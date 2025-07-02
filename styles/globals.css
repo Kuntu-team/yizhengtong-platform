@@ -1,0 +1,115 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+  background-color: hsl(220 15% 98%);
+  color: hsl(220 15% 15%);
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@layer base {
+  :root {
+    --background: 220 15% 98%;
+    --foreground: 220 15% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 15% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 15% 15%;
+    --primary: 220 85% 45%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 220 15% 95%;
+    --secondary-foreground: 220 15% 25%;
+    --muted: 220 15% 96%;
+    --muted-foreground: 220 15% 45%;
+    --accent: 220 15% 94%;
+    --accent-foreground: 220 15% 25%;
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 15% 88%;
+    --input: 220 15% 88%;
+    --ring: 220 85% 45%;
+    --chart-1: 220 85% 45%;
+    --chart-2: 0 75% 55%;
+    --chart-3: 220 15% 35%;
+    --chart-4: 220 85% 65%;
+    --chart-5: 0 75% 75%;
+    --radius: 0.5rem;
+    --sidebar-background: 220 15% 98%;
+    --sidebar-foreground: 220 15% 25%;
+    --sidebar-primary: 220 85% 45%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 220 15% 95%;
+    --sidebar-accent-foreground: 220 15% 25%;
+    --sidebar-border: 220 15% 88%;
+    --sidebar-ring: 220 85% 45%;
+  }
+  .dark {
+    --background: 220 15% 12%;
+    --foreground: 0 0% 98%;
+    --card: 220 15% 15%;
+    --card-foreground: 0 0% 98%;
+    --popover: 220 15% 15%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 220 85% 55%;
+    --primary-foreground: 220 15% 12%;
+    --secondary: 220 15% 18%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 220 15% 18%;
+    --muted-foreground: 220 15% 60%;
+    --accent: 220 15% 18%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 75% 65%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 15% 25%;
+    --input: 220 15% 25%;
+    --ring: 220 85% 55%;
+    --chart-1: 220 85% 55%;
+    --chart-2: 0 75% 65%;
+    --chart-3: 220 15% 75%;
+    --chart-4: 220 85% 75%;
+    --chart-5: 0 75% 85%;
+    --sidebar-background: 220 15% 12%;
+    --sidebar-foreground: 220 15% 75%;
+    --sidebar-primary: 220 85% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 15% 18%;
+    --sidebar-accent-foreground: 220 15% 75%;
+    --sidebar-border: 220 15% 25%;
+    --sidebar-ring: 220 85% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* 商务风格增强 */
+@layer components {
+  .business-card {
+    @apply bg-white border border-business-gray-200 rounded-lg shadow-sm;
+  }
+
+  .business-button-primary {
+    @apply bg-business-blue-600 hover:bg-business-blue-700 text-white font-medium;
+  }
+
+  .business-button-secondary {
+    @apply bg-business-gray-100 hover:bg-business-gray-200 text-business-gray-700 font-medium;
+  }
+
+  .business-button-danger {
+    @apply bg-business-red-600 hover:bg-business-red-700 text-white font-medium;
+  }
+}
