@@ -1,0 +1,166 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model business_manager_region_info {
+  business_person_id   String?   @db.VarChar(36)
+  business_person_name String?   @db.VarChar(50)
+  region_code          String?   @db.VarChar(20)
+  region_cn            String?   @db.VarChar(100)
+  region_level         String?   @db.Char(1)
+  team                 String?   @db.VarChar(20)
+  start_date           DateTime? @db.Date
+  end_date             DateTime? @default(dbgenerated("'9999-12-31'::date")) @db.Date
+  data_status          String?   @default("1") @db.Char(1)
+  created_time         DateTime  @default(now()) @db.Timestamp(6)
+  updated_time         DateTime  @default(now()) @db.Timestamp(6)
+
+  @@ignore
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model business_person_base_info {
+  business_person_id   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  business_person_name String    @db.VarChar(100)
+  business_person_type String?   @db.Char(1)
+  staff_id             String?   @db.VarChar(10)
+  gender               String?   @db.Char(1)
+  department           String?   @db.VarChar(100)
+  position             String?   @db.VarChar(100)
+  phone_number         String?   @db.VarChar(20)
+  email                String?   @db.VarChar(100)
+  position_status      String?   @default("1") @db.Char(1)
+  hire_date            DateTime? @db.Date
+  leave_date           DateTime? @default(dbgenerated("'9999-12-31'::date")) @db.Date
+  manager_name         String?   @db.VarChar(100)
+  data_status          String?   @default("1") @db.Char(1)
+  created_time         DateTime  @default(now()) @db.Timestamp(6)
+  updated_time         DateTime  @default(now()) @db.Timestamp(6)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model dim_region_code {
+  region_code  String? @db.VarChar(20)
+  region_name  String? @db.VarChar(500)
+  region_level String? @db.Char(1)
+  parent_code  String? @db.VarChar(20)
+  parent_cn    String? @db.VarChar(500)
+
+  @@ignore
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model key_person_base_info {
+  person_id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  person_name         String   @db.VarChar(100)
+  department          String?  @db.VarChar(100)
+  position            String?  @db.VarChar(100)
+  leadership_division String?
+  person_desc         String?
+  province_code       String?  @db.VarChar(10)
+  province_cn         String?  @db.VarChar(50)
+  city_code           String?  @db.VarChar(10)
+  city_cn             String?  @db.VarChar(50)
+  district_code       String?  @db.VarChar(10)
+  district_cn         String?  @db.VarChar(50)
+  office_phone        String?  @db.VarChar(20)
+  office_address      String?
+  public_email        String?  @db.VarChar(100)
+  work_experience     String?
+  person_photo_url    String?  @db.VarChar(500)
+  ancestral_home      String?  @db.VarChar(100)
+  ethnic_group        String?  @db.VarChar(100)
+  gender              String?  @db.Char(1)
+  birth_date          String?  @db.VarChar(20)
+  graduate_school     String?  @db.VarChar(100)
+  baike_url           String?  @db.VarChar(500)
+  data_status         String?  @default("1") @db.Char(1)
+  created_time        DateTime @default(now()) @db.Timestamp(6)
+  updated_time        DateTime @default(now()) @db.Timestamp(6)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model key_person_news {
+  news_id      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  new_title    String    @db.VarChar(500)
+  new_url      String    @db.VarChar(500)
+  new_content  String    @db.VarChar(500)
+  new_time     DateTime? @db.Timestamp(6)
+  new_source   String    @db.VarChar(100)
+  person_id    String?   @db.VarChar(36)
+  data_status  String?   @default("1") @db.Char(1)
+  created_time DateTime  @default(now()) @db.Timestamp(6)
+  updated_time DateTime  @default(now()) @db.Timestamp(6)
+}
+
+/// We could not retrieve columns for the underlying table. Either it has none or you are missing rights to see them. Please check your privileges.
+// model key_person_news_tags {
+// }
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model key_person_private_info {
+  person_id            String   @id @db.VarChar(36)
+  person_name          String   @db.VarChar(100)
+  phone_number         String?  @db.VarChar(20)
+  wechat_number        String?  @db.VarChar(100)
+  home_address         String?
+  children_status      String?
+  hobbies              String?
+  person_avoidances    String?
+  person_notes         String?
+  business_person_id   String?  @db.VarChar(36)
+  business_person_name String?  @db.VarChar(100)
+  business_person_type String?  @db.Char(1)
+  data_status          String?  @default("1") @db.Char(1)
+  created_time         DateTime @default(now()) @db.Timestamp(6)
+  updated_time         DateTime @default(now()) @db.Timestamp(6)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model policies_info {
+  policy_id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  policy_title        String?
+  policy_content      String?
+  policy_url          String?  @db.VarChar(500)
+  policy_level        String?  @db.VarChar(10)
+  policy_code         String?  @db.VarChar(100)
+  province_code       String?  @db.VarChar(20)
+  province_cn         String?  @db.VarChar(100)
+  city_code           String?  @db.VarChar(20)
+  city_cn             String?  @db.VarChar(100)
+  category_id         String?  @db.VarChar(20)
+  category_name       String?  @db.VarChar(100)
+  theme_category_id   String?  @db.VarChar(20)
+  theme_category_name String?  @db.VarChar(100)
+  is_effective        String?  @default("1") @db.Char(1)
+  policy_doc_number   String?  @db.VarChar(100)
+  group_category      String?  @db.VarChar(100)
+  issued_authority    String?  @db.VarChar(500)
+  completed_date      String?
+  released_date       String?
+  data_status         String?  @default("1") @db.Char(1)
+  created_time        DateTime @default(now()) @db.Timestamp(6)
+  updated_time        DateTime @default(now()) @db.Timestamp(6)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model region_special_bond_stats {
+  region_code    String?  @db.VarChar(20)
+  region_name    String?  @db.VarChar(500)
+  region_level   String?  @db.Char(1)
+  parent_code    String?  @db.VarChar(20)
+  parent_cn      String?  @db.VarChar(500)
+  year_dim       String?  @db.Char(1)
+  project_amount BigInt?
+  issued_amount  Decimal? @db.Decimal(10, 2)
+
+  @@ignore
+}
