@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -34,105 +34,6 @@ const departmentJobs: Record<string, string[]> = {
   环保局: ["全部岗位", "环境监测中心专员", "排污许可科科员", "固废管理处负责人"],
 }
 
-const mockPeople: Person[] = [
-  {
-    id: "1",
-    name: "张三",
-    position: "主任",
-    department: "发改委",
-    region: "jiujiang",
-    hometown: "南昌市",
-    age: 52,
-    tenure: "3年",
-    focusAreas: ["数字经济", "产业发展", "投资促进"],
-    latestActivity: "主持召开数字经济发展座谈会",
-    contact: {
-      phone: "0792-8****888",
-      wechat: "zhangsan_jj",
-    },
-  },
-  {
-    id: "2",
-    name: "李四",
-    position: "局长",
-    department: "财政局",
-    region: "nanchang",
-    hometown: "九江市",
-    age: 48,
-    tenure: "2年",
-    focusAreas: ["财政管理", "资金监管", "预算编制"],
-    latestActivity: "审议2024年财政预算执行情况",
-    contact: {
-      phone: "0791-8****666",
-      wechat: "lisi_nc",
-    },
-  },
-  {
-    id: "3",
-    name: "王五",
-    position: "市长",
-    department: "市政府",
-    region: "yichun",
-    hometown: "宜春市",
-    age: 55,
-    tenure: "4年",
-    focusAreas: ["城市发展", "民生保障", "招商引资"],
-    latestActivity: "调研教育城项目建设进展",
-    contact: {
-      phone: "0795-3****999",
-      wechat: "wangwu_yc",
-    },
-  },
-  {
-    id: "4",
-    name: "赵六",
-    position: "副市长",
-    department: "市政府",
-    region: "shangrao",
-    hometown: "景德镇市",
-    age: 46,
-    tenure: "1年",
-    focusAreas: ["城市建设", "基础设施", "市政工程"],
-    latestActivity: "检查重点工程建设情况",
-    contact: {
-      phone: "0793-8****777",
-      wechat: "zhaoliu_sr",
-    },
-  },
-  {
-    id: "5",
-    name: "陈七",
-    position: "局长",
-    department: "住建局",
-    region: "ganzhou",
-    hometown: "赣州市",
-    age: 50,
-    tenure: "5年",
-    focusAreas: ["房地产", "城市规划", "住房保障"],
-    latestActivity: "部署保障性住房建设工作",
-    contact: {
-      phone: "0797-8****555",
-      wechat: "chenqi_gz",
-    },
-  },
-  {
-    id: "6",
-    name: "孙八",
-    position: "局长",
-    department: "交通局",
-    region: "jiujiang",
-    hometown: "抚州市",
-    age: 49,
-    tenure: "2年",
-    focusAreas: ["交通建设", "物流发展", "港口管理"],
-    latestActivity: "推进综合交通枢纽建设",
-    contact: {
-      phone: "0792-8****444",
-      wechat: "sunba_fz",
-    },
-  },
-]
-
 // 紧凑的人物卡片组件
 function CompactPersonCard({
   person,
@@ -159,9 +60,20 @@ function CompactPersonCard({
     >
       <div className="flex items-center gap-3">
         {/* 头像 */}
-        <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-          <User className="h-6 w-6 text-white" />
-        </div>
+        {person.avatar ? (
+          <img 
+            src={person.avatar} 
+            alt={person.name}
+            className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = '/placeholder-user.jpg';
+            }}
+          />
+        ) : (
+          <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+            <User className="h-6 w-6 text-white" />
+          </div>
+        )}
 
         {/* 主要信息 */}
         <div className="flex-1 min-w-0">
@@ -189,7 +101,7 @@ function CompactPersonCard({
             <span className="text-xs text-slate-400">·</span>
             <span className="text-xs text-gray-700">{person.hometown}</span>
             <span className="text-xs text-slate-400">·</span>
-            <span className="text-xs text-gray-600">{person.age}岁</span>
+            <span className="text-xs text-gray-600">{person.age ? `${person.age}岁` : '未知'}</span>
           </div>
 
           {/* 第三行：电话和微信 */}
@@ -221,7 +133,8 @@ export default function DirectoryPage() {
   const [selectedPosition, setSelectedPosition] = useState("全部岗位")
   const [followedPeople, setFollowedPeople] = useState<string[]>(["1", "3"])
   const [activeTab, setActiveTab] = useState("followed")
-
+  const [people, setPeople] = useState<Person[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [filterOpen, setFilterOpen] = useState(false)
   const [hoveredDepartment, setHoveredDepartment] = useState<string | null>(null)
 
@@ -231,8 +144,70 @@ export default function DirectoryPage() {
   // 根据部门选择更新岗位选项
   const availablePositions = departmentJobs[selectedDepartment] || ["全部岗位"]
 
+  // 获取人物数据
+  useEffect(() => {
+    let isMounted = true // 防止组件卸载后设置状态[10](@ref)
+
+    async function fetchPeople() {
+      try {
+        const response = await fetch('/api/key-persons')
+        if (!response.ok) throw new Error('Failed to fetch data')
+        const data = await response.json()
+      console.log(data,'data')
+        if (isMounted) {
+          const transformed = data.map((p: any) => ({
+            ...p,
+            age: calculateAge(p.birth_date),
+            hometown: '',
+            tenure: '',
+            focusAreas: [],
+            latestActivity: '',
+            contact: {
+              phone: '',
+              wechat: p.wechat || ''
+            }
+          }))
+          setPeople(transformed)
+        }
+      } catch (error) {
+        if (isMounted) {
+          toast({
+            title: "加载失败",
+            description: "无法获取人物数据",
+            variant: "destructive"
+          })
+          console.error(error)
+        }
+      } finally {
+        if (isMounted) setIsLoading(false)
+      }
+    }
+
+    fetchPeople()
+
+    return () => {
+      isMounted = false
+    }
+  }, [toast])
+
+  // 点击外部关闭筛选
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (filterOpen && !target.closest(".relative")) {
+        setFilterOpen(false)
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [filterOpen])
+
+  // 过滤人物列表
   const filteredPeople = useMemo(() => {
-    return mockPeople.filter((person) => {
+    return people.filter((person) => {
       // 首先按tab筛选
       if (activeTab === "followed" && !followedPeople.includes(person.id)) {
         return false
@@ -242,31 +217,34 @@ export default function DirectoryPage() {
       const matchesPosition = selectedPosition === "全部岗位" || person.position === selectedPosition
       return matchesDepartment && matchesPosition
     })
-  }, [selectedDepartment, selectedPosition, activeTab, followedPeople])
+  }, [people, selectedDepartment, selectedPosition, activeTab, followedPeople])
 
-  const handleToggleFollow = (personId: string) => {
-    if (followedPeople.includes(personId)) {
-      setFollowedPeople(followedPeople.filter((id) => id !== personId))
-      toast({
-        title: "取消关注",
-        description: "已取消关注",
-      })
-    } else {
-      if (followedPeople.length >= 10) {
+  // 切换关注状态
+  const handleToggleFollow = useCallback((personId: string) => {
+    setFollowedPeople(prev => {
+      if (prev.includes(personId)) {
         toast({
-          title: "关注失败",
-          description: "最多关注10位关键人物",
-          variant: "destructive",
+          title: "取消关注",
+          description: "已取消关注",
         })
-        return
+        return prev.filter((id) => id !== personId)
+      } else {
+        if (prev.length >= 10) {
+          toast({
+            title: "关注失败",
+            description: "最多关注10位关键人物",
+            variant: "destructive",
+          })
+          return prev
+        }
+        toast({
+          title: "关注成功",
+          description: "将在销售线索中显示其动态",
+        })
+        return [...prev, personId]
       }
-      setFollowedPeople([...followedPeople, personId])
-      toast({
-        title: "关注成功",
-        description: "将在销售线索中显示其动态",
-      })
-    }
-  }
+    })
+  }, [toast])
 
   const handleDepartmentSelect = (department: string) => {
     setSelectedDepartment(department)
@@ -289,21 +267,6 @@ export default function DirectoryPage() {
       description: "已重置所有筛选条件",
     })
   }
-
-  // 在组件顶部添加
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement
-      if (filterOpen && !target.closest(".relative")) {
-        setFilterOpen(false)
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-    }
-  }, [filterOpen])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -344,7 +307,7 @@ export default function DirectoryPage() {
                   value="all"
                   className="text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=inactive]:text-gray-600 data-[state=inactive]:bg-transparent"
                 >
-                  全部人物 ({mockPeople.length})
+                  全部人物 ({people.length})
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -434,86 +397,197 @@ export default function DirectoryPage() {
 
       {/* 主体内容 */}
       <main className="max-w-7xl mx-auto px-6 py-4">
-        <Tabs value={activeTab} className="w-full">
-          <TabsContent value="all" className="mt-0">
-            {filteredPeople.length > 0 ? (
-              <div className="grid grid-cols-2 gap-3">
-                {filteredPeople.map((person, index) => (
-                  <motion.div
-                    key={person.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.02 }}
-                  >
-                    <CompactPersonCard
-                      person={person}
-                      isFollowed={followedPeople.includes(person.id)}
-                      onToggleFollow={handleToggleFollow}
-                    />
-                  </motion.div>
-                ))}
-              </div>
-            ) : (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center py-12 bg-white border border-gray-200 shadow-sm rounded-lg"
-              >
-                <User className="h-12 w-12 text-slate-400 mx-auto mb-3" />
-                <p className="text-slate-500 mb-1 font-light">没有找到符合条件的人物</p>
-                <p className="text-sm text-slate-400 font-light">尝试调整筛选条件</p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-4 border border-gray-200 hover:bg-gray-100 font-light"
-                  onClick={handleClearFilter}
+        {isLoading ? (
+          <div className="text-center py-12">加载中...</div>
+        ) : (
+          <Tabs value={activeTab} className="w-full">
+            <TabsContent value="all" className="mt-0">
+              {filteredPeople.length > 0 ? (
+                <div className="grid grid-cols-2 gap-3">
+                  {filteredPeople.map((person, index) => (
+                    <motion.div
+                      key={person.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.02 }}
+                    >
+                      <CompactPersonCard
+                        person={person}
+                        isFollowed={followedPeople.includes(person.id)}
+                        onToggleFollow={handleToggleFollow}
+                      />
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center py-12 bg-white border border-gray-200 shadow-sm rounded-lg"
                 >
-                  清除筛选
-                </Button>
-              </motion.div>
-            )}
-          </TabsContent>
+                  <User className="h-12 w-12 text-slate-400 mx-auto mb-3" />
+                  <p className="text-slate-500 mb-1 font-light">没有找到符合条件的人物</p>
+                  <p className="text-sm text-slate-400 font-light">尝试调整筛选条件</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-4 border border-gray-200 hover:bg-gray-100 font-light"
+                    onClick={handleClearFilter}
+                  >
+                    清除筛选
+                  </Button>
+                </motion.div>
+              )}
+            </TabsContent>
 
-          <TabsContent value="followed" className="mt-0">
-            {filteredPeople.length > 0 ? (
-              <div className="grid grid-cols-2 gap-3">
-                {filteredPeople.map((person, index) => (
-                  <motion.div
-                    key={person.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.02 }}
-                  >
-                    <CompactPersonCard
-                      person={person}
-                      isFollowed={followedPeople.includes(person.id)}
-                      onToggleFollow={handleToggleFollow}
-                    />
-                  </motion.div>
-                ))}
-              </div>
-            ) : (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center py-12 bg-white border border-gray-200 shadow-sm rounded-lg"
-              >
-                <Star className="h-12 w-12 text-slate-400 mx-auto mb-3" />
-                <p className="text-slate-500 mb-1 font-light">还没有关注任何人物</p>
-                <p className="text-sm text-slate-400 font-light">点击星标关注感兴趣的关键人物</p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-4 border border-gray-200 hover:bg-gray-100 font-light"
-                  onClick={() => setActiveTab("all")}
+            <TabsContent value="followed" className="mt-0">
+              {filteredPeople.length > 0 ? (
+                <div className="grid grid-cols-2 gap-3">
+                  {filteredPeople.map((person, index) => (
+                    <motion.div
+                      key={person.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.02 }}
+                    >
+                      <CompactPersonCard
+                        person={person}
+                        isFollowed={followedPeople.includes(person.id)}
+                        onToggleFollow={handleToggleFollow}
+                      />
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center py-12 bg-white border border-gray-200 shadow-sm rounded-lg"
                 >
-                  浏览全部人物
-                </Button>
-              </motion.div>
-            )}
-          </TabsContent>
-        </Tabs>
+                  <Star className="h-12 w-12 text-slate-400 mx-auto mb-3" />
+                  <p className="text-slate-500 mb-1 font-light">还没有关注任何人物</p>
+                  <p className="text-sm text-slate-400 font-light">点击星标关注感兴趣的关键人物</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-4 border border-gray-200 hover:bg-gray-100 font-light"
+                    onClick={() => setActiveTab("all")}
+                  >
+                    浏览全部人物
+                  </Button>
+                </motion.div>
+              )}
+            </TabsContent>
+          </Tabs>
+        )}
       </main>
     </div>
   )
 }
+// 计算年龄的辅助函数 - 支持'YYYY年MM月'格式
+const calculateAge = (birthDateString: string | undefined): number | null => {
+  if (!birthDateString) return null;
+  
+
+
+
+
+
+
+
+  // 解析中文日期格式 'YYYY年MM月'
+  // 专注处理'YYYY年MM月'格式（半角数字，无额外空格）
+  // 支持带空格和全角数字的中文日期格式 (YYYY年MM月)
+  // 全角数字转半角工具函数
+  // 全角字符转半角字符 (包括数字、字母、标点符号)
+  const toHalfWidth = (str: string) => 
+    str.replace(/[！-～]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+       .replace(/　/g, ' '); // 全角空格转半角空格
+  // 统一转换所有数字为半角
+  // 中文月份转数字
+  const chineseMonths = { '一月': '1月', '二月': '2月', '三月': '3月', '四月': '4月', '五月': '5月', '六月': '6月', '七月': '7月', '八月': '8月', '九月': '9月', '十月': '10月', '十一月': '11月', '十二月': '12月' };
+  let normalizedDateString = toHalfWidth(birthDateString);
+  for (const [cnMonth, numMonth] of Object.entries(chineseMonths)) {
+    normalizedDateString = normalizedDateString.replace(new RegExp(cnMonth, 'g'), numMonth);
+  }
+  
+  // 匹配中文日期格式 (YYYY年MM月或YYYY年MM月DD日)
+  const chineseDateMatch = normalizedDateString.match(/(\d{4})\s*年\s*(\d{1,2})\s*月\s*(?:(\d{1,2})\s*日)?/);
+  let birthDate;
+  
+  if (chineseDateMatch) {
+      
+      const year = parseInt(toHalfWidth(chineseDateMatch[1]), 10);
+      const month = parseInt(toHalfWidth(chineseDateMatch[2]), 10) - 1; // 月份从0开始
+      const day = chineseDateMatch[3] ? parseInt(toHalfWidth(chineseDateMatch[3]), 10) : 1; // 默认1号
+      birthDate = new Date(year, month, day);
+      // 检查日期是否有效，无效则尝试标准解析
+      if (isNaN(birthDate.getTime())) {
+        birthDate = new Date(birthDateString);
+      }
+    } else {
+      // 尝试ISO格式 (YYYY-MM-DD)
+      const isoMatch = normalizedDateString.match(/\s*(\d{4})-(\d{1,2})(?:-(\d{1,2}))?\s*/);
+      if (isoMatch) {
+        const year = parseInt(isoMatch[1], 10);
+        const month = parseInt(isoMatch[2], 10) - 1;
+        const day = isoMatch[3] ? parseInt(isoMatch[3], 10) : 1; // 默认1号
+        birthDate = new Date(year, month, day);
+      } else {
+        // 尝试斜杠分隔格式 (YYYY/MM/DD)
+        // 尝试斜杠分隔格式 (YYYY/MM/DD 或 MM/DD/YYYY)
+          const slashMatch = normalizedDateString.match(/\s*(\d{1,4})\/(\d{1,2})(?:\/(\d{1,2}))?\s*/);
+          if (slashMatch) {
+            let year, month, day;
+            const part1 = parseInt(slashMatch[1], 10);
+            const part2 = parseInt(slashMatch[2], 10);
+            const part3 = slashMatch[3] ? parseInt(slashMatch[3], 10) : 1;
+
+            // 判断是 YYYY/MM/DD 还是 MM/DD/YYYY
+            if (part1 > 1900) {
+              // YYYY/MM/DD 格式
+              year = part1;
+              month = part2 - 1;
+              day = part3;
+            } else {
+              // MM/DD/YYYY 格式
+              year = part3;
+              month = part1 - 1;
+              day = part2;
+
+              // 如果月份无效，尝试交换月和日
+              if (month < 0 || month > 11) {
+                month = day - 1;
+                day = part1;
+              }
+            }
+            birthDate = new Date(year, month, day);
+          } else {
+            // 尝试点分隔格式 (YYYY.MM.DD)
+            const dotMatch = normalizedDateString.match(/\s*(\d{4})\.(\d{1,2})(?:\.(\d{1,2}))?\s*/);
+            if (dotMatch) {
+              const year = parseInt(dotMatch[1], 10);
+              const month = parseInt(dotMatch[2], 10) - 1;
+              const day = dotMatch[3] ? parseInt(dotMatch[3], 10) : 1; // 默认1号
+              birthDate = new Date(year, month, day);
+            } else {
+              // 尝试标准日期格式
+              birthDate = new Date(normalizedDateString);
+            }
+          }
+      }
+    }
+  
+  if (isNaN(birthDate.getTime())) return null;
+  
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  
+  // 考虑月份和日期因素
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  
+  return age >= 0 ? age : null;
+};
