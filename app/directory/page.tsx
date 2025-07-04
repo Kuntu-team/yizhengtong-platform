@@ -27,7 +27,7 @@ interface Person {
 }
 
 // 部门岗位联动数据
-const departmentJobs = {
+const departmentJobs: Record<string, string[]> = {
   全部部门: ["全部岗位"],
   发改委: ["全部岗位", "综合规划科科员", "产业发展处副主任", "投资科负责人"],
   水利局: ["全部岗位", "水资源管理科科员", "工程建设科主任", "防汛办工作人员"],
@@ -132,7 +132,6 @@ const mockPeople: Person[] = [
     },
   },
 ]
-// test
 
 // 紧凑的人物卡片组件
 function CompactPersonCard({
@@ -152,7 +151,8 @@ function CompactPersonCard({
       animate={{ opacity: 1, scale: 1 }}
       className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md transition-all duration-300 cursor-pointer hover:bg-gray-50"
       onClick={(e) => {
-        if (!e.target.closest("button")) {
+        const target = e.target as HTMLElement
+        if (!target.closest("button")) {
           router.push(`/directory/${person.id}`)
         }
       }}
@@ -205,7 +205,7 @@ function CompactPersonCard({
                 <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 4.882-1.900 7.6.5.5-3.187-2.75-6.874-8.372-6.874zm-3.375 5.25a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5zm6.75 0a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5z" />
                 <path d="M15.312 9.531c-4.157 0-7.5 2.69-7.5 6.094 0 1.875.937 3.563 2.438 4.688-.188.75-.375 1.313-.375 1.313s1.313-.375 2.063-.75c.375.094.75.188 1.125.188 4.156 0 7.5-2.69 7.5-6.094s-3.344-6.094-7.5-6.094zm-2.25 3.75a.563.563 0 1 1 0-1.125.563.563 0 0 1 0 1.125zm4.5 0a.563.563 0 1 1 0-1.125.563.563 0 0 1 0 1.125z" />
               </svg>
-              <span className="text-xs text-gray-900 font-medium">{person.contact.wechat}</span>
+              <span className="text-xs text-gray-900 font-medium">{person.contact?.wechat || "未提供"}</span>
             </div>
           </div>
         </div>
@@ -293,7 +293,7 @@ export default function DirectoryPage() {
   // 在组件顶部添加
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Element
+      const target = event.target as HTMLElement
       if (filterOpen && !target.closest(".relative")) {
         setFilterOpen(false)
       }
@@ -393,7 +393,7 @@ export default function DirectoryPage() {
                       {/* 第二级菜单 - 职位 */}
                       <div className="w-40">
                         <div className="p-2 border-b border-gray-100 bg-gray-50">
-                          <span className="text-xs font-medium text-gray-600">{hoveredDepartment || "职��"}</span>
+                          <span className="text-xs font-medium text-gray-600">{hoveredDepartment || "职位"}</span>
                         </div>
                         <div className="max-h-60 overflow-y-auto">
                           {hoveredDepartment &&
