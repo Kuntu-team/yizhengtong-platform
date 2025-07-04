@@ -15,11 +15,12 @@ interface Person {
   department: string
   region: string
   hometown: string
-  age: number
+  age: number | null
   tenure: string
   focusAreas: string[]
   latestActivity?: string
   avatar?: string
+  office_phone?: string
   contact?: {
     phone?: string
     wechat?: string
@@ -98,20 +99,18 @@ function CompactPersonCard({
             <span className="text-sm font-medium text-gray-800">{person.department}</span>
             <span className="text-xs text-slate-400">·</span>
             <span className="text-sm font-medium text-gray-800">{person.position}</span>
-            <span className="text-xs text-slate-400">·</span>
+            {/* <span className="text-xs text-slate-400">·</span> */}
             <span className="text-xs text-gray-700">{person.hometown}</span>
             <span className="text-xs text-slate-400">·</span>
-            <span className="text-xs text-gray-600">{person.age ? `${person.age}岁` : '未知'}</span>
+            <span className="text-xs text-gray-600">{person.age !== null ? `${person.age}岁` : '未知'}</span>
           </div>
 
           {/* 第三行：电话和微信 */}
           <div className="flex items-center gap-4">
-            {person.contact?.phone && (
-              <div className="flex items-center gap-1">
-                <Phone className="h-3 w-3 text-slate-400 flex-shrink-0" />
-                <span className="text-xs text-gray-900 font-medium">{person.contact.phone}</span>
-              </div>
-            )}
+            <div className="flex items-center gap-1">
+              <Phone className="h-3 w-3 text-slate-400 flex-shrink-0" />
+              <span className="text-xs text-gray-900 font-medium">{person.office_phone || '暂无办公电话'}</span>
+            </div>
             <div className="flex items-center gap-1">
               <svg className="h-3 w-3 text-green-600 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 4.882-1.900 7.6.5.5-3.187-2.75-6.874-8.372-6.874zm-3.375 5.25a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5zm6.75 0a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5z" />
@@ -146,24 +145,23 @@ export default function DirectoryPage() {
 
   // 获取人物数据
   useEffect(() => {
-    let isMounted = true // 防止组件卸载后设置状态[10](@ref)
+    let isMounted = true // 防止组件卸载后设置状态
 
     async function fetchPeople() {
       try {
         const response = await fetch('/api/key-persons')
         if (!response.ok) throw new Error('Failed to fetch data')
         const data = await response.json()
-      console.log(data,'data')
         if (isMounted) {
           const transformed = data.map((p: any) => ({
             ...p,
             age: calculateAge(p.birth_date),
-            hometown: '',
-            tenure: '',
-            focusAreas: [],
-            latestActivity: '',
+            hometown: p.hometown || '',
+            tenure: p.tenure || '',
+            focusAreas: p.focusAreas || [],
+            latestActivity: p.latestActivity || '',
             contact: {
-              phone: '',
+              phone: p.phone || '',
               wechat: p.wechat || ''
             }
           }))
@@ -484,110 +482,113 @@ export default function DirectoryPage() {
     </div>
   )
 }
-// 计算年龄的辅助函数 - 支持'YYYY年MM月'格式
-const calculateAge = (birthDateString: string | undefined): number | null => {
+
+// 优化后的年龄计算函数
+function calculateAge(birthDateString: string | undefined): number | null {
   if (!birthDateString) return null;
-  
 
-
-
-
-
-
-
-  // 解析中文日期格式 'YYYY年MM月'
-  // 专注处理'YYYY年MM月'格式（半角数字，无额外空格）
-  // 支持带空格和全角数字的中文日期格式 (YYYY年MM月)
-  // 全角数字转半角工具函数
-  // 全角字符转半角字符 (包括数字、字母、标点符号)
+  // 全角字符转半角字符
   const toHalfWidth = (str: string) => 
     str.replace(/[！-～]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
-       .replace(/　/g, ' '); // 全角空格转半角空格
-  // 统一转换所有数字为半角
+       .replace(/　/g, ' ');
+
   // 中文月份转数字
-  const chineseMonths = { '一月': '1月', '二月': '2月', '三月': '3月', '四月': '4月', '五月': '5月', '六月': '6月', '七月': '7月', '八月': '8月', '九月': '9月', '十月': '10月', '十一月': '11月', '十二月': '12月' };
-  let normalizedDateString = toHalfWidth(birthDateString);
+  const chineseMonths: Record<string, string> = {
+    '一月': '1月', '二月': '2月', '三月': '3月', '四月': '4月', 
+    '五月': '5月', '六月': '6月', '七月': '7月', '八月': '8月', 
+    '九月': '9月', '十月': '10月', '十一月': '11月', '十二月': '12月'
+  };
+
+  // 统一转换所有数字为半角并处理中文月份
+  let normalizedDateString = toHalfWidth(birthDateString.trim());
   for (const [cnMonth, numMonth] of Object.entries(chineseMonths)) {
     normalizedDateString = normalizedDateString.replace(new RegExp(cnMonth, 'g'), numMonth);
   }
+
+  // 尝试解析各种日期格式
+  let birthDate: Date | null = null;
   
-  // 匹配中文日期格式 (YYYY年MM月或YYYY年MM月DD日)
-  const chineseDateMatch = normalizedDateString.match(/(\d{4})\s*年\s*(\d{1,2})\s*月\s*(?:(\d{1,2})\s*日)?/);
-  let birthDate;
-  
+  // 1. 尝试中文日期格式 (YYYY年MM月DD日 或 YYYY年MM月)
+  const chineseDateMatch = normalizedDateString.match(/(\d{4})\s*年\s*(\d{1,2})\s*月(?:\s*(\d{1,2})\s*日)?/);
   if (chineseDateMatch) {
-      
-      const year = parseInt(toHalfWidth(chineseDateMatch[1]), 10);
-      const month = parseInt(toHalfWidth(chineseDateMatch[2]), 10) - 1; // 月份从0开始
-      const day = chineseDateMatch[3] ? parseInt(toHalfWidth(chineseDateMatch[3]), 10) : 1; // 默认1号
+    const year = parseInt(chineseDateMatch[1], 10);
+    const month = parseInt(chineseDateMatch[2], 10) - 1; // 月份从0开始
+    const day = chineseDateMatch[3] ? parseInt(chineseDateMatch[3], 10) : 1;
+    birthDate = new Date(year, month, day);
+  }
+  
+  // 2. 尝试ISO格式 (YYYY-MM-DD)
+  if (!birthDate || isNaN(birthDate.getTime())) {
+    const isoMatch = normalizedDateString.match(/(\d{4})-(\d{1,2})(?:-(\d{1,2}))?/);
+    if (isoMatch) {
+      const year = parseInt(isoMatch[1], 10);
+      const month = parseInt(isoMatch[2], 10) - 1;
+      const day = isoMatch[3] ? parseInt(isoMatch[3], 10) : 1;
       birthDate = new Date(year, month, day);
-      // 检查日期是否有效，无效则尝试标准解析
-      if (isNaN(birthDate.getTime())) {
-        birthDate = new Date(birthDateString);
-      }
-    } else {
-      // 尝试ISO格式 (YYYY-MM-DD)
-      const isoMatch = normalizedDateString.match(/\s*(\d{4})-(\d{1,2})(?:-(\d{1,2}))?\s*/);
-      if (isoMatch) {
-        const year = parseInt(isoMatch[1], 10);
-        const month = parseInt(isoMatch[2], 10) - 1;
-        const day = isoMatch[3] ? parseInt(isoMatch[3], 10) : 1; // 默认1号
-        birthDate = new Date(year, month, day);
-      } else {
-        // 尝试斜杠分隔格式 (YYYY/MM/DD)
-        // 尝试斜杠分隔格式 (YYYY/MM/DD 或 MM/DD/YYYY)
-          const slashMatch = normalizedDateString.match(/\s*(\d{1,4})\/(\d{1,2})(?:\/(\d{1,2}))?\s*/);
-          if (slashMatch) {
-            let year, month, day;
-            const part1 = parseInt(slashMatch[1], 10);
-            const part2 = parseInt(slashMatch[2], 10);
-            const part3 = slashMatch[3] ? parseInt(slashMatch[3], 10) : 1;
-
-            // 判断是 YYYY/MM/DD 还是 MM/DD/YYYY
-            if (part1 > 1900) {
-              // YYYY/MM/DD 格式
-              year = part1;
-              month = part2 - 1;
-              day = part3;
-            } else {
-              // MM/DD/YYYY 格式
-              year = part3;
-              month = part1 - 1;
-              day = part2;
-
-              // 如果月份无效，尝试交换月和日
-              if (month < 0 || month > 11) {
-                month = day - 1;
-                day = part1;
-              }
-            }
-            birthDate = new Date(year, month, day);
-          } else {
-            // 尝试点分隔格式 (YYYY.MM.DD)
-            const dotMatch = normalizedDateString.match(/\s*(\d{4})\.(\d{1,2})(?:\.(\d{1,2}))?\s*/);
-            if (dotMatch) {
-              const year = parseInt(dotMatch[1], 10);
-              const month = parseInt(dotMatch[2], 10) - 1;
-              const day = dotMatch[3] ? parseInt(dotMatch[3], 10) : 1; // 默认1号
-              birthDate = new Date(year, month, day);
-            } else {
-              // 尝试标准日期格式
-              birthDate = new Date(normalizedDateString);
-            }
-          }
-      }
     }
+  }
   
-  if (isNaN(birthDate.getTime())) return null;
+  // 3. 尝试斜杠分隔格式 (YYYY/MM/DD 或 MM/DD/YYYY)
+  if (!birthDate || isNaN(birthDate.getTime())) {
+    const slashMatch = normalizedDateString.match(/(\d{1,4})\/(\d{1,2})(?:\/(\d{1,2}))?/);
+    if (slashMatch) {
+      let year, month, day;
+      const part1 = parseInt(slashMatch[1], 10);
+      const part2 = parseInt(slashMatch[2], 10);
+      const part3 = slashMatch[3] ? parseInt(slashMatch[3], 10) : 1;
+
+      // 判断是 YYYY/MM/DD 还是 MM/DD/YYYY
+      if (part1 > 1900) {
+        // YYYY/MM/DD 格式
+        year = part1;
+        month = part2 - 1;
+        day = part3;
+      } else {
+        // MM/DD/YYYY 格式
+        year = part3;
+        month = part1 - 1;
+        day = part2;
+
+        // 如果月份无效，尝试交换月和日
+        if (month < 0 || month > 11) {
+          month = day - 1;
+          day = part1;
+        }
+      }
+      birthDate = new Date(year, month, day);
+    }
+  }
   
+  // 4. 尝试点分隔格式 (YYYY.MM.DD)
+  if (!birthDate || isNaN(birthDate.getTime())) {
+    const dotMatch = normalizedDateString.match(/(\d{4})\.(\d{1,2})(?:\.(\d{1,2}))?/);
+    if (dotMatch) {
+      const year = parseInt(dotMatch[1], 10);
+      const month = parseInt(dotMatch[2], 10) - 1;
+      const day = dotMatch[3] ? parseInt(dotMatch[3], 10) : 1;
+      birthDate = new Date(year, month, day);
+    }
+  }
+  
+  // 5. 最后尝试标准日期解析
+  if (!birthDate || isNaN(birthDate.getTime())) {
+    birthDate = new Date(normalizedDateString);
+  }
+
+  // 如果仍然无效，返回null
+  if (!birthDate || isNaN(birthDate.getTime())) {
+    return null;
+  }
+
+  // 计算年龄 [1,2,3](@ref)
   const today = new Date();
   let age = today.getFullYear() - birthDate.getFullYear();
   const monthDiff = today.getMonth() - birthDate.getMonth();
   
-  // 考虑月份和日期因素
+  // 考虑月份和日期因素 [4,5](@ref)
   if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
     age--;
   }
   
   return age >= 0 ? age : null;
-};
+}
