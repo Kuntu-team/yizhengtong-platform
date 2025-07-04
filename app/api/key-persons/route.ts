@@ -11,7 +11,8 @@ export async function GET() {
         p.department, 
         p.position, 
         p.region_cn as region, 
-        p.birth_date as birth_date, 
+        p.birth_date as birth_date,
+        p.office_phone as office_phone,
         c.wechat_number as wechat 
       FROM 
         key_person_base_info p 
