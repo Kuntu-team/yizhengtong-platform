@@ -32,15 +32,21 @@ async function getBusinessPersons(): Promise<BusinessPerson[]> {
     // 使用Prisma raw查询进行多表联查
     const data = await prisma.$queryRaw`
       SELECT 
-        b.*, 
-        p.phone_number as private_phone, 
-        p.wechat_number 
+        p.person_photo_url, 
+        p.person_name, 
+        p.department, 
+        p.position, 
+        p.region_cn, 
+        p.birth_date, 
+        c.wechat_number 
       FROM 
-        business_person_base_info b
+        key_person_base_info p 
       LEFT JOIN 
-        key_person_private_info p ON CAST(b.business_person_id AS VARCHAR) = p.business_person_id
+        key_person_private_info c 
+      ON 
+        p.person_id = c.person_id
       ORDER BY 
-        b.business_person_name ASC
+        p.person_name ASC
     `;
     return data as BusinessPerson[];
   } catch (error) {
