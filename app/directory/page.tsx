@@ -351,31 +351,70 @@ const response = await fetch(`/api/key-persons?businessPersonId=${businessPerson
   }, [people, selectedDepartment, selectedPosition, activeTab, followedPeople])
 
   // 切换关注状态
-  const handleToggleFollow = useCallback((personId: string) => {
-    setFollowedPeople(prev => {
-      if (prev.includes(personId)) {
+  const handleToggleFollow = useCallback(async (personId: string) => {
+    try {
+      const isFollowing = followedPeople.includes(personId);
+      // 获取当前用户ID和部门代码（实际项目中需要替换为真实获取方式）
+      const businessPersonId = 'current_business_person_id'; // 应从用户认证信息中获取
+      const departmentCode = selectedDepartment; // 或从用户信息中获取
+
+      if (isFollowing) {
+        // 取消关注 - 调用DELETE API
+        const response = await fetch('/api/business-person/follow', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            business_person_id: businessPersonId,
+            followed_person_id: personId
+          })
+        });
+
+        if (!response.ok) throw new Error('取消关注失败');
+
         toast({
           title: "取消关注",
           description: "已取消关注",
-        })
-        return prev.filter((id) => id !== personId)
+        });
+        setFollowedPeople(prev => prev.filter(id => id !== personId));
       } else {
-        if (prev.length >= 10) {
+        // 关注 - 调用POST API
+        if (followedPeople.length >= 10) {
           toast({
             title: "关注失败",
             description: "最多关注10位关键人物",
             variant: "destructive",
-          })
-          return prev
+          });
+          return;
         }
+
+        const response = await fetch('/api/business-person/follow', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            business_person_id: businessPersonId,
+            followed_person_id: personId,
+            department_code: departmentCode,
+            follow_time: new Date().toISOString()
+          })
+        });
+
+        if (!response.ok) throw new Error('关注失败');
+
         toast({
           title: "关注成功",
           description: "将在销售线索中显示其动态",
-        })
-        return [...prev, personId]
+        });
+        setFollowedPeople(prev => [...prev, personId]);
       }
-    })
-  }, [toast])
+    } catch (error) {
+      console.error('关注操作失败:', error);
+      toast({
+        title: "操作失败",
+        description: error instanceof Error ? error.message : '关注/取消关注请求失败',
+        variant: "destructive",
+      });
+    }
+  }, [toast, followedPeople, selectedDepartment])
 
   const handleDepartmentSelect = (department: string) => {
     setSelectedDepartment(department)
