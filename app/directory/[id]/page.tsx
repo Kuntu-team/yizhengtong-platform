@@ -22,6 +22,7 @@ import {
   Target,
 } from "lucide-react"
 import { motion } from "framer-motion"
+import { useParams } from 'next/navigation';
 
 interface PersonDetailProps {
   params: {
@@ -195,7 +196,7 @@ function ScriptGenerationModal({
 3. 招商引资专业服务
 4. 政策资金申报指导
 
-希望能有机会详细汇报我们的方案，为九江的数字经济发展贡献一份力量。
+ 希望能有机会详细汇报我们的方案，为九江的数字经济发展贡献一份力量。
 `
 
   const handleCopy = async () => {
@@ -319,7 +320,9 @@ function ScriptGenerationModal({
   )
 }
 
-export default function PersonDetailPage({ params }: PersonDetailProps) {
+export default function PersonDetailPage() {
+  const params = useParams();
+  const id = params.id as string;
   const router = useRouter()
   const { toast } = useToast()
   const [person, setPerson] = useState<PersonDetail | null>(null)
@@ -332,13 +335,13 @@ export default function PersonDetailPage({ params }: PersonDetailProps) {
 
   useEffect(() => {
     // 模拟获取人物详情
-    const personData = mockPersonDetails[params.id]
+    const personData = mockPersonDetails[id]
     if (personData) {
       setPerson(personData)
       // 模拟检查是否已关注
       setIsFollowed(Math.random() > 0.5)
     }
-  }, [params.id])
+  }, [id])
 
   const handleToggleFollow = () => {
     setIsFollowed(!isFollowed)
