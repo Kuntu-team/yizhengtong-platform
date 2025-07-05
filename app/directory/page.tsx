@@ -285,6 +285,20 @@ const response = await fetch(`/api/key-persons?businessPersonId=${businessPerson
         if (!response.ok) throw new Error('Failed to fetch data')
         const data = await response.json()
           console.log(businessPersonId,'------','Fetched key persons data:', data,);
+        // 获取关注表数据
+        const followResponse = await fetch('/api/business-person/follow')
+        if (!followResponse.ok) throw new Error('Failed to fetch follow data')
+        const followData = await followResponse.json();
+        console.log('查询wby_business_person_follow表全部的数据:', followData);
+        // 提取关注的人员ID列表
+        // 正确提取API响应中的关注人员ID数组
+          const followedPersonIds = Array.isArray(followData?.followedPersonIds) ? followData.followedPersonIds : [];
+        setFollowedPeople(followedPersonIds);
+
+        // 筛选出已关注的人员数据
+        const followedPersons = data.filter((item: any) => followedPersonIds.includes(item.id));
+        console.log('已关注的人员数据:', followedPersons);
+
         if (isMounted) {
           const transformed = data.map((p: any) => ({
             ...p,
