@@ -355,7 +355,9 @@ const response = await fetch(`/api/key-persons?businessPersonId=${businessPerson
     try {
       const isFollowing = followedPeople.includes(personId);
       // 获取当前用户ID和部门代码（实际项目中需要替换为真实获取方式）
-      const businessPersonId = 'current_business_person_id'; // 应从用户认证信息中获取
+      // const businessPersonId = 'current_business_person_id'; // 应从用户认证信息中获取
+      const searchParams = new URLSearchParams(window.location.search);
+      const businessPersonId = searchParams.get('businessPersonId') || 'e7558fb6-234c-475d-82b9-79db46840389';
       const departmentCode = selectedDepartment; // 或从用户信息中获取
 
       if (isFollowing) {
