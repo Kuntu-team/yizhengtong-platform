@@ -27,12 +27,114 @@ interface Person {
   }
 }
 
-// 部门岗位联动数据
-const departmentJobs: Record<string, string[]> = {
-  全部部门: ["全部岗位"],
-  发改委: ["全部岗位", "综合规划科科员", "产业发展处副主任", "投资科负责人"],
-  水利局: ["全部岗位", "水资源管理科科员", "工程建设科主任", "防汛办工作人员"],
-  环保局: ["全部岗位", "环境监测中心专员", "排污许可科科员", "固废管理处负责人"],
+// 计算年龄的辅助函数
+function calculateAge(birthDateString: string | undefined): number | null {
+  if (!birthDateString) return null;
+
+  // 全角字符转半角字符
+  const toHalfWidth = (str: string) => 
+    str.replace(/[！-～]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+         .replace(/　/g, ' ');
+
+  // 中文月份转数字
+  const chineseMonths: Record<string, string> = {
+    '一月': '1月', '二月': '2月', '三月': '3月', '四月': '4月', 
+    '五月': '5月', '六月': '6月', '七月': '7月', '八月': '8月', 
+    '九月': '9月', '十月': '10月', '十一月': '11月', '十二月': '12月'
+  };
+
+  // 统一转换所有数字为半角并处理中文月份
+  let normalizedDateString = toHalfWidth(birthDateString.trim());
+  for (const [cnMonth, numMonth] of Object.entries(chineseMonths)) {
+    normalizedDateString = normalizedDateString.replace(new RegExp(cnMonth, 'g'), numMonth);
+  }
+
+  // 尝试解析各种日期格式
+  let birthDate: Date | null = null;
+  
+  // 1. 尝试中文日期格式 (YYYY年MM月DD日 或 YYYY年MM月)
+  const chineseDateMatch = normalizedDateString.match(/(\d{4})\s*年\s*(\d{1,2})\s*月(?:\s*(\d{1,2})\s*日)?/);
+  if (chineseDateMatch) {
+    const year = parseInt(chineseDateMatch[1], 10);
+    const month = parseInt(chineseDateMatch[2], 10) - 1; // 月份从0开始
+    const day = chineseDateMatch[3] ? parseInt(chineseDateMatch[3], 10) : 1;
+    birthDate = new Date(year, month, day);
+  }
+  
+  // 2. 尝试ISO格式 (YYYY-MM-DD)
+  if (!birthDate || isNaN(birthDate.getTime())) {
+    const isoMatch = normalizedDateString.match(/(\d{4})-(\d{1,2})(?:-(\d{1,2}))?/);
+    if (isoMatch) {
+      const year = parseInt(isoMatch[1], 10);
+      const month = parseInt(isoMatch[2], 10) - 1;
+      const day = isoMatch[3] ? parseInt(isoMatch[3], 10) : 1;
+      birthDate = new Date(year, month, day);
+    }
+  }
+  
+  // 3. 尝试斜杠分隔格式 (YYYY/MM/DD 或 MM/DD/YYYY)
+  if (!birthDate || isNaN(birthDate.getTime())) {
+    const slashMatch = normalizedDateString.match(/(\d{1,4})\/(\d{1,2})(?:\/(\d{1,2}))?/);
+    if (slashMatch) {
+      let year, month, day;
+      const part1 = parseInt(slashMatch[1], 10);
+      const part2 = parseInt(slashMatch[2], 10);
+      const part3 = slashMatch[3] ? parseInt(slashMatch[3], 10) : 1;
+
+      // 判断是 YYYY/MM/DD 还是 MM/DD/YYYY
+      if (part1 > 1900) {
+        // YYYY/MM/DD 格式
+        year = part1;
+        month = part2 - 1;
+        day = part3;
+      } else {
+        // MM/DD/YYYY 格式
+        year = part3;
+        month = part1 - 1;
+        day = part2;
+
+        // 如果月份无效，尝试交换月和日
+        if (month < 0 || month > 11) {
+          month = day - 1;
+          day = part1;
+        }
+      }
+      birthDate = new Date(year, month, day);
+    }
+  }
+  
+  // 4. 尝试点分隔格式 (YYYY.MM.DD)
+  if (!birthDate || isNaN(birthDate.getTime())) {
+    const dotMatch = normalizedDateString.match(/(\d{4})\.(\d{1,2})(?:\.(\d{1,2}))?/);
+    if (dotMatch) {
+      const year = parseInt(dotMatch[1], 10);
+      const month = parseInt(dotMatch[2], 10) - 1;
+      const day = dotMatch[3] ? parseInt(dotMatch[3], 10) : 1;
+      birthDate = new Date(year, month, day);
+    }
+  }
+  
+  // 5. 最后尝试标准日期解析
+  if (!birthDate || isNaN(birthDate.getTime())) {
+    birthDate = new Date(normalizedDateString);
+  }
+
+  // 如果仍然无效，返回null
+  if (!birthDate || isNaN(birthDate.getTime())) {
+    return null;
+  }
+
+  // 计算年龄
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  
+  // 考虑月份和日期因素
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  
+  return age >= 0 ? age : null;
 }
 
 // 紧凑的人物卡片组件
@@ -126,22 +228,49 @@ function CompactPersonCard({
 }
 
 export default function DirectoryPage() {
-  const router = useRouter()
-  const { toast } = useToast()
-  const [selectedDepartment, setSelectedDepartment] = useState("全部部门")
-  const [selectedPosition, setSelectedPosition] = useState("全部岗位")
+  const { toast } = useToast();
+  const router = useRouter();
+  const [selectedDepartment, setSelectedDepartment] = useState<string>("全部部门");
+  const [selectedPosition, setSelectedPosition] = useState<string>("全部岗位");
+  // 部门岗位联动数据 - 从API获取
+  const [departmentPositions, setDepartmentPositions] = useState<Record<string, string[]>>({
+    "全部部门": ["全部岗位"]
+  });
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [followedPeople, setFollowedPeople] = useState<string[]>(["1", "3"])
   const [activeTab, setActiveTab] = useState("followed")
   const [people, setPeople] = useState<Person[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  // Removed duplicate isLoading state declaration
   const [filterOpen, setFilterOpen] = useState(false)
   const [hoveredDepartment, setHoveredDepartment] = useState<string | null>(null)
+
+  // 获取部门岗位数据
+  useEffect(() => {
+    async function fetchDepartmentPositions() {
+      try {
+        const response = await fetch('/api/departments/positions');
+        if (!response.ok) throw new Error('Failed to fetch department positions');
+        const data = await response.json();
+        console.log('Fetched department positions from API:', data);
+        setDepartmentPositions(data);
+      } catch (error) {
+          console.error('Error fetching department positions:', error);
+          toast({
+          title: "数据加载失败",
+          description: "无法获取部门岗位数据",
+          variant: "destructive"
+        });
+      }
+    }
+
+    fetchDepartmentPositions();
+  }, [toast])
 
   // 检查是否有筛选条件
   const hasFilter = selectedDepartment !== "全部部门" || selectedPosition !== "全部岗位"
 
   // 根据部门选择更新岗位选项
-  const availablePositions = departmentJobs[selectedDepartment] || ["全部岗位"]
+  const availablePositions = departmentPositions[selectedDepartment] || ["全部岗位"]
 
   // 获取人物数据
   useEffect(() => {
@@ -333,10 +462,11 @@ const response = await fetch(`/api/key-persons?businessPersonId=${businessPerson
                       {/* 第一级菜单 - 部门 */}
                       <div className="w-40 border-r border-gray-200">
                         <div className="p-2 border-b border-gray-100 bg-gray-50">
+
                           <span className="text-xs font-medium text-gray-600">部门</span>
                         </div>
                         <div className="max-h-60 overflow-y-auto">
-                          {Object.keys(departmentJobs)
+                          {Object.keys(departmentPositions)
                             .filter((dept) => dept !== "全部部门")
                             .map((department) => (
                               <div
@@ -362,9 +492,9 @@ const response = await fetch(`/api/key-persons?businessPersonId=${businessPerson
                         </div>
                         <div className="max-h-60 overflow-y-auto">
                           {hoveredDepartment &&
-                            departmentJobs[hoveredDepartment]
-                              ?.filter((pos) => pos !== "全部岗位")
-                              .map((position) => (
+                            departmentPositions[hoveredDepartment as keyof typeof departmentPositions]
+                              ?.filter((pos:any) => pos !== "全部岗位")
+                              .map((position:any) => (
                                 <div
                                   key={position}
                                   className="px-3 py-2 text-sm cursor-pointer text-gray-700 hover:bg-gray-50 transition-colors"
@@ -485,114 +615,4 @@ const response = await fetch(`/api/key-persons?businessPersonId=${businessPerson
       </main>
     </div>
   )
-}
-
-// 优化后的年龄计算函数
-function calculateAge(birthDateString: string | undefined): number | null {
-  if (!birthDateString) return null;
-
-  // 全角字符转半角字符
-  const toHalfWidth = (str: string) => 
-    str.replace(/[！-～]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
-       .replace(/　/g, ' ');
-
-  // 中文月份转数字
-  const chineseMonths: Record<string, string> = {
-    '一月': '1月', '二月': '2月', '三月': '3月', '四月': '4月', 
-    '五月': '5月', '六月': '6月', '七月': '7月', '八月': '8月', 
-    '九月': '9月', '十月': '10月', '十一月': '11月', '十二月': '12月'
-  };
-
-  // 统一转换所有数字为半角并处理中文月份
-  let normalizedDateString = toHalfWidth(birthDateString.trim());
-  for (const [cnMonth, numMonth] of Object.entries(chineseMonths)) {
-    normalizedDateString = normalizedDateString.replace(new RegExp(cnMonth, 'g'), numMonth);
-  }
-
-  // 尝试解析各种日期格式
-  let birthDate: Date | null = null;
-  
-  // 1. 尝试中文日期格式 (YYYY年MM月DD日 或 YYYY年MM月)
-  const chineseDateMatch = normalizedDateString.match(/(\d{4})\s*年\s*(\d{1,2})\s*月(?:\s*(\d{1,2})\s*日)?/);
-  if (chineseDateMatch) {
-    const year = parseInt(chineseDateMatch[1], 10);
-    const month = parseInt(chineseDateMatch[2], 10) - 1; // 月份从0开始
-    const day = chineseDateMatch[3] ? parseInt(chineseDateMatch[3], 10) : 1;
-    birthDate = new Date(year, month, day);
-  }
-  
-  // 2. 尝试ISO格式 (YYYY-MM-DD)
-  if (!birthDate || isNaN(birthDate.getTime())) {
-    const isoMatch = normalizedDateString.match(/(\d{4})-(\d{1,2})(?:-(\d{1,2}))?/);
-    if (isoMatch) {
-      const year = parseInt(isoMatch[1], 10);
-      const month = parseInt(isoMatch[2], 10) - 1;
-      const day = isoMatch[3] ? parseInt(isoMatch[3], 10) : 1;
-      birthDate = new Date(year, month, day);
-    }
-  }
-  
-  // 3. 尝试斜杠分隔格式 (YYYY/MM/DD 或 MM/DD/YYYY)
-  if (!birthDate || isNaN(birthDate.getTime())) {
-    const slashMatch = normalizedDateString.match(/(\d{1,4})\/(\d{1,2})(?:\/(\d{1,2}))?/);
-    if (slashMatch) {
-      let year, month, day;
-      const part1 = parseInt(slashMatch[1], 10);
-      const part2 = parseInt(slashMatch[2], 10);
-      const part3 = slashMatch[3] ? parseInt(slashMatch[3], 10) : 1;
-
-      // 判断是 YYYY/MM/DD 还是 MM/DD/YYYY
-      if (part1 > 1900) {
-        // YYYY/MM/DD 格式
-        year = part1;
-        month = part2 - 1;
-        day = part3;
-      } else {
-        // MM/DD/YYYY 格式
-        year = part3;
-        month = part1 - 1;
-        day = part2;
-
-        // 如果月份无效，尝试交换月和日
-        if (month < 0 || month > 11) {
-          month = day - 1;
-          day = part1;
-        }
-      }
-      birthDate = new Date(year, month, day);
-    }
-  }
-  
-  // 4. 尝试点分隔格式 (YYYY.MM.DD)
-  if (!birthDate || isNaN(birthDate.getTime())) {
-    const dotMatch = normalizedDateString.match(/(\d{4})\.(\d{1,2})(?:\.(\d{1,2}))?/);
-    if (dotMatch) {
-      const year = parseInt(dotMatch[1], 10);
-      const month = parseInt(dotMatch[2], 10) - 1;
-      const day = dotMatch[3] ? parseInt(dotMatch[3], 10) : 1;
-      birthDate = new Date(year, month, day);
-    }
-  }
-  
-  // 5. 最后尝试标准日期解析
-  if (!birthDate || isNaN(birthDate.getTime())) {
-    birthDate = new Date(normalizedDateString);
-  }
-
-  // 如果仍然无效，返回null
-  if (!birthDate || isNaN(birthDate.getTime())) {
-    return null;
-  }
-
-  // 计算年龄 [1,2,3](@ref)
-  const today = new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const monthDiff = today.getMonth() - birthDate.getMonth();
-  
-  // 考虑月份和日期因素 [4,5](@ref)
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-    age--;
-  }
-  
-  return age >= 0 ? age : null;
 }
