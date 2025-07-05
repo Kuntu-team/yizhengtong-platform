@@ -207,9 +207,3 @@ model wby_business_person_follow {
   key_person_base_info key_person_base_info @relation(fields: [followed_person_id], references: [person_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_followed_person")
 }
 
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
-model  {
-id String? @db.VarChar(255)
-@@map("测试表")
-@@ignore
-}
