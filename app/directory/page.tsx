@@ -149,9 +149,13 @@ export default function DirectoryPage() {
 
     async function fetchPeople() {
       try {
-        const response = await fetch('/api/key-persons')
+        // 从URL参数获取businessPersonId
+const searchParams = new URLSearchParams(window.location.search);
+const businessPersonId = searchParams.get('businessPersonId') || 'e7558fb6-234c-475d-82b9-79db46840389';
+const response = await fetch(`/api/key-persons?businessPersonId=${businessPersonId}`)
         if (!response.ok) throw new Error('Failed to fetch data')
         const data = await response.json()
+          console.log(businessPersonId,'------','Fetched key persons data:', data,);
         if (isMounted) {
           const transformed = data.map((p: any) => ({
             ...p,
