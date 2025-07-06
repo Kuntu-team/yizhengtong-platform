@@ -86,7 +86,7 @@ export default function HomePage() {
 
   // 获取用户数据和更新时间
   useEffect(() => {
-    const userInfo = localStorage.getItem("userInfo")
+    const userInfo = typeof window !== 'undefined' ? localStorage.getItem("userInfo") : null
     if (userInfo) {
       const userData = JSON.parse(userInfo)
       setUser(userData)

@@ -43,7 +43,7 @@ interface PersonDetail {
   region: string
   person_photo_url?: string
   focusAreas: string[]
-  workHistory: Array<{
+  workHistory: Array<string | {
     period: string
     organization: string
     position: string
@@ -361,7 +361,7 @@ export default function PersonDetailPage() {
           region: apiData.region,
           person_photo_url: apiData.person_photo_url,
           focusAreas: JSON.parse(apiData.focus_areas || '[]'),
-          workHistory: parseWorkExperience(apiData.work_experience || ''),
+          workHistory: (() => { try { const parsed = JSON.parse(apiData.work_experience || '""'); if (Array.isArray(parsed)) { return parsed.flatMap(item => typeof item === 'string' ? parseWorkExperience(item) : item); } else if (typeof parsed === 'string') { return parseWorkExperience(parsed); } else { console.warn('Unexpected work experience format:', parsed); return []; } } catch (e) { console.error('JSON parse failed for work experience:', e, 'Raw data:', apiData.work_experience); const cleanedData = apiData.work_experience?.replace(/[\u0000-\u001F\u007F]/g, '') || ''; return parseWorkExperience(cleanedData); } })(),
           education: JSON.parse(apiData.education || '[]'),
           achievements: JSON.parse(apiData.achievements || '[]'),
           recentActivities: JSON.parse(apiData.recent_activities || '[]'),
@@ -404,15 +404,15 @@ const parseWorkExperience = (experienceStr: string): Array<{ period: string; org
 
   if (!experienceStr) return [];
   // 分割主要条目（过滤空字符串）
-  const mainEntries = experienceStr.split(/；+/).map(entry => entry.trim()).filter(entry => entry && !entry.includes('[') && /\d{4}年/.test(entry));
+  const mainEntries = experienceStr.split(/；+/).map(entry => entry.trim()).filter(entry => entry);
   const parsedItems = mainEntries.map(entry => {
     // 提取时间段 (匹配年份格式)
-    const periodMatch = entry.match(/\d{4}年\d{2}月--(?:\d{4}年\d{2}月|至今)/);
+    const periodMatch = entry.match(/\d{4}年\d{1,2}月(?:--(?:\d{4}年\d{1,2}月|至今))?/);
     const period = periodMatch?.[0] || '';
   const startYear = getYearFromPeriod(period);
   const endYear = period.includes('至今') ? new Date().getFullYear() : getYearFromPeriod(period.split('--')[1] || '');
   // 提取剩余部分并清理
-  const remaining = period ? entry.replace(period, '').trim() : entry.trim();
+  const remaining = period ? entry.replace(period, '').trim().replace(/^，+/, '').replace(/^任/, '') : entry.trim().replace(/^，+/, '').replace(/^任/, '');
     // 分割组织和职位 (简单处理，实际可能需要更复杂逻辑)
     const parts = remaining.split('，');
     const organization = parts[0]?.trim() || '';
@@ -426,7 +426,7 @@ const parseWorkExperience = (experienceStr: string): Array<{ period: string; org
   };
   });
 return parsedItems
-  .filter(item => item.organization.trim() && item.position.trim() && item.period.trim())
+  .filter(item => item.organization.trim() || item.position.trim() || item.period.trim())
   .sort((a, b) => b.endYear - a.endYear || b.startYear - a.startYear);
 }
 
@@ -704,28 +704,31 @@ function calculateAge(birthDateString: string | undefined): number | null {
               {/* 工作履历 */}
               <TabsContent value="work" className="mt-4">
                 <div className="space-y-2">
-                  {(person.workHistory || []).filter(work => work.organization?.trim() && work.position?.trim() && work.period?.trim()).map((work, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"
-                    >
-                      <span className="font-semibold text-gray-900 text-sm">{work.position.replace(/,/g, '')}</span>
-                      {/* <span className="text-gray-600 text-sm">·</span> */}
-                      <span className="text-gray-600 text-sm">{work.organization.replace(/,/g, '')}</span>
-                      <span className="text-gray-600 text-sm">·</span>
-                      <Badge variant={index === 0 ? "default" : "secondary"} className="text-xs">
-                        {work.period}
-                      </Badge>
-                      {index === 0 && (
-                        <Badge variant="outline" className="text-xs text-blue-600">
-                          当前
+                  {(person.workHistory || [])
+                    .filter(work => typeof work !== 'string' && (work.organization || work.position || work.period))
+                    .map((work, index) => (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"
+                      >
+                        <span className="font-semibold text-gray-900 text-sm">{typeof work === 'string' ? work : work.position}</span>
+                        <span className="text-gray-600 text-sm">·</span>
+                        <span className="text-gray-600 text-sm">{typeof work === 'string' ? work : work.organization}</span>
+                        <span className="text-gray-600 text-sm">·</span>
+                        <Badge variant={index === 0 ? "default" : "secondary"} className="text-xs">
+                          {typeof work === 'string' ? work : work.period}
                         </Badge>
-                      )}
-                    </motion.div>
-                  ))}
+                        {index === 0 && (
+                          <Badge variant="outline" className="text-xs text-blue-600">
+                            当前
+                          </Badge>
+                        )}
+                      </motion.div>
+                    ))
+                  }
                 </div>
               </TabsContent>
 

@@ -174,7 +174,7 @@ function toast({ ...props }: Toast) {
 
 
 try {
-  const savedState = localStorage.getItem('toastState');
+  const savedState = typeof window !== 'undefined' ? localStorage.getItem('toastState') : null;
   if (savedState) {
     const parsedState = JSON.parse(savedState);
     // 严格验证数据结构
