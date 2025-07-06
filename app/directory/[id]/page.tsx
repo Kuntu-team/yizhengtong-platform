@@ -68,6 +68,7 @@ interface PersonDetail {
     phone?: string
     wechat?: string
   }
+  person_desc?: string
 }
 
 // 模拟详细人物数据
@@ -165,6 +166,7 @@ const mockPersonDetails: Record<string, PersonDetail> = {
       phone: "0792-8****888",
       wechat: "zs_jiujiang",
     },
+    person_desc: "张三同志是一位经验丰富的经济管理专家，长期从事经济管理和政策研究工作。他在数字经济、产业发展、投资促进等方面有深入的研究和实践经验。",
   },
 }
 
@@ -348,6 +350,8 @@ export default function PersonDetailPage() {
   const [showScriptModal, setShowScriptModal] = useState(false)
   const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
   const businessPersonId = searchParams?.get('businessPersonId') || 'e7558fb6-234c-475d-82b9-79db46840389';
+  const [graduateSchool, setGraduateSchool] = useState<string>('');
+  const [personDesc, setPersonDesc] = useState<string>('');
 
   // 获取已关注ID
   useEffect(() => {
@@ -413,8 +417,8 @@ export default function PersonDetailPage() {
           contact: (apiData.wechat_number || apiData.phone_number) ? { 
             wechat: apiData.wechat_number, 
             phone: apiData.phone_number 
-          } : undefined
-          // contact: (apiData.wechat_number || apiData.phone_number) ? { wechat_number: apiData.wechat_number, phone_number: apiData.phone_number } : undefined
+          } : undefined,
+          person_desc: apiData.person_desc || ''
         };
         if (mappedData.age !== null) {
           setPerson(mappedData as PersonDetail);
@@ -423,9 +427,12 @@ export default function PersonDetailPage() {
           setPerson({ ...mappedData, age: 0 } as PersonDetail);
         }
         console.log('映射后的数据:', mappedData);
+        setGraduateSchool(apiData.graduate_school || '');
+        setPersonDesc(apiData.person_desc || '');
       } catch (error) {
         console.error('Error fetching person data:', error);
         setPerson(null);
+        setGraduateSchool('');
       }
     };
 
@@ -815,43 +822,74 @@ function calculateAge(birthDateString: string | undefined): number | null {
               {/* 主要成就 */}
               <TabsContent value="achievements" className="mt-4">
                 <div className="space-y-2">
-                  {(person.achievements || []).map((achievement, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="flex items-start gap-2"
-                    >
-                      
-                      <span className="text-sm text-gray-700">{achievement.replace(/,/g, '')}</span>
-                    </motion.div>
-                  ))}
+                  {(person.achievements && person.achievements.length > 0) ? (
+                    person.achievements.map((achievement, index) => (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="flex items-center gap-2"
+                      >
+                        <span className="text-green-500 mt-1">●</span>
+                        <span className="text-sm text-gray-700">{achievement.replace(/,/g, '')}</span>
+                      </motion.div>
+                    ))
+                  ) : (
+                    personDesc
+                      ? personDesc.split(/[。\n]/)
+                          .map(desc => desc.replace(/\[\d+(?:-\d+)?\]/g, '').replace(/^[,，\s"'""'']+/, '').replace(/[,，\s"'""'']+$/, '').trim())
+                          .filter(desc => desc && /[\u4e00-\u9fa5\w]/.test(desc))
+                          .map((desc, idx) => (
+                            <motion.div
+                              key={idx}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: idx * 0.1 }}
+                              className="flex items-center gap-2"
+                            >
+                              <span className="text-green-500 mt-1">●</span>
+                              <span className="text-sm text-gray-700">{desc}</span>
+                            </motion.div>
+                          ))
+                      : <span className="text-gray-400 text-sm">暂无主要成就</span>
+                  )}
                 </div>
               </TabsContent>
 
               {/* 教育经历 */}
               <TabsContent value="education" className="mt-4">
                 <div className="space-y-2">
-                  {(person.education || []).map((edu, index) => (
+                  {(person.education && person.education.length > 0) ? (
+                    person.education.map((edu, index) => (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"
+                      >
+                        <span className="font-semibold text-gray-900 text-sm">{cleanText(edu.school)}</span>
+                        <span className="text-gray-600 text-sm">·</span>
+                        <span className="text-gray-600 text-sm">{cleanText(edu.degree)}</span>
+                        <span className="text-gray-600 text-sm">·</span>
+                        <span className="text-gray-600 text-sm">{cleanText(edu.major)}</span>
+                        <span className="text-gray-600 text-sm">·</span>
+                        <Badge variant="outline" className="text-xs">
+                          {cleanText(edu.period)}
+                        </Badge>
+                      </motion.div>
+                    ))
+                  ) : (
                     <motion.div
-                      key={index}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
+                      transition={{ delay: 0 }}
                       className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"
                     >
-                      <span className="font-semibold text-gray-900 text-sm">{edu.school.replace(/,/g, '')}</span>
-                      <span className="text-gray-600 text-sm">·</span>
-                      <span className="text-gray-600 text-sm">{edu.degree.replace(/,/g, '')}</span>
-                      <span className="text-gray-600 text-sm">·</span>
-                      <span className="text-gray-600 text-sm">{edu.major.replace(/,/g, '')}</span>
-                      <span className="text-gray-600 text-sm">·</span>
-                      <Badge variant="outline" className="text-xs">
-                        {edu.period}
-                      </Badge>
+                      <span className="font-semibold text-gray-900 text-sm">{graduateSchool ? cleanText(graduateSchool) : '未知'}</span>
                     </motion.div>
-                  ))}
+                  )}
                 </div>
               </TabsContent>
             </Tabs>
