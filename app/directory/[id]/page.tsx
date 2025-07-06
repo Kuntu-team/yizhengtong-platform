@@ -268,15 +268,15 @@ function ScriptGenerationModal({
             </h3>
             <ul className="space-y-1 text-sm text-gray-700">
               <li className="flex items-start gap-2">
-                <span className="text-blue-600 mt-0.5">•</span>
+                
                 <span>{person?.focusAreas?.[0]}相关成功案例</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-blue-600 mt-0.5">•</span>
+                
                 <span>投资收益数据分析</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-blue-600 mt-0.5">•</span>
+                
                 <span>技术方案简要说明</span>
               </li>
               <li className="flex items-start gap-2">
@@ -404,7 +404,7 @@ const parseWorkExperience = (experienceStr: string): Array<{ period: string; org
 
   if (!experienceStr) return [];
   // 分割主要条目（过滤空字符串）
-  const mainEntries = experienceStr.split('；').filter(entry => entry.trim() && !entry.includes('['));
+  const mainEntries = experienceStr.split(/；+/).map(entry => entry.trim()).filter(entry => entry && !entry.includes('[') && /\d{4}年/.test(entry));
   const parsedItems = mainEntries.map(entry => {
     // 提取时间段 (匹配年份格式)
     const periodMatch = entry.match(/\d{4}年\d{2}月--(?:\d{4}年\d{2}月|至今)/);
@@ -414,7 +414,9 @@ const parseWorkExperience = (experienceStr: string): Array<{ period: string; org
   // 提取剩余部分并清理
   const remaining = period ? entry.replace(period, '').trim() : entry.trim();
     // 分割组织和职位 (简单处理，实际可能需要更复杂逻辑)
-    const [organization = '', position = ''] = remaining.split('，').slice(1);
+    const parts = remaining.split('，');
+    const organization = parts[0]?.trim() || '';
+    const position = parts.slice(1).join('，').trim() || '';
     return {
     period,
     organization: organization.trim(),
@@ -423,7 +425,9 @@ const parseWorkExperience = (experienceStr: string): Array<{ period: string; org
     endYear
   };
   });
-return parsedItems.sort((a, b) => b.endYear - a.endYear || b.startYear - a.startYear);
+return parsedItems
+  .filter(item => item.organization.trim() && item.position.trim() && item.period.trim())
+  .sort((a, b) => b.endYear - a.endYear || b.startYear - a.startYear);
 }
 
 function calculateAge(birthDateString: string | undefined): number | null {
@@ -614,10 +618,10 @@ function calculateAge(birthDateString: string | undefined): number | null {
                 </span>
                 <div className="flex-1">
                   <h4 className="font-medium text-gray-900 mb-1 text-sm">{activity.title}</h4>
-                  <p className="text-xs text-gray-600 mb-1">{activity.description}</p>
+                  <p className="text-xs text-gray-600 mb-1">{activity.description.replace(/,/g, '')}</p>
                   <div className="flex items-center gap-3 text-xs text-gray-500">
                     <span>{activity.timeAgo}</span>
-                    <span>•</span>
+                    
                     <span>{activity.source}</span>
                     <Badge variant="outline" className="text-xs px-1 py-0">
                       {activity.type === "internal" ? "任内" : "任外"}
@@ -700,7 +704,7 @@ function calculateAge(birthDateString: string | undefined): number | null {
               {/* 工作履历 */}
               <TabsContent value="work" className="mt-4">
                 <div className="space-y-2">
-                  {(person.workHistory || []).map((work, index) => (
+                  {(person.workHistory || []).filter(work => work.organization?.trim() && work.position?.trim() && work.period?.trim()).map((work, index) => (
                     <motion.div
                       key={index}
                       initial={{ opacity: 0, y: 20 }}
@@ -708,9 +712,9 @@ function calculateAge(birthDateString: string | undefined): number | null {
                       transition={{ delay: index * 0.1 }}
                       className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"
                     >
-                      <span className="font-semibold text-gray-900 text-sm">{work.position}</span>
-                      <span className="text-gray-600 text-sm">·</span>
-                      <span className="text-gray-600 text-sm">{work.organization}</span>
+                      <span className="font-semibold text-gray-900 text-sm">{work.position.replace(/,/g, '')}</span>
+                      {/* <span className="text-gray-600 text-sm">·</span> */}
+                      <span className="text-gray-600 text-sm">{work.organization.replace(/,/g, '')}</span>
                       <span className="text-gray-600 text-sm">·</span>
                       <Badge variant={index === 0 ? "default" : "secondary"} className="text-xs">
                         {work.period}
@@ -736,8 +740,8 @@ function calculateAge(birthDateString: string | undefined): number | null {
                       transition={{ delay: index * 0.1 }}
                       className="flex items-start gap-2"
                     >
-                      <span className="text-green-600 mt-0.5">•</span>
-                      <span className="text-sm text-gray-700">{achievement}</span>
+                      
+                      <span className="text-sm text-gray-700">{achievement.replace(/,/g, '')}</span>
                     </motion.div>
                   ))}
                 </div>
@@ -754,11 +758,11 @@ function calculateAge(birthDateString: string | undefined): number | null {
                       transition={{ delay: index * 0.1 }}
                       className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"
                     >
-                      <span className="font-semibold text-gray-900 text-sm">{edu.school}</span>
+                      <span className="font-semibold text-gray-900 text-sm">{edu.school.replace(/,/g, '')}</span>
                       <span className="text-gray-600 text-sm">·</span>
-                      <span className="text-gray-600 text-sm">{edu.degree}</span>
+                      <span className="text-gray-600 text-sm">{edu.degree.replace(/,/g, '')}</span>
                       <span className="text-gray-600 text-sm">·</span>
-                      <span className="text-gray-600 text-sm">{edu.major}</span>
+                      <span className="text-gray-600 text-sm">{edu.major.replace(/,/g, '')}</span>
                       <span className="text-gray-600 text-sm">·</span>
                       <Badge variant="outline" className="text-xs">
                         {edu.period}
