@@ -215,7 +215,7 @@ function CompactPersonCard({
             </div>
             <div className="flex items-center gap-1">
               <svg className="h-3 w-3 text-green-600 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 4.882-1.900 7.6.5.5-3.187-2.75-6.874-8.372-6.874zm-3.375 5.25a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5zm6.75 0a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5z" />
+                <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.295.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 4.882-1.900 7.6.5.5-3.187-2.75-6.874-8.372-6.874zm-3.375 5.25a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5zm6.75 0a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5z" />
                 <path d="M15.312 9.531c-4.157 0-7.5 2.69-7.5 6.094 0 1.875.937 3.563 2.438 4.688-.188.75-.375 1.313-.375 1.313s1.313-.375 2.063-.75c.375.094.75.188 1.125.188 4.156 0 7.5-2.69 7.5-6.094s-3.344-6.094-7.5-6.094zm-2.25 3.75a.563.563 0 1 1 0-1.125.563.563 0 0 1 0 1.125zm4.5 0a.563.563 0 1 1 0-1.125.563.563 0 0 1 0 1.125z" />
               </svg>
               <span className="text-xs text-gray-900 font-medium">{person.contact?.wechat || "未提供"}</span>
@@ -237,7 +237,7 @@ export default function DirectoryPage() {
     "全部部门": ["全部岗位"]
   });
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [followedPeople, setFollowedPeople] = useState<string[]>(["1", "3"])
+  const [followedPeople, setFollowedPeople] = useState<string[]>([])
   const [activeTab, setActiveTab] = useState("followed")
   const [people, setPeople] = useState<Person[]>([])
   // Removed duplicate isLoading state declaration
@@ -453,6 +453,25 @@ const response = await fetch(`/api/key-persons?businessPersonId=${businessPerson
       description: "已重置所有筛选条件",
     })
   }
+
+  useEffect(() => {
+    async function fetchFollowedPeople() {
+      const searchParams = new URLSearchParams(window.location.search);
+      const businessPersonId = searchParams.get('businessPersonId') || 'e7558fb6-234c-475d-82b9-79db46840389';
+      try {
+        const res = await fetch(`/api/business-person/follow?businessPersonId=${businessPersonId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setFollowedPeople(Array.isArray(data.followedPersonIds) ? data.followedPersonIds : []);
+        } else {
+          setFollowedPeople([]);
+        }
+      } catch {
+        setFollowedPeople([]);
+      }
+    }
+    fetchFollowedPeople();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
