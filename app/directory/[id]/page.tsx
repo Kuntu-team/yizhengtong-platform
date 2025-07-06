@@ -335,13 +335,7 @@ export default function PersonDetailPage() {
 
   useEffect(() => {
 
-    // 模拟获取人物详情
-    const personData = mockPersonDetails[id]
-    if (personData) {
-      setPerson(personData)
-      // 模拟检查是否已关注
-      setIsFollowed(Math.random() > 0.5)
-    }
+
     
     // 从API获取数据
     const fetchPersonData = async () => {
@@ -350,10 +344,34 @@ export default function PersonDetailPage() {
         if (!response.ok) {
           throw new Error('Failed to fetch person data');
         }
-        const data = await response.json();
-        setPerson(data);
-        console.log('查询到的数据:', data); // 打印数据到控制台
-        // 模拟检查是否已关注
+        const apiData = await response.json();
+        console.log(apiData,'______________')
+        // 映射API数据到PersonDetail结构
+        const mappedData = {
+          id: apiData.person_id,
+          name: apiData.person_name,
+          currentPosition: {
+            department: apiData.department,
+            title: apiData.position,
+            startDate: apiData.start_date
+          },
+          hometown: apiData.hometown,
+          age: calculateAge(apiData.birth_date),
+          region: apiData.region,
+          focusAreas: JSON.parse(apiData.focus_areas || '[]'),
+          workHistory: JSON.parse(apiData.work_history || '[]'),
+          education: JSON.parse(apiData.education || '[]'),
+          achievements: JSON.parse(apiData.achievements || '[]'),
+          recentActivities: JSON.parse(apiData.recent_activities || '[]'),
+          contact: (apiData.wechat_number || apiData.phone_number) ? { wechat_number: apiData.wechat_number, phone_number: apiData.phone_number } : undefined
+        };
+        if (mappedData.age !== null) {
+          setPerson(mappedData as PersonDetail);
+        } else {
+          // 如果年龄为 null，则将 age 设置为默认值 0
+          setPerson({ ...mappedData, age: 0 } as PersonDetail);
+        }
+        console.log('映射后的数据:', mappedData);
         setIsFollowed(Math.random() > 0.5);
       } catch (error) {
         console.error('Error fetching person data:', error);
@@ -362,8 +380,124 @@ export default function PersonDetailPage() {
     };
 
     fetchPersonData();
+        // 模拟获取人物详情
+    // const personData = mockPersonDetails[id]
+    // if (personData) {
+    //   setPerson(personData)
+    //   // 模拟检查是否已关注
+    //   setIsFollowed(Math.random() > 0.5)
+    // }
+    // console.log('查询到的数据-----',personData)
   }, [id])
+// 计算年龄的辅助函数
+function calculateAge(birthDateString: string | undefined): number | null {
+  if (!birthDateString) return null;
 
+  // 全角字符转半角字符
+  const toHalfWidth = (str: string) => 
+    str.replace(/[！-～]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+         .replace(/　/g, ' ');
+
+  // 中文月份转数字
+  const chineseMonths: Record<string, string> = {
+    '一月': '1月', '二月': '2月', '三月': '3月', '四月': '4月', 
+    '五月': '5月', '六月': '6月', '七月': '7月', '八月': '8月', 
+    '九月': '9月', '十月': '10月', '十一月': '11月', '十二月': '12月'
+  };
+
+  // 统一转换所有数字为半角并处理中文月份
+  let normalizedDateString = toHalfWidth(birthDateString.trim());
+  for (const [cnMonth, numMonth] of Object.entries(chineseMonths)) {
+    normalizedDateString = normalizedDateString.replace(new RegExp(cnMonth, 'g'), numMonth);
+  }
+
+  // 尝试解析各种日期格式
+  let birthDate: Date | null = null;
+  
+  // 1. 尝试中文日期格式 (YYYY年MM月DD日 或 YYYY年MM月)
+  const chineseDateMatch = normalizedDateString.match(/(\d{4})\s*年\s*(\d{1,2})\s*月(?:\s*(\d{1,2})\s*日)?/);
+  if (chineseDateMatch) {
+    const year = parseInt(chineseDateMatch[1], 10);
+    const month = parseInt(chineseDateMatch[2], 10) - 1; // 月份从0开始
+    const day = chineseDateMatch[3] ? parseInt(chineseDateMatch[3], 10) : 1;
+    birthDate = new Date(year, month, day);
+  }
+  
+  // 2. 尝试ISO格式 (YYYY-MM-DD)
+  if (!birthDate || isNaN(birthDate.getTime())) {
+    const isoMatch = normalizedDateString.match(/(\d{4})-(\d{1,2})(?:-(\d{1,2}))?/);
+    if (isoMatch) {
+      const year = parseInt(isoMatch[1], 10);
+      const month = parseInt(isoMatch[2], 10) - 1;
+      const day = isoMatch[3] ? parseInt(isoMatch[3], 10) : 1;
+      birthDate = new Date(year, month, day);
+    }
+  }
+  
+  // 3. 尝试斜杠分隔格式 (YYYY/MM/DD 或 MM/DD/YYYY)
+  if (!birthDate || isNaN(birthDate.getTime())) {
+    const slashMatch = normalizedDateString.match(/(\d{1,4})\/(\d{1,2})(?:\/(\d{1,2}))?/);
+    if (slashMatch) {
+      let year, month, day;
+      const part1 = parseInt(slashMatch[1], 10);
+      const part2 = parseInt(slashMatch[2], 10);
+      const part3 = slashMatch[3] ? parseInt(slashMatch[3], 10) : 1;
+
+      // 判断是 YYYY/MM/DD 还是 MM/DD/YYYY
+      if (part1 > 1900) {
+        // YYYY/MM/DD 格式
+        year = part1;
+        month = part2 - 1;
+        day = part3;
+      } else {
+        // MM/DD/YYYY 格式
+        year = part3;
+        month = part1 - 1;
+        day = part2;
+
+        // 如果月份无效，尝试交换月和日
+        if (month < 0 || month > 11) {
+          month = day - 1;
+          day = part1;
+        }
+      }
+      birthDate = new Date(year, month, day);
+    }
+  }
+  
+  // 4. 尝试点分隔格式 (YYYY.MM.DD)
+  if (!birthDate || isNaN(birthDate.getTime())) {
+    const dotMatch = normalizedDateString.match(/(\d{4})\.(\d{1,2})(?:\.(\d{1,2}))?/);
+    if (dotMatch) {
+      const year = parseInt(dotMatch[1], 10);
+      const month = parseInt(dotMatch[2], 10) - 1;
+      const day = dotMatch[3] ? parseInt(dotMatch[3], 10) : 1;
+      birthDate = new Date(year, month, day);
+    }
+  }
+  
+  // 5. 最后尝试标准日期解析
+  if (!birthDate || isNaN(birthDate.getTime())) {
+    birthDate = new Date(normalizedDateString);
+  }
+
+  // 如果仍然无效，返回null
+  if (!birthDate || isNaN(birthDate.getTime())) {
+    return null;
+  }
+
+  // 计算年龄
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  
+  // 考虑月份和日期因素
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  
+  return age >= 0 ? age : null;
+}
   const handleToggleFollow = () => {
     setIsFollowed(!isFollowed)
     toast({
@@ -489,24 +623,25 @@ export default function PersonDetailPage() {
               </div>
               <div>
                 <div className="flex gap-2">
-                  <h1 className="text-md font-bold text-gray-900">{person.name}</h1>
+                  <h1 className="text-md font-bold text-gray-900">{person.name || '未知姓名'}</h1>
                   <p className="text-md font-bold text-gray-700">{person.currentPosition?.department}</p>
                   <p className="text-md font-bold text-gray-700">· {person.currentPosition?.title}</p>
                 </div>
                 <div className="flex gap-2">
                   <p className="text-sm font-bold text-gray-700">{person.hometown}</p>
-                  <p className="text-sm font-bold text-gray-700">· {person.age}岁</p>
+                  <p className="text-sm font-bold text-gray-700">· {person.age>0 ? `${person.age}岁` : '年龄未知'}</p>
                   <p className="text-sm font-bold text-gray-700">
                     · {new Date().getFullYear() - Number.parseInt(person.currentPosition?.startDate?.split("-")[0] || new Date().getFullYear().toString())}
                     年任职
                   </p>
+                  
                   {person.contact && (
                     <>
-                      {person.contact.phone && (
-                        <p className="text-sm font-bold text-gray-700">· 电话: {person.contact.phone}</p>
+                      {person.contact?.phone && (
+                        <p className="text-sm font-bold text-gray-700">· 电话: {person.contact?.phone}</p>
                       )}
-                      {person.contact.wechat && (
-                        <p className="text-sm font-bold text-gray-700">· 微信: {person.contact.wechat}</p>
+                      {person.contact?.wechat && (
+                        <p className="text-sm font-bold text-gray-700">· 微信: {person.contact?.wechat}</p>
                       )}
                     </>
                   )}

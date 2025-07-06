@@ -11,8 +11,7 @@ export async function GET(
     const { id } = resolvedParams;
     // 执行原始SQL查询并返回所有字段
     const result = await prisma.$queryRaw`
-      SELECT DISTINCT ON (k.person_id) 
-        k.*, p.* 
+      SELECT k.*, p.* 
       FROM 
         key_person_base_info k 
       LEFT JOIN 
