@@ -41,6 +41,7 @@ interface PersonDetail {
   hometown: string
   age: number
   region: string
+  person_photo_url?: string
   focusAreas: string[]
   workHistory: Array<{
     period: string
@@ -355,15 +356,20 @@ export default function PersonDetailPage() {
             title: apiData.position,
             startDate: apiData.start_date
           },
-          hometown: apiData.hometown,
+          hometown: apiData.ancestral_home,
           age: calculateAge(apiData.birth_date),
           region: apiData.region,
+          person_photo_url: apiData.person_photo_url,
           focusAreas: JSON.parse(apiData.focus_areas || '[]'),
-          workHistory: JSON.parse(apiData.work_history || '[]'),
+          workHistory: parseWorkExperience(apiData.work_experience || ''),
           education: JSON.parse(apiData.education || '[]'),
           achievements: JSON.parse(apiData.achievements || '[]'),
           recentActivities: JSON.parse(apiData.recent_activities || '[]'),
-          contact: (apiData.wechat_number || apiData.phone_number) ? { wechat_number: apiData.wechat_number, phone_number: apiData.phone_number } : undefined
+          contact: (apiData.wechat_number || apiData.phone_number) ? { 
+            wechat: apiData.wechat_number, 
+            phone: apiData.phone_number 
+          } : undefined
+          // contact: (apiData.wechat_number || apiData.phone_number) ? { wechat_number: apiData.wechat_number, phone_number: apiData.phone_number } : undefined
         };
         if (mappedData.age !== null) {
           setPerson(mappedData as PersonDetail);
@@ -390,6 +396,36 @@ export default function PersonDetailPage() {
     // console.log('查询到的数据-----',personData)
   }, [id])
 // 计算年龄的辅助函数
+const parseWorkExperience = (experienceStr: string): Array<{ period: string; organization: string; position: string; startYear: number; endYear: number }> => {
+  const getYearFromPeriod = (period: string): number => {
+    const yearMatch = period.match(/(\d{4})/);
+    return yearMatch ? parseInt(yearMatch[1]) : 0;
+  };
+
+  if (!experienceStr) return [];
+  // 分割主要条目（过滤空字符串）
+  const mainEntries = experienceStr.split('；').filter(entry => entry.trim() && !entry.includes('['));
+  const parsedItems = mainEntries.map(entry => {
+    // 提取时间段 (匹配年份格式)
+    const periodMatch = entry.match(/\d{4}年\d{2}月--(?:\d{4}年\d{2}月|至今)/);
+    const period = periodMatch?.[0] || '';
+  const startYear = getYearFromPeriod(period);
+  const endYear = period.includes('至今') ? new Date().getFullYear() : getYearFromPeriod(period.split('--')[1] || '');
+  // 提取剩余部分并清理
+  const remaining = period ? entry.replace(period, '').trim() : entry.trim();
+    // 分割组织和职位 (简单处理，实际可能需要更复杂逻辑)
+    const [organization = '', position = ''] = remaining.split('，').slice(1);
+    return {
+    period,
+    organization: organization.trim(),
+    position: position.trim(),
+    startYear,
+    endYear
+  };
+  });
+return parsedItems.sort((a, b) => b.endYear - a.endYear || b.startYear - a.startYear);
+}
+
 function calculateAge(birthDateString: string | undefined): number | null {
   if (!birthDateString) return null;
 
@@ -618,8 +654,12 @@ function calculateAge(birthDateString: string | undefined): number | null {
           <div className="space-y-3">
             {/* 头像和姓名 */}
             <div className="flex items-start gap-3">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <User className="h-6 w-6 text-blue-600" />
+              <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+                <img
+                  src={person.person_photo_url || '/placeholder-user.jpg'}
+                  alt={person.name || '用户头像'}
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div>
                 <div className="flex gap-2">
@@ -660,7 +700,7 @@ function calculateAge(birthDateString: string | undefined): number | null {
               {/* 工作履历 */}
               <TabsContent value="work" className="mt-4">
                 <div className="space-y-2">
-                  {(person.workHistory || []).slice(0, 2).map((work, index) => (
+                  {(person.workHistory || []).map((work, index) => (
                     <motion.div
                       key={index}
                       initial={{ opacity: 0, y: 20 }}
