@@ -184,7 +184,7 @@ function ScriptGenerationModal({
 张主任您好，我是亿科咨询的小王。听说您是南昌人，我也是江西老乡，上大学时经常去八一广场。很荣幸能有机会向您请教。
 
 【话题切入】
-看到您最近在数字经济论坛上的讲话，特别是关于产业数字化转型的观点很有启发。九江在长江经济带的区位优势确实得天独厚，您提出的"数字+港口+制造"的���展思路很有前瞻性。
+看到您最近在数字经济论坛上的讲话，特别是关于产业数字化转型的观点很有启发。九江在长江经济带的区位优势确实得天独厚，您提出的"数字+港口+制造"的   展思路很有前瞻性。
 
 【项目建议】
 基于九江的产业基础和您主导的三年行动计划，我们在数字工厂改造方面有成熟方案。比如我们帮助某地级市完成了200亿数字产业园的融资方案，现在园区入驻率已达85%，年产值突破300亿。
@@ -334,6 +334,7 @@ export default function PersonDetailPage() {
   const [showScriptModal, setShowScriptModal] = useState(false)
 
   useEffect(() => {
+
     // 模拟获取人物详情
     const personData = mockPersonDetails[id]
     if (personData) {
@@ -341,6 +342,26 @@ export default function PersonDetailPage() {
       // 模拟检查是否已关注
       setIsFollowed(Math.random() > 0.5)
     }
+    
+    // 从API获取数据
+    const fetchPersonData = async () => {
+      try {
+        const response = await fetch(`/api/key-persons/${id}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch person data');
+        }
+        const data = await response.json();
+        setPerson(data);
+        console.log('查询到的数据:', data); // 打印数据到控制台
+        // 模拟检查是否已关注
+        setIsFollowed(Math.random() > 0.5);
+      } catch (error) {
+        console.error('Error fetching person data:', error);
+        setPerson(null);
+      }
+    };
+
+    fetchPersonData();
   }, [id])
 
   const handleToggleFollow = () => {
@@ -409,7 +430,7 @@ export default function PersonDetailPage() {
             </Button>
           </div>
           <div className="space-y-3">
-            {person.recentActivities.slice(0, expandedSections.activities ? undefined : 3).map((activity, index) => (
+            {(person.recentActivities || []).slice(0, expandedSections.activities ? undefined : 3).map((activity, index) => (
               <motion.div
                 key={activity.id}
                 initial={{ opacity: 0, x: -20 }}
@@ -438,7 +459,7 @@ export default function PersonDetailPage() {
             ))}
           </div>
 
-          {person.recentActivities.length > 3 && (
+          {((person.recentActivities || []).length > 3) && (
             <Button
               variant="link"
               size="sm"
@@ -469,14 +490,14 @@ export default function PersonDetailPage() {
               <div>
                 <div className="flex gap-2">
                   <h1 className="text-md font-bold text-gray-900">{person.name}</h1>
-                  <p className="text-md font-bold text-gray-700">{person.currentPosition.department}</p>
-                  <p className="text-md font-bold text-gray-700">· {person.currentPosition.title}</p>
+                  <p className="text-md font-bold text-gray-700">{person.currentPosition?.department}</p>
+                  <p className="text-md font-bold text-gray-700">· {person.currentPosition?.title}</p>
                 </div>
                 <div className="flex gap-2">
                   <p className="text-sm font-bold text-gray-700">{person.hometown}</p>
                   <p className="text-sm font-bold text-gray-700">· {person.age}岁</p>
                   <p className="text-sm font-bold text-gray-700">
-                    · {new Date().getFullYear() - Number.parseInt(person.currentPosition.startDate.split("-")[0])}
+                    · {new Date().getFullYear() - Number.parseInt(person.currentPosition?.startDate?.split("-")[0] || new Date().getFullYear().toString())}
                     年任职
                   </p>
                   {person.contact && (
@@ -504,7 +525,7 @@ export default function PersonDetailPage() {
               {/* 工作履历 */}
               <TabsContent value="work" className="mt-4">
                 <div className="space-y-2">
-                  {person.workHistory.slice(0, 2).map((work, index) => (
+                  {(person.workHistory || []).slice(0, 2).map((work, index) => (
                     <motion.div
                       key={index}
                       initial={{ opacity: 0, y: 20 }}
@@ -532,7 +553,7 @@ export default function PersonDetailPage() {
               {/* 主要成就 */}
               <TabsContent value="achievements" className="mt-4">
                 <div className="space-y-2">
-                  {person.achievements.map((achievement, index) => (
+                  {(person.achievements || []).map((achievement, index) => (
                     <motion.div
                       key={index}
                       initial={{ opacity: 0, x: -20 }}
@@ -550,7 +571,7 @@ export default function PersonDetailPage() {
               {/* 教育经历 */}
               <TabsContent value="education" className="mt-4">
                 <div className="space-y-2">
-                  {person.education.map((edu, index) => (
+                  {(person.education || []).map((edu, index) => (
                     <motion.div
                       key={index}
                       initial={{ opacity: 0, y: 20 }}
@@ -577,7 +598,7 @@ export default function PersonDetailPage() {
       </main>
 
       {/* 话术生成弹窗 */}
-      <ScriptGenerationModal open={showScriptModal} onClose={() => setShowScriptModal(false)} person={person} />
+      <ScriptGenerationModal open={showScriptModal} onClose={() => setShowScriptModal(false)} person={person || {}} />
     </div>
   )
 }
