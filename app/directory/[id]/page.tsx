@@ -336,6 +336,43 @@ function cleanText(str: string) {
     .trim();
 }
 
+// 计算最近一份工作任职年数
+function getCurrentTenure(workHistory: any[]): number | null {
+  if (!workHistory || workHistory.length === 0) return null;
+  const first = workHistory[0];
+  let period = '';
+  if (typeof first === 'object' && first !== null && first.period) {
+    period = first.period;
+  } else if (typeof first === 'string') {
+    period = first;
+  }
+  // 匹配起始年份
+  const match = period.match(/(\d{4})[.年-](\d{1,2})?/);
+  if (match) {
+    const startYear = parseInt(match[1], 10);
+    const now = new Date();
+    let years = now.getFullYear() - startYear;
+    // 如果有月份，且当前月份小于起始月份，则减一年
+    if (match[2]) {
+      const startMonth = parseInt(match[2], 10);
+      if (now.getMonth() + 1 < startMonth) years--;
+    }
+    return years >= 0 ? years : null;
+  }
+  return null;
+}
+
+// 获取履历时间区间
+function getPeriod(work: any): string {
+  if (typeof work === 'object' && work !== null && work.period) return cleanText(work.period);
+  if (typeof work === 'string') {
+    // 修正正则字符类顺序
+    const match = work.match(/(\d{4}[.\-年]\d{1,2}(?:[.\-月]\d{1,2})?(?:[—~至-][\d.年月今至]*)?)/);
+    return match ? match[0] : '';
+  }
+  return '';
+}
+
 export default function PersonDetailPage() {
   const params = useParams();
   const id = params.id as string;
@@ -352,6 +389,8 @@ export default function PersonDetailPage() {
   const businessPersonId = searchParams?.get('businessPersonId') || 'e7558fb6-234c-475d-82b9-79db46840389';
   const [graduateSchool, setGraduateSchool] = useState<string>('');
   const [personDesc, setPersonDesc] = useState<string>('');
+  const [newsList, setNewsList] = useState<any[]>([]);
+  const [districtCn, setDistrictCn] = useState<string>('');
 
   // 获取已关注ID
   useEffect(() => {
@@ -429,6 +468,7 @@ export default function PersonDetailPage() {
         console.log('映射后的数据:', mappedData);
         setGraduateSchool(apiData.graduate_school || '');
         setPersonDesc(apiData.person_desc || '');
+        setDistrictCn(apiData.district_cn || '');
       } catch (error) {
         console.error('Error fetching person data:', error);
         setPerson(null);
@@ -446,6 +486,25 @@ export default function PersonDetailPage() {
     // }
     // console.log('查询到的数据-----',personData)
   }, [id])
+
+  // 拉取新闻动态
+  useEffect(() => {
+    async function fetchNews() {
+      try {
+        const res = await fetch(`/api/key-persons/${id}/news`);
+        if (res.ok) {
+          const data = await res.json();
+          setNewsList(Array.isArray(data) ? data : []);
+        } else {
+          setNewsList([]);
+        }
+      } catch {
+        setNewsList([]);
+      }
+    }
+    fetchNews();
+  }, [id]);
+
 // 计算年龄的辅助函数
 const parseWorkExperience = (experienceStr: string): Array<{ period: string; organization: string; position: string; startYear: number; endYear: number }> => {
   const getYearFromPeriod = (period: string): number => {
@@ -679,41 +738,34 @@ function calculateAge(birthDateString: string | undefined): number | null {
               <Calendar className="h-4 w-4" />
               近期动态
             </h2>
-            <Button variant="link" size="sm" className="text-blue-600 text-xs" onClick={() => router.push("/leads")}>
-              查看全部 <ChevronRight className="h-3 w-3 ml-1" />
-            </Button>
+            <Button variant="link" size="sm" className="text-blue-600 text-xs" onClick={() => router.push("/leads")}>查看全部 <ChevronRight className="h-3 w-3 ml-1" /></Button>
           </div>
           <div className="space-y-3">
-            {(person.recentActivities || []).slice(0, expandedSections.activities ? undefined : 3).map((activity, index) => (
+            {newsList.length > 0 ? newsList.slice(0, expandedSections.activities ? undefined : 3).map((news, index) => (
               <motion.div
-                key={activity.id}
+                key={news.id || index}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
                 className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
-                onClick={() => handleActivityClick(activity)}
+                // 可根据需要添加 onClick 跳转
               >
-                <span className={`mt-0.5 ${activity.type === "internal" ? "text-red-500" : "text-blue-500"}`}>
-                  {activity.type === "internal" ? "●" : "🔄"}
-                </span>
+                <span className={`mt-0.5 text-red-500`}>●</span>
                 <div className="flex-1">
-                  <h4 className="font-medium text-gray-900 mb-1 text-sm">{activity.title}</h4>
-                  <p className="text-xs text-gray-600 mb-1">{activity.description.replace(/,/g, '')}</p>
+                  <h4 className="font-medium text-gray-900 mb-1 text-sm">{news.title || news.news_title || '无标题'}</h4>
+                  <p className="text-xs text-gray-600 mb-1">{news.content || news.news_content || ''}</p>
                   <div className="flex items-center gap-3 text-xs text-gray-500">
-                    <span>{activity.timeAgo}</span>
-                    
-                    <span>{activity.source}</span>
-                    <Badge variant="outline" className="text-xs px-1 py-0">
-                      {activity.type === "internal" ? "任内" : "任外"}
-                    </Badge>
+                    <span>{news.news_time ? new Date(news.news_time).toLocaleDateString() : ''}</span>
+                    {news.source && <span>{news.source}</span>}
                   </div>
                 </div>
                 <ChevronRight className="h-3 w-3 text-gray-400 mt-1" />
               </motion.div>
-            ))}
+            )) : (
+              <div className="text-gray-400 text-sm text-center py-6">暂无动态</div>
+            )}
           </div>
-
-          {((person.recentActivities || []).length > 3) && (
+          {newsList.length > 3 && (
             <Button
               variant="link"
               size="sm"
@@ -721,9 +773,7 @@ function calculateAge(birthDateString: string | undefined): number | null {
               onClick={() => setExpandedSections({ ...expandedSections, activities: !expandedSections.activities })}
             >
               {expandedSections.activities ? "收起" : "展开更多"}
-              <ChevronDown
-                className={`h-3 w-3 ml-1 transition-transform ${expandedSections.activities ? "rotate-180" : ""}`}
-              />
+              <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${expandedSections.activities ? "rotate-180" : ""}`} />
             </Button>
           )}
         </section>
@@ -753,11 +803,9 @@ function calculateAge(birthDateString: string | undefined): number | null {
                 </div>
                 <div className="flex gap-2">
                   <p className="text-sm font-bold text-gray-700">{person.hometown}</p>
+                  {districtCn && <p className="text-sm font-bold text-gray-700">{districtCn}</p>}
                   <p className="text-sm font-bold text-gray-700">· {person.age>0 ? `${person.age}岁` : '年龄未知'}</p>
-                  <p className="text-sm font-bold text-gray-700">
-                    · {new Date().getFullYear() - Number.parseInt(person.currentPosition?.startDate?.split("-")[0] || new Date().getFullYear().toString())}
-                    年任职
-                  </p>
+                  <p className="text-sm font-bold text-gray-700">· {getCurrentTenure(person.workHistory)}年任职</p>
                   
                   {person.contact && (
                     <>
@@ -784,38 +832,46 @@ function calculateAge(birthDateString: string | undefined): number | null {
               {/* 工作履历 */}
               <TabsContent value="work" className="mt-4">
                 <div className="space-y-2">
-                  {(person.workHistory || [])
-                    .map((work, index) => {
-                      if (typeof work !== 'object' || work === null) return null;
-                      const position = cleanText(work.position);
-                      const organization = cleanText(work.organization);
-                      const period = cleanText(work.period);
-                      return (
-                        <motion.div
-                          key={index}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.1 }}
-                          className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"
-                        >
-                          {position && <span className="font-semibold text-gray-900 text-sm">{position}</span>}
-                          {position && organization && <span className="text-gray-600 text-sm">·</span>}
-                          {organization && <span className="text-gray-600 text-sm">{organization}</span>}
-                          {(position || organization) && period && <span className="text-gray-600 text-sm">·</span>}
-                          {period && (
-                            <Badge variant="outline" className="text-xs">
-                              {period}
-                            </Badge>
-                          )}
-                          {index === 0 && (
-                            <Badge variant="default" className="text-xs ml-1 text-white bg-blue-500">
-                              当前
-                            </Badge>
-                          )}
-                        </motion.div>
-                      );
-                    })
-                  }
+                  {[...(person.workHistory || [])].reverse().map((work, index, arr) => {
+                    if (typeof work !== 'object' || work === null) return null;
+                    const position = cleanText(work.position);
+                    const organization = cleanText(work.organization);
+                    const period = getPeriod(work);
+                    const isCurrent = index === 0; // 倒序后第一条为当前
+                    let displayPeriod = period;
+                    if ((period.includes('至今') || period.includes('现在')) && !/\d{4}[.\-年]\d{1,2}[—~至-](至今|现在)/.test(period)) {
+                      // 尝试提取起始时间
+                      const startMatch = period.match(/(\d{4}[.\-年]\d{1,2})/);
+                      if (startMatch) {
+                        displayPeriod = `${startMatch[1]}-至今`;
+                      }
+                    }
+                    return (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"
+                      >
+                        <span className="font-semibold text-gray-900 text-sm">{position}</span>
+                        <span className="text-gray-600 text-sm">·</span>
+                        <span className="font-semibold text-gray-900 text-sm">{organization}</span>
+                        <span className="text-gray-600 text-sm">·</span>
+                        {displayPeriod && (
+                          <Badge
+                            className={`text-xs px-3 py-1 rounded-full font-semibold ${displayPeriod.includes('至今') || displayPeriod.includes('现在') ? 'bg-cyan-400 text-white' : 'bg-yellow-50 text-yellow-400'}`}
+                            style={{ backgroundColor: displayPeriod.includes('至今') || displayPeriod.includes('现在') ? '#22d3ee' : '#fef9c3', color: displayPeriod.includes('至今') || displayPeriod.includes('现在') ? '#fff' : '#facc15' }}
+                          >
+                            {displayPeriod}
+                          </Badge>
+                        )}
+                        {isCurrent && (
+                          <Badge variant="default" className="text-xs ml-1 text-blue-500 bg-blue-50 border border-blue-200 font-bold">当前</Badge>
+                        )}
+                      </motion.div>
+                    );
+                  })}
                 </div>
               </TabsContent>
 
