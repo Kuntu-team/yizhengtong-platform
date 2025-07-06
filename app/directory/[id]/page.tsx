@@ -321,6 +321,19 @@ function ScriptGenerationModal({
   )
 }
 
+// 清理函数，去除[]、多余逗号、空字符串、引号和首尾空格，并避免连续两个点
+function cleanText(str: string) {
+  return str
+    .replace(/\[\d+(?:-\d+)?\]/g, '') // 去除[5-6]、[11]等
+    .replace(/["'""']/g, '') // 去除各种引号
+    .replace(/,+/g, ',') // 连续逗号合并为一个
+    .replace(/^,+|,+$/g, '') // 去除首尾逗号
+    .replace(/\s+/g, ' ') // 多空格合一
+    .replace(/\.{2,}/g, '·') // 连续点替换为一个·
+    .replace(/^·+|·+$/g, '') // 去除首尾·
+    .trim();
+}
+
 export default function PersonDetailPage() {
   const params = useParams();
   const id = params.id as string;
@@ -767,6 +780,9 @@ function calculateAge(birthDateString: string | undefined): number | null {
                   {(person.workHistory || [])
                     .map((work, index) => {
                       if (typeof work !== 'object' || work === null) return null;
+                      const position = cleanText(work.position);
+                      const organization = cleanText(work.organization);
+                      const period = cleanText(work.period);
                       return (
                         <motion.div
                           key={index}
@@ -775,13 +791,15 @@ function calculateAge(birthDateString: string | undefined): number | null {
                           transition={{ delay: index * 0.1 }}
                           className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"
                         >
-                          <span className="font-semibold text-gray-900 text-sm">{work.position}</span>
-                          <span className="text-gray-600 text-sm">·</span>
-                          <span className="text-gray-600 text-sm">{work.organization}</span>
-                          <span className="text-gray-600 text-sm">·</span>
-                          <Badge variant="outline" className="text-xs">
-                            {work.period}
-                          </Badge>
+                          {position && <span className="font-semibold text-gray-900 text-sm">{position}</span>}
+                          {position && organization && <span className="text-gray-600 text-sm">·</span>}
+                          {organization && <span className="text-gray-600 text-sm">{organization}</span>}
+                          {(position || organization) && period && <span className="text-gray-600 text-sm">·</span>}
+                          {period && (
+                            <Badge variant="outline" className="text-xs">
+                              {period}
+                            </Badge>
+                          )}
                           {index === 0 && (
                             <Badge variant="default" className="text-xs ml-1 text-white bg-blue-500">
                               当前
