@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -327,17 +327,31 @@ export default function PersonDetailPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [person, setPerson] = useState<PersonDetail | null>(null)
-  const [isFollowed, setIsFollowed] = useState(false)
+  const [followedPeople, setFollowedPeople] = useState<string[]>([]);
   const [expandedSections, setExpandedSections] = useState({
     achievements: false,
     activities: false,
   })
   const [showScriptModal, setShowScriptModal] = useState(false)
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const businessPersonId = searchParams?.get('businessPersonId') || 'e7558fb6-234c-475d-82b9-79db46840389';
+
+  // 获取已关注ID
+  useEffect(() => {
+    async function fetchFollowed() {
+      try {
+        const res = await fetch(`/api/business-person/follow?businessPersonId=${businessPersonId}`);
+        if (!res.ok) throw new Error('获取关注列表失败');
+        const data = await res.json();
+        setFollowedPeople(Array.isArray(data.followedPersonIds) ? data.followedPersonIds : []);
+      } catch (e) {
+        setFollowedPeople([]);
+      }
+    }
+    fetchFollowed();
+  }, [businessPersonId]);
 
   useEffect(() => {
-
-
-    
     // 从API获取数据
     const fetchPersonData = async () => {
       try {
@@ -361,7 +375,25 @@ export default function PersonDetailPage() {
           region: apiData.region,
           person_photo_url: apiData.person_photo_url,
           focusAreas: JSON.parse(apiData.focus_areas || '[]'),
-          workHistory: (() => { try { const parsed = JSON.parse(apiData.work_experience || '""'); if (Array.isArray(parsed)) { return parsed.flatMap(item => typeof item === 'string' ? parseWorkExperience(item) : item); } else if (typeof parsed === 'string') { return parseWorkExperience(parsed); } else { console.warn('Unexpected work experience format:', parsed); return []; } } catch (e) { console.error('JSON parse failed for work experience:', e, 'Raw data:', apiData.work_experience); const cleanedData = apiData.work_experience?.replace(/[\u0000-\u001F\u007F]/g, '') || ''; return parseWorkExperience(cleanedData); } })(),
+          workHistory: (() => {
+            const raw = apiData.work_experience || '';
+            try {
+              const parsed = JSON.parse(raw);
+              if (Array.isArray(parsed)) {
+                return parsed.flatMap(item => typeof item === 'string' ? parseWorkExperience(item) : item);
+              } else if (typeof parsed === 'string') {
+                return parseWorkExperience(parsed);
+              } else {
+                return [];
+              }
+            } catch {
+              // 如果不是 JSON，尝试用 parseWorkExperience 解析
+              if (typeof raw === 'string' && raw.trim()) {
+                return parseWorkExperience(raw);
+              }
+              return [];
+            }
+          })(),
           education: JSON.parse(apiData.education || '[]'),
           achievements: JSON.parse(apiData.achievements || '[]'),
           recentActivities: JSON.parse(apiData.recent_activities || '[]'),
@@ -378,7 +410,6 @@ export default function PersonDetailPage() {
           setPerson({ ...mappedData, age: 0 } as PersonDetail);
         }
         console.log('映射后的数据:', mappedData);
-        setIsFollowed(Math.random() > 0.5);
       } catch (error) {
         console.error('Error fetching person data:', error);
         setPerson(null);
@@ -538,13 +569,42 @@ function calculateAge(birthDateString: string | undefined): number | null {
   
   return age >= 0 ? age : null;
 }
-  const handleToggleFollow = () => {
-    setIsFollowed(!isFollowed)
-    toast({
-      title: isFollowed ? "已取消关注" : "关注成功",
-      description: isFollowed ? "已取消关注该人物" : "已添加到关注列表",
-    })
-  }
+  const handleToggleFollow = async () => {
+    if (!person) return;
+    const isFollowing = followedPeople.includes(person.id);
+    const departmentCode = person.currentPosition?.department || '';
+    try {
+      if (isFollowing) {
+        // 取消关注
+        const res = await fetch('/api/business-person/follow', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ business_person_id: businessPersonId, followed_person_id: person.id })
+        });
+        if (!res.ok) throw new Error('取消关注失败');
+        toast({ title: '已取消关注', description: '已取消关注该人物' });
+        setFollowedPeople(prev => prev.filter(pid => pid !== person.id));
+      } else {
+        // 关注
+        if (followedPeople.length >= 10) {
+          toast({ title: '关注失败', description: '最多关注10位关键人物', variant: 'destructive' });
+          return;
+        }
+        const res = await fetch('/api/business-person/follow', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ business_person_id: businessPersonId, followed_person_id: person.id, department_code: departmentCode, follow_time: new Date().toISOString() })
+        });
+        if (!res.ok) throw new Error('关注失败');
+        toast({ title: '关注成功', description: '已添加到关注列表' });
+        setFollowedPeople(prev => [...prev, person.id]);
+      }
+    } catch (e) {
+      toast({ title: '操作失败', description: e instanceof Error ? e.message : '关注/取消关注请求失败', variant: 'destructive' });
+    }
+  };
+
+  const isFollowed = person ? followedPeople.includes(person.id) : false;
 
   // 处理动态点击，跳转到对应的新闻详情页
   const handleActivityClick = (activity: PersonDetail["recentActivities"][0]) => {
@@ -705,29 +765,31 @@ function calculateAge(birthDateString: string | undefined): number | null {
               <TabsContent value="work" className="mt-4">
                 <div className="space-y-2">
                   {(person.workHistory || [])
-                    .filter(work => typeof work !== 'string' && (work.organization || work.position || work.period))
-                    .map((work, index) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"
-                      >
-                        <span className="font-semibold text-gray-900 text-sm">{typeof work === 'string' ? work : work.position}</span>
-                        <span className="text-gray-600 text-sm">·</span>
-                        <span className="text-gray-600 text-sm">{typeof work === 'string' ? work : work.organization}</span>
-                        <span className="text-gray-600 text-sm">·</span>
-                        <Badge variant={index === 0 ? "default" : "secondary"} className="text-xs">
-                          {typeof work === 'string' ? work : work.period}
-                        </Badge>
-                        {index === 0 && (
-                          <Badge variant="outline" className="text-xs text-blue-600">
-                            当前
+                    .map((work, index) => {
+                      if (typeof work !== 'object' || work === null) return null;
+                      return (
+                        <motion.div
+                          key={index}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"
+                        >
+                          <span className="font-semibold text-gray-900 text-sm">{work.position}</span>
+                          <span className="text-gray-600 text-sm">·</span>
+                          <span className="text-gray-600 text-sm">{work.organization}</span>
+                          <span className="text-gray-600 text-sm">·</span>
+                          <Badge variant="outline" className="text-xs">
+                            {work.period}
                           </Badge>
-                        )}
-                      </motion.div>
-                    ))
+                          {index === 0 && (
+                            <Badge variant="default" className="text-xs ml-1 text-white bg-blue-500">
+                              当前
+                            </Badge>
+                          )}
+                        </motion.div>
+                      );
+                    })
                   }
                 </div>
               </TabsContent>
