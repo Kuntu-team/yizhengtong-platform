@@ -7,11 +7,10 @@ import { ChevronLeft, ChevronDown, CheckCircle, Users, X } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import React from "react"
 
 interface PolicyDetailProps {
-  params: {
-    id: string
-  }
+  params: Promise<{ id: string }>
 }
 
 interface Project {
@@ -35,6 +34,7 @@ interface PolicyDetail {
 }
 
 export default function PolicyDetailPage({ params }: PolicyDetailProps) {
+  const unwrappedParams = React.use(params) as { id: string }
   const router = useRouter()
   const [policy, setPolicy] = useState<PolicyDetail | null>(null)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
@@ -94,7 +94,7 @@ export default function PolicyDetailPage({ params }: PolicyDetailProps) {
   }, [])
 
   useEffect(() => {
-    fetch(`/api/policies/${params.id}`)
+    fetch(`/api/policies/${unwrappedParams.id}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && data.data) {
@@ -112,7 +112,7 @@ export default function PolicyDetailPage({ params }: PolicyDetailProps) {
           })
         }
       })
-  }, [params.id])
+  }, [unwrappedParams.id])
 
   // 初始化分享文案
   useEffect(() => {
