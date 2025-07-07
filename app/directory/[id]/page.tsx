@@ -410,6 +410,7 @@ export default function PersonDetailPage() {
   const [newsList, setNewsList] = useState<any[]>([]);
   const [districtCn, setDistrictCn] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [workExperiences, setWorkExperiences] = useState<Array<{ position: string; organization: string; startDate: string; endDate: string | null }>>([]);
 
   // 获取已关注ID
   useEffect(() => {
@@ -525,6 +526,22 @@ export default function PersonDetailPage() {
     }
     fetchNews();
   }, [id]);
+
+  useEffect(() => {
+    if (!id || !person?.name) return;
+    const cacheKey = `work-experience-${id}`;
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      setWorkExperiences(JSON.parse(cached));
+    } else {
+      fetch(`/api/persons/${id}/work-experience?name=${encodeURIComponent(person.name)}`)
+        .then(res => res.json())
+        .then(data => {
+          setWorkExperiences(data);
+          sessionStorage.setItem(cacheKey, JSON.stringify(data));
+        });
+    }
+  }, [id, person?.name]);
 
 // 计算年龄的辅助函数
 const parseWorkExperience = (experienceStr: string): Array<{ period: string; organization: string; position: string; startYear: number; endYear: number }> => {
@@ -865,42 +882,79 @@ function calculateAge(birthDateString: string | undefined): number | null {
               {/* 工作履历 */}
               <TabsContent value="work" className="mt-4">
                 <div className="space-y-2">
-                  {[...(person.workHistory || [])].reverse().slice(0, 2).map((work, index, arr) => {
-                    if (typeof work !== 'object' || work === null) return null;
-                    const position = cleanText(work.position);
-                    const organization = cleanText(work.organization);
-                    const period = getPeriod(work);
-                    const isCurrent = index === 0; // 倒序后第一条为当前
-                    let displayPeriod = period;
-                    if ((period.includes('至今') || period.includes('现在')) && !/\d{4}[.\-年]\d{1,2}[—~至-](至今|现在)/.test(period)) {
-                      // 尝试提取起始时间
-                      const startMatch = period.match(/(\d{4}[.\-年]\d{1,2})/);
-                      if (startMatch) {
-                        displayPeriod = `${startMatch[1]}-至今`;
-                      }
-                    }
-                    return (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"
-                      >
-                        <span className="font-semibold text-gray-900 text-sm">{position}</span>
-                        <span className="font-semibold text-gray-900 text-sm">{organization}</span>
-                        <Badge
-                          className={`text-xs px-3 py-1 rounded-full font-semibold ${displayPeriod && (displayPeriod.includes('至今') || displayPeriod.includes('现在')) ? 'bg-cyan-400 text-white' : 'bg-yellow-50 text-yellow-400'}`}
-                          style={{ backgroundColor: displayPeriod && (displayPeriod.includes('至今') || displayPeriod.includes('现在')) ? '#22d3ee' : '#fef9c3', color: displayPeriod && (displayPeriod.includes('至今') || displayPeriod.includes('现在')) ? '#fff' : '#facc15' }}
-                        >
-                          {displayPeriod ? displayPeriod : '日期未知'}
-                        </Badge>
-                        {isCurrent && (
-                          <Badge variant="default" className="text-xs ml-1 text-blue-500 bg-blue-50 border border-blue-200 font-bold">当前</Badge>
-                        )}
-                      </motion.div>
-                    );
-                  })}
+                  {workExperiences.length === 0 ? (
+                    <div className="text-gray-400 text-sm text-center py-6">暂无工作履历</div>
+                  ) : (
+                    (() => {
+                      const parseStartDate = (text: string) => {
+                        const match = text.match(/(\d{4})[年.-](\d{1,2})/);
+                        if (!match) return 0;
+                        const month = match[2].padStart(2, '0');
+                        return parseInt(match[1] + month);
+                      };
+                      // 过滤有日期的，按日期倒序，取前2条
+                      const sorted = workExperiences
+                        .filter(exp => /\d{4}[年.-]\d{1,2}/.test(exp.organization) || /\d{4}年\d{1,2}月\d{1,2}日/.test(exp.organization))
+                        .sort((a, b) => parseStartDate(b.organization) - parseStartDate(a.organization))
+                        .slice(0, 2);
+
+                      return sorted.map((exp, idx) => {
+                        // 去除脚注
+                        let org = exp.organization.replace(/\[\d+(-\d+)?\]/g, '');
+                        // 提取所有日期（区间、年月日、年月、xxxx.xx等）
+                        const dateMatches = org.match(/(\d{4}年\d{1,2}月\d{1,2}日)|(\d{4}年\d{1,2}月)|(\d{4}[.\-]\d{2}(?:[.\-至今]\d{4}[.\-]\d{2}|[.\-至今][^\s]*)?)/g);
+                        let dateStr = dateMatches ? dateMatches.join('，') : '';
+                        if (dateStr) {
+                          org = org.replace(dateStr, '').trim();
+                        }
+                        // 最后再去除最前和最后的特殊符号
+                        org = org.replace(/^[^\u4e00-\u9fa5a-zA-Z0-9]+|[^\u4e00-\u9fa5a-zA-Z0-9]+$/g, '');
+                        return (
+                          <motion.div
+                            key={idx}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: idx * 0.1 }}
+                            className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"
+                          >
+                            <span className="font-semibold text-gray-900 text-sm">{org}</span>
+                            {dateStr && (
+                              <span
+                                style={{
+                                  background: '#FFF500',
+                                  color: '#333',
+                                  borderRadius: 4,
+                                  padding: '2px 8px',
+                                  fontWeight: 600,
+                                  marginLeft: 8,
+                                }}
+                              >
+                                {dateStr}
+                              </span>
+                            )}
+                            {idx === 0 && (
+                              /至今|现在/.test(dateStr) ||
+                              /[-－—~～]$/.test(dateStr) ||
+                              (dateStr && !/[至-－—~～]/.test(dateStr) && dateStr.length > 0)
+                            ) && (
+                              <span
+                                style={{
+                                  background: '#E6F0FF',
+                                  color: '#1677FF',
+                                  borderRadius: 4,
+                                  padding: '2px 8px',
+                                  fontWeight: 600,
+                                  marginLeft: 8,
+                                }}
+                              >
+                                当前
+                              </span>
+                            )}
+                          </motion.div>
+                        );
+                      });
+                    })()
+                  )}
                 </div>
               </TabsContent>
 
