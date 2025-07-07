@@ -391,6 +391,16 @@ function daysAgo(dateString: string): string {
   return `未来${-diffDays}天`;
 }
 
+// 展示所有履历，按enddate和startdate倒序排列，enddate为'至今'的排最前
+function parseDate(str: string) {
+  if (!str) return 0;
+  if (str === '至今') return 99999999;
+  // 兼容'2018年09月'等格式
+  const match = str.match(/(\d{4})年(\d{1,2})月/);
+  if (match) return parseInt(match[1]) * 100 + parseInt(match[2]);
+  return 0;
+}
+
 export default function PersonDetailPage() {
   const params = useParams();
   const id = params.id as string;
@@ -410,7 +420,7 @@ export default function PersonDetailPage() {
   const [newsList, setNewsList] = useState<any[]>([]);
   const [districtCn, setDistrictCn] = useState<string>('');
   const [loading, setLoading] = useState(true);
-  const [workExperiences, setWorkExperiences] = useState<Array<{ position: string; organization: string; startDate: string; endDate: string | null }>>([]);
+  const [workExperiences, setWorkExperiences] = useState<Array<{ position_info: string; startdate: string; enddate: string }>>([]);
 
   // 获取已关注ID
   useEffect(() => {
@@ -537,155 +547,163 @@ export default function PersonDetailPage() {
       fetch(`/api/persons/${id}/work-experience?name=${encodeURIComponent(person.name)}`)
         .then(res => res.json())
         .then(data => {
-          setWorkExperiences(data);
-          sessionStorage.setItem(cacheKey, JSON.stringify(data));
+          // 字段兜底，防止后端字段变动
+          const safeData = Array.isArray(data)
+            ? data.map(item => ({
+                position_info: item.position_info || '',
+                startdate: item.startdate || '',
+                enddate: item.enddate || '',
+              }))
+            : [];
+          setWorkExperiences(safeData);
+          sessionStorage.setItem(cacheKey, JSON.stringify(safeData));
         });
     }
   }, [id, person?.name]);
 
-// 计算年龄的辅助函数
-const parseWorkExperience = (experienceStr: string): Array<{ period: string; organization: string; position: string; startYear: number; endYear: number }> => {
-  const getYearFromPeriod = (period: string): number => {
-    const yearMatch = period.match(/(\d{4})/);
-    return yearMatch ? parseInt(yearMatch[1]) : 0;
-  };
+  // 计算年龄的辅助函数
+  const parseWorkExperience = (experienceStr: string): Array<{ period: string; organization: string; position: string; startYear: number; endYear: number }> => {
+    const getYearFromPeriod = (period: string): number => {
+      const yearMatch = period.match(/(\d{4})/);
+      return yearMatch ? parseInt(yearMatch[1]) : 0;
+    };
 
-  if (!experienceStr) return [];
-  // 分割主要条目（过滤空字符串）
-  const mainEntries = experienceStr.split(/；+/).map(entry => entry.trim()).filter(entry => entry);
-  const parsedItems = mainEntries.map(entry => {
-    // 提取时间段 (匹配年份格式)
-    const periodMatch = entry.match(/\d{4}年\d{1,2}月(?:--(?:\d{4}年\d{1,2}月|至今))?/);
-    const period = periodMatch?.[0] || '';
-  const startYear = getYearFromPeriod(period);
-  const endYear = period.includes('至今') ? new Date().getFullYear() : getYearFromPeriod(period.split('--')[1] || '');
-  // 提取剩余部分并清理
-  const remaining = period ? entry.replace(period, '').trim().replace(/^，+/, '').replace(/^任/, '') : entry.trim().replace(/^，+/, '').replace(/^任/, '');
-    // 分割组织和职位 (简单处理，实际可能需要更复杂逻辑)
-    const parts = remaining.split('，');
-    const organization = parts[0]?.trim() || '';
-    const position = parts.slice(1).join('，').trim() || '';
-    return {
-    period,
-    organization: organization.trim(),
-    position: position.trim(),
-    startYear,
-    endYear
-  };
-  });
-return parsedItems
-  .filter(item => item.organization.trim() || item.position.trim() || item.period.trim())
-  .sort((a, b) => b.endYear - a.endYear || b.startYear - a.startYear);
-}
-
-function calculateAge(birthDateString: string | undefined): number | null {
-  if (!birthDateString) return null;
-
-  // 全角字符转半角字符
-  const toHalfWidth = (str: string) => 
-    str.replace(/[！-～]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
-         .replace(/　/g, ' ');
-
-  // 中文月份转数字
-  const chineseMonths: Record<string, string> = {
-    '一月': '1月', '二月': '2月', '三月': '3月', '四月': '4月', 
-    '五月': '5月', '六月': '6月', '七月': '7月', '八月': '8月', 
-    '九月': '9月', '十月': '10月', '十一月': '11月', '十二月': '12月'
-  };
-
-  // 统一转换所有数字为半角并处理中文月份
-  let normalizedDateString = toHalfWidth(birthDateString.trim());
-  for (const [cnMonth, numMonth] of Object.entries(chineseMonths)) {
-    normalizedDateString = normalizedDateString.replace(new RegExp(cnMonth, 'g'), numMonth);
+    if (!experienceStr) return [];
+    // 分割主要条目（过滤空字符串）
+    const mainEntries = experienceStr.split(/；+/).map(entry => entry.trim()).filter(entry => entry);
+    const parsedItems = mainEntries.map(entry => {
+      // 提取时间段 (匹配年份格式)
+      const periodMatch = entry.match(/\d{4}年\d{1,2}月(?:--(?:\d{4}年\d{1,2}月|至今))?/);
+      const period = periodMatch?.[0] || '';
+    const startYear = getYearFromPeriod(period);
+    const endYear = period.includes('至今') ? new Date().getFullYear() : getYearFromPeriod(period.split('--')[1] || '');
+    // 提取剩余部分并清理
+    const remaining = period ? entry.replace(period, '').trim().replace(/^，+/, '').replace(/^任/, '') : entry.trim().replace(/^，+/, '').replace(/^任/, '');
+      // 分割组织和职位 (简单处理，实际可能需要更复杂逻辑)
+      const parts = remaining.split('，');
+      const organization = parts[0]?.trim() || '';
+      const position = parts.slice(1).join('，').trim() || '';
+      return {
+      period,
+      organization: organization.trim(),
+      position: position.trim(),
+      startYear,
+      endYear
+    };
+    });
+  return parsedItems
+    .filter(item => item.organization.trim() || item.position.trim() || item.period.trim())
+    .sort((a, b) => b.endYear - a.endYear || b.startYear - a.startYear);
   }
 
-  // 尝试解析各种日期格式
-  let birthDate: Date | null = null;
-  
-  // 1. 尝试中文日期格式 (YYYY年MM月DD日 或 YYYY年MM月)
-  const chineseDateMatch = normalizedDateString.match(/(\d{4})\s*年\s*(\d{1,2})\s*月(?:\s*(\d{1,2})\s*日)?/);
-  if (chineseDateMatch) {
-    const year = parseInt(chineseDateMatch[1], 10);
-    const month = parseInt(chineseDateMatch[2], 10) - 1; // 月份从0开始
-    const day = chineseDateMatch[3] ? parseInt(chineseDateMatch[3], 10) : 1;
-    birthDate = new Date(year, month, day);
-  }
-  
-  // 2. 尝试ISO格式 (YYYY-MM-DD)
-  if (!birthDate || isNaN(birthDate.getTime())) {
-    const isoMatch = normalizedDateString.match(/(\d{4})-(\d{1,2})(?:-(\d{1,2}))?/);
-    if (isoMatch) {
-      const year = parseInt(isoMatch[1], 10);
-      const month = parseInt(isoMatch[2], 10) - 1;
-      const day = isoMatch[3] ? parseInt(isoMatch[3], 10) : 1;
+  function calculateAge(birthDateString: string | undefined): number | null {
+    if (!birthDateString) return null;
+
+    // 全角字符转半角字符
+    const toHalfWidth = (str: string) => 
+      str.replace(/[！-～]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+           .replace(/　/g, ' ');
+
+    // 中文月份转数字
+    const chineseMonths: Record<string, string> = {
+      '一月': '1月', '二月': '2月', '三月': '3月', '四月': '4月', 
+      '五月': '5月', '六月': '6月', '七月': '7月', '八月': '8月', 
+      '九月': '9月', '十月': '10月', '十一月': '11月', '十二月': '12月'
+    };
+
+    // 统一转换所有数字为半角并处理中文月份
+    let normalizedDateString = toHalfWidth(birthDateString.trim());
+    for (const [cnMonth, numMonth] of Object.entries(chineseMonths)) {
+      normalizedDateString = normalizedDateString.replace(new RegExp(cnMonth, 'g'), numMonth);
+    }
+
+    // 尝试解析各种日期格式
+    let birthDate: Date | null = null;
+    
+    // 1. 尝试中文日期格式 (YYYY年MM月DD日 或 YYYY年MM月)
+    const chineseDateMatch = normalizedDateString.match(/(\d{4})\s*年\s*(\d{1,2})\s*月(?:\s*(\d{1,2})\s*日)?/);
+    if (chineseDateMatch) {
+      const year = parseInt(chineseDateMatch[1], 10);
+      const month = parseInt(chineseDateMatch[2], 10) - 1; // 月份从0开始
+      const day = chineseDateMatch[3] ? parseInt(chineseDateMatch[3], 10) : 1;
       birthDate = new Date(year, month, day);
     }
-  }
-  
-  // 3. 尝试斜杠分隔格式 (YYYY/MM/DD 或 MM/DD/YYYY)
-  if (!birthDate || isNaN(birthDate.getTime())) {
-    const slashMatch = normalizedDateString.match(/(\d{1,4})\/(\d{1,2})(?:\/(\d{1,2}))?/);
-    if (slashMatch) {
-      let year, month, day;
-      const part1 = parseInt(slashMatch[1], 10);
-      const part2 = parseInt(slashMatch[2], 10);
-      const part3 = slashMatch[3] ? parseInt(slashMatch[3], 10) : 1;
-
-      // 判断是 YYYY/MM/DD 还是 MM/DD/YYYY
-      if (part1 > 1900) {
-        // YYYY/MM/DD 格式
-        year = part1;
-        month = part2 - 1;
-        day = part3;
-      } else {
-        // MM/DD/YYYY 格式
-        year = part3;
-        month = part1 - 1;
-        day = part2;
-
-        // 如果月份无效，尝试交换月和日
-        if (month < 0 || month > 11) {
-          month = day - 1;
-          day = part1;
-        }
+    
+    // 2. 尝试ISO格式 (YYYY-MM-DD)
+    if (!birthDate || isNaN(birthDate.getTime())) {
+      const isoMatch = normalizedDateString.match(/(\d{4})-(\d{1,2})(?:-(\d{1,2}))?/);
+      if (isoMatch) {
+        const year = parseInt(isoMatch[1], 10);
+        const month = parseInt(isoMatch[2], 10) - 1;
+        const day = isoMatch[3] ? parseInt(isoMatch[3], 10) : 1;
+        birthDate = new Date(year, month, day);
       }
-      birthDate = new Date(year, month, day);
     }
-  }
-  
-  // 4. 尝试点分隔格式 (YYYY.MM.DD)
-  if (!birthDate || isNaN(birthDate.getTime())) {
-    const dotMatch = normalizedDateString.match(/(\d{4})\.(\d{1,2})(?:\.(\d{1,2}))?/);
-    if (dotMatch) {
-      const year = parseInt(dotMatch[1], 10);
-      const month = parseInt(dotMatch[2], 10) - 1;
-      const day = dotMatch[3] ? parseInt(dotMatch[3], 10) : 1;
-      birthDate = new Date(year, month, day);
+    
+    // 3. 尝试斜杠分隔格式 (YYYY/MM/DD 或 MM/DD/YYYY)
+    if (!birthDate || isNaN(birthDate.getTime())) {
+      const slashMatch = normalizedDateString.match(/(\d{1,4})\/(\d{1,2})(?:\/(\d{1,2}))?/);
+      if (slashMatch) {
+        let year, month, day;
+        const part1 = parseInt(slashMatch[1], 10);
+        const part2 = parseInt(slashMatch[2], 10);
+        const part3 = slashMatch[3] ? parseInt(slashMatch[3], 10) : 1;
+
+        // 判断是 YYYY/MM/DD 还是 MM/DD/YYYY
+        if (part1 > 1900) {
+          // YYYY/MM/DD 格式
+          year = part1;
+          month = part2 - 1;
+          day = part3;
+        } else {
+          // MM/DD/YYYY 格式
+          year = part3;
+          month = part1 - 1;
+          day = part2;
+
+          // 如果月份无效，尝试交换月和日
+          if (month < 0 || month > 11) {
+            month = day - 1;
+            day = part1;
+          }
+        }
+        birthDate = new Date(year, month, day);
+      }
     }
-  }
-  
-  // 5. 最后尝试标准日期解析
-  if (!birthDate || isNaN(birthDate.getTime())) {
-    birthDate = new Date(normalizedDateString);
-  }
+    
+    // 4. 尝试点分隔格式 (YYYY.MM.DD)
+    if (!birthDate || isNaN(birthDate.getTime())) {
+      const dotMatch = normalizedDateString.match(/(\d{4})\.(\d{1,2})(?:\.(\d{1,2}))?/);
+      if (dotMatch) {
+        const year = parseInt(dotMatch[1], 10);
+        const month = parseInt(dotMatch[2], 10) - 1;
+        const day = dotMatch[3] ? parseInt(dotMatch[3], 10) : 1;
+        birthDate = new Date(year, month, day);
+      }
+    }
+    
+    // 5. 最后尝试标准日期解析
+    if (!birthDate || isNaN(birthDate.getTime())) {
+      birthDate = new Date(normalizedDateString);
+    }
 
-  // 如果仍然无效，返回null
-  if (!birthDate || isNaN(birthDate.getTime())) {
-    return null;
-  }
+    // 如果仍然无效，返回null
+    if (!birthDate || isNaN(birthDate.getTime())) {
+      return null;
+    }
 
-  // 计算年龄
-  const today = new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const monthDiff = today.getMonth() - birthDate.getMonth();
-  
-  // 考虑月份和日期因素
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-    age--;
+    // 计算年龄
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    // 考虑月份和日期因素
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    return age >= 0 ? age : null;
   }
-  
-  return age >= 0 ? age : null;
-}
   const handleToggleFollow = async () => {
     if (!person) return;
     const isFollowing = followedPeople.includes(person.id);
@@ -736,6 +754,23 @@ function calculateAge(birthDateString: string | undefined): number | null {
       })
     }
   }
+
+  useEffect(() => {
+    console.log('workExperiences', workExperiences);
+  }, [workExperiences]);
+
+  // 只展示enddate为'至今'的履历
+  const filteredWorkExperiences = workExperiences.filter(exp => exp.enddate === '至今');
+
+  // 展示所有履历，按enddate和startdate倒序排列，enddate为'至今'的排最前
+  const sortedWorkExperiences = [...workExperiences].sort((a, b) => {
+    const endA = parseDate(a.enddate);
+    const endB = parseDate(b.enddate);
+    if (endA !== endB) return endB - endA;
+    const startA = parseDate(a.startdate);
+    const startB = parseDate(b.startdate);
+    return endB !== endA ? endB - endA : startB - startA;
+  });
 
   if (loading) {
     return (
@@ -882,78 +917,43 @@ function calculateAge(birthDateString: string | undefined): number | null {
               {/* 工作履历 */}
               <TabsContent value="work" className="mt-4">
                 <div className="space-y-2">
-                  {workExperiences.length === 0 ? (
+                  {sortedWorkExperiences.length === 0 ? (
                     <div className="text-gray-400 text-sm text-center py-6">暂无工作履历</div>
                   ) : (
-                    (() => {
-                      const parseStartDate = (text: string) => {
-                        const match = text.match(/(\d{4})[年.-](\d{1,2})/);
-                        if (!match) return 0;
-                        const month = match[2].padStart(2, '0');
-                        return parseInt(match[1] + month);
-                      };
-                      // 过滤有日期的，按日期倒序，取前2条
-                      const sorted = workExperiences
-                        .filter(exp => /\d{4}[年.-]\d{1,2}/.test(exp.organization) || /\d{4}年\d{1,2}月\d{1,2}日/.test(exp.organization))
-                        .sort((a, b) => parseStartDate(b.organization) - parseStartDate(a.organization))
-                        .slice(0, 2);
-
-                      return sorted.map((exp, idx) => {
-                        // 去除脚注
-                        let org = exp.organization.replace(/\[\d+(-\d+)?\]/g, '');
-                        // 提取所有日期（区间、年月日、年月、xxxx.xx等）
-                        const dateMatches = org.match(/(\d{4}年\d{1,2}月\d{1,2}日)|(\d{4}年\d{1,2}月)|(\d{4}[.\-]\d{2}(?:[.\-至今]\d{4}[.\-]\d{2}|[.\-至今][^\s]*)?)/g);
-                        let dateStr = dateMatches ? dateMatches.join('，') : '';
-                        if (dateStr) {
-                          org = org.replace(dateStr, '').trim();
-                        }
-                        // 最后再去除最前和最后的特殊符号
-                        org = org.replace(/^[^\u4e00-\u9fa5a-zA-Z0-9]+|[^\u4e00-\u9fa5a-zA-Z0-9]+$/g, '');
-                        return (
-                          <motion.div
-                            key={idx}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: idx * 0.1 }}
-                            className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"
+                    sortedWorkExperiences.map((exp, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"
+                      >
+                        <span className="font-semibold text-gray-900 text-sm min-w-[80px]">{exp.position_info}</span>
+                        <span
+                          style={{
+                            background: '#FFF500',
+                            color: '#333',
+                            borderRadius: 4,
+                            padding: '2px 8px',
+                            fontWeight: 600,
+                            marginLeft: 8,
+                          }}
+                        >
+                          {exp.startdate} - {exp.enddate}
+                        </span>
+                        {exp.enddate === '至今' && (
+                          <span
+                            style={{
+                              background: '#E6F0FF',
+                              color: '#1677FF',
+                              borderRadius: 4,
+                              padding: '2px 8px',
+                              fontWeight: 600,
+                              marginLeft: 8,
+                            }}
                           >
-                            <span className="font-semibold text-gray-900 text-sm">{org}</span>
-                            {dateStr && (
-                              <span
-                                style={{
-                                  background: '#FFF500',
-                                  color: '#333',
-                                  borderRadius: 4,
-                                  padding: '2px 8px',
-                                  fontWeight: 600,
-                                  marginLeft: 8,
-                                }}
-                              >
-                                {dateStr}
-                              </span>
-                            )}
-                            {idx === 0 && (
-                              /至今|现在/.test(dateStr) ||
-                              /[-－—~～]$/.test(dateStr) ||
-                              (dateStr && !/[至-－—~～]/.test(dateStr) && dateStr.length > 0)
-                            ) && (
-                              <span
-                                style={{
-                                  background: '#E6F0FF',
-                                  color: '#1677FF',
-                                  borderRadius: 4,
-                                  padding: '2px 8px',
-                                  fontWeight: 600,
-                                  marginLeft: 8,
-                                }}
-                              >
-                                当前
-                              </span>
-                            )}
-                          </motion.div>
-                        );
-                      });
-                    })()
+                            当前
+                          </span>
+                        )}
+                      </div>
+                    ))
                   )}
                 </div>
               </TabsContent>

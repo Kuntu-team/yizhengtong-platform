@@ -9,7 +9,8 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  devIndicators: false
+  devIndicators: false,
+  output: "standalone" // 添加 standalone 输出模式配置
 }
 
 export default nextConfig
