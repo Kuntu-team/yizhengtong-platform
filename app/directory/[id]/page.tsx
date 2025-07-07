@@ -373,6 +373,24 @@ function getPeriod(work: any): string {
   return '';
 }
 
+function daysAgo(dateString: string): string {
+  if (!dateString) return '';
+  // 只取日期部分，兼容 ISO 字符串
+  const dateOnly = dateString.split('T')[0].replace(/-/g, '/').replace(/\./g, '/');
+  const date = new Date(dateOnly);
+  if (isNaN(date.getTime())) return dateString;
+  const now = new Date();
+  // 只保留年月日
+  const nowYMD = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dateYMD = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffTime = nowYMD.getTime() - dateYMD.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return '今天';
+  if (diffDays > 0) return `${diffDays}天前`;
+  if (diffDays === -1) return '明天';
+  return `未来${-diffDays}天`;
+}
+
 export default function PersonDetailPage() {
   const params = useParams();
   const id = params.id as string;
@@ -391,6 +409,7 @@ export default function PersonDetailPage() {
   const [personDesc, setPersonDesc] = useState<string>('');
   const [newsList, setNewsList] = useState<any[]>([]);
   const [districtCn, setDistrictCn] = useState<string>('');
+  const [loading, setLoading] = useState(true);
 
   // 获取已关注ID
   useEffect(() => {
@@ -469,10 +488,12 @@ export default function PersonDetailPage() {
         setGraduateSchool(apiData.graduate_school || '');
         setPersonDesc(apiData.person_desc || '');
         setDistrictCn(apiData.district_cn || '');
+        setLoading(false);
       } catch (error) {
         console.error('Error fetching person data:', error);
         setPerson(null);
         setGraduateSchool('');
+        setLoading(false);
       }
     };
 
@@ -699,6 +720,17 @@ function calculateAge(birthDateString: string | undefined): number | null {
     }
   }
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-500">加载中...</p>
+        </div>
+      </div>
+    )
+  }
+
   if (!person) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -755,7 +787,8 @@ function calculateAge(birthDateString: string | undefined): number | null {
                   <h4 className="font-medium text-gray-900 mb-1 text-sm">{news.title || news.news_title || '无标题'}</h4>
                   <p className="text-xs text-gray-600 mb-1">{news.content || news.news_content || ''}</p>
                   <div className="flex items-center gap-3 text-xs text-gray-500">
-                    <span>{news.news_time ? new Date(news.news_time).toLocaleDateString() : ''}</span>
+                    <span>{news.news_time ? daysAgo(news.news_time) : ''}</span>
+                    <span className="px-2 py-0.5 rounded bg-yellow-100 text-yellow-700 text-xs font-semibold">任内</span>
                     {news.source && <span>{news.source}</span>}
                   </div>
                 </div>
@@ -832,7 +865,7 @@ function calculateAge(birthDateString: string | undefined): number | null {
               {/* 工作履历 */}
               <TabsContent value="work" className="mt-4">
                 <div className="space-y-2">
-                  {[...(person.workHistory || [])].reverse().map((work, index, arr) => {
+                  {[...(person.workHistory || [])].reverse().slice(0, 2).map((work, index, arr) => {
                     if (typeof work !== 'object' || work === null) return null;
                     const position = cleanText(work.position);
                     const organization = cleanText(work.organization);
@@ -855,17 +888,13 @@ function calculateAge(birthDateString: string | undefined): number | null {
                         className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"
                       >
                         <span className="font-semibold text-gray-900 text-sm">{position}</span>
-                        <span className="text-gray-600 text-sm">·</span>
                         <span className="font-semibold text-gray-900 text-sm">{organization}</span>
-                        <span className="text-gray-600 text-sm">·</span>
-                        {displayPeriod && (
-                          <Badge
-                            className={`text-xs px-3 py-1 rounded-full font-semibold ${displayPeriod.includes('至今') || displayPeriod.includes('现在') ? 'bg-cyan-400 text-white' : 'bg-yellow-50 text-yellow-400'}`}
-                            style={{ backgroundColor: displayPeriod.includes('至今') || displayPeriod.includes('现在') ? '#22d3ee' : '#fef9c3', color: displayPeriod.includes('至今') || displayPeriod.includes('现在') ? '#fff' : '#facc15' }}
-                          >
-                            {displayPeriod}
-                          </Badge>
-                        )}
+                        <Badge
+                          className={`text-xs px-3 py-1 rounded-full font-semibold ${displayPeriod && (displayPeriod.includes('至今') || displayPeriod.includes('现在')) ? 'bg-cyan-400 text-white' : 'bg-yellow-50 text-yellow-400'}`}
+                          style={{ backgroundColor: displayPeriod && (displayPeriod.includes('至今') || displayPeriod.includes('现在')) ? '#22d3ee' : '#fef9c3', color: displayPeriod && (displayPeriod.includes('至今') || displayPeriod.includes('现在')) ? '#fff' : '#facc15' }}
+                        >
+                          {displayPeriod ? displayPeriod : '日期未知'}
+                        </Badge>
                         {isCurrent && (
                           <Badge variant="default" className="text-xs ml-1 text-blue-500 bg-blue-50 border border-blue-200 font-bold">当前</Badge>
                         )}
