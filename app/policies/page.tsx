@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
@@ -121,6 +121,13 @@ const mockPolicies: Policy[] = [
   },
 ]
 
+function formatDate(date: string | Date) {
+  if (!date) return "-";
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(d.getTime())) return String(date);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
 function PolicyCard({ policy }: { policy: Policy }) {
   const router = useRouter()
 
@@ -165,7 +172,7 @@ function PolicyCard({ policy }: { policy: Policy }) {
           <div className="flex items-center gap-3">
             <span>{policy.source}</span>
             <span>•</span>
-            <span>{policy.publishDate.toLocaleDateString("zh-CN")}</span>
+            <span>{formatDate(policy.publishDate)}</span>
           </div>
           <span>{policy.timeAgo}</span>
         </div>
@@ -430,7 +437,7 @@ function InterestsManagementSheet({ open, onClose }: { open: boolean; onClose: (
 
 export default function PoliciesPage() {
   const router = useRouter()
-  const [policies, setPolicies] = useState<Policy[]>(mockPolicies)
+  const [policies, setPolicies] = useState<Policy[]>([])
   const [showFilter, setShowFilter] = useState(false)
   const [showInterestsManagement, setShowInterestsManagement] = useState(false)
 
@@ -439,6 +446,28 @@ export default function PoliciesPage() {
     statusFilter: ["pending", "completed"],
     interests: [],
   })
+
+  useEffect(() => {
+    fetch("/api/policies")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.data)) {
+          const mapped = data.data.map((item: any) => ({
+            id: item.policy_id,
+            title: item.policy_title || "-",
+            source: item.issued_authority || "-",
+            publishDate: item.released_date ? new Date(item.released_date) : new Date(),
+            timeAgo: "", // 可根据需要计算
+            status: "completed", // 可根据需要调整
+            matchedProjects: 0, // 可根据需要调整
+            unread: false, // 可根据需要调整
+            category: item.category_name || "other",
+            salesPitch: item.policy_content ? item.policy_content.slice(0, 60) + "..." : "-",
+          }))
+          setPolicies(mapped)
+        }
+      })
+  }, [])
 
   const filteredPolicies = useMemo(() => {
     let filtered = [...policies]
