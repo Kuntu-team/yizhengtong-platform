@@ -122,12 +122,12 @@ export async function GET(request: NextRequest) {
         followed_person_id: true
       }
     });
-    console.log('Fetched followedPersons count:', followedPersons.length);
-    console.log('Fetched followed_person_ids:', followedPersons.map(item => item.followed_person_id));
+    // console.log('Fetched followedPersons count:', followedPersons.length);
+    // console.log('Fetched followed_person_ids:', followedPersons.map(item => item.followed_person_id));
 
     // 提取并返回followed_person_id数组
     const followedPersonIds = followedPersons.map(item => item.followed_person_id);
-    console.log('Returning followedPersonIds:', followedPersonIds);
+    // console.log('Returning followedPersonIds:', followedPersonIds);
     
     return NextResponse.json({
       followedPersonIds

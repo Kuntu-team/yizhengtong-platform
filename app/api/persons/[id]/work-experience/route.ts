@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
-  const { id } = params;
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   // 只查数据库 work_experience 字段
   const person = await prisma.key_person_base_info.findUnique({
     where: { person_id: id },
