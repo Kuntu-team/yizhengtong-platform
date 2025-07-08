@@ -3,10 +3,10 @@ import prisma from '@/lib/prisma';
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const news = await prisma.$queryRaw`
       SELECT * FROM key_person_news WHERE person_id = ${id} ORDER BY news_time DESC
     `;
