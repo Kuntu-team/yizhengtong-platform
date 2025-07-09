@@ -169,7 +169,6 @@ model policies_info {
 }
 
 /// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model region_special_bond_stats {
   id             Int      @id @default(autoincrement())
   region_code    String?  @db.VarChar(20)
@@ -180,8 +179,6 @@ model region_special_bond_stats {
   year_dim       String?  @db.Char(1)
   project_amount BigInt?
   issued_amount  Decimal? @db.Decimal(10, 2)
-
-  @@ignore
 }
 
 model dim_dept_position_code {
@@ -207,3 +204,47 @@ model wby_business_person_follow {
   key_person_base_info key_person_base_info @relation(fields: [followed_person_id], references: [person_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_followed_person")
 }
 
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model dim_region_code_dh {
+  province_code String? @db.VarChar
+  province_cn   String? @db.VarChar
+  city_code     String? @db.VarChar(20)
+  city_cn       String? @db.VarChar(500)
+  district_code String? @db.VarChar(20)
+  district_cn   String? @db.VarChar(500)
+
+  @@ignore
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model yk_internal_projects {
+  project_id               Int      @id @default(autoincrement())
+  project_name             String   @db.VarChar(250)
+  total_investment         String?  @db.VarChar(250)
+  project_type             String?  @db.VarChar(100)
+  project_field_name       String?  @db.VarChar(100)
+  project_difficulty       String?
+  project_plan             String?
+  project_proposal_content String?
+  construction_content     String?
+  application_advice       String?
+  issued_result            String?  @db.VarChar(250)
+  income_source            String?  @db.VarChar(250)
+  capital_source           String?  @db.VarChar(250)
+  client_department        String?  @db.VarChar(250)
+  client_type              String?  @db.VarChar(250)
+  service_scope            String?  @db.VarChar(250)
+  project_date             String?
+  project_address          String?
+  project_result           String?  @db.VarChar(250)
+  project_amount           String?  @db.VarChar(250)
+  province_code            String?  @db.VarChar(10)
+  province_cn              String?  @db.VarChar(50)
+  city_code                String?  @db.VarChar(10)
+  city_cn                  String?  @db.VarChar(50)
+  district_code            String?  @db.VarChar(10)
+  district_cn              String?  @db.VarChar(50)
+  data_status              String?  @default("1") @db.Char(1)
+  created_time             DateTime @default(now()) @db.Timestamp(6)
+  updated_time             DateTime @default(now()) @db.Timestamp(6)
+}

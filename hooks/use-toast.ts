@@ -198,7 +198,7 @@ function useToast() {
         listeners.splice(index, 1)
       }
     }
-  }, [state])
+  }, []) // 只在挂载/卸载时注册/注销
 
   return {
     ...state,
