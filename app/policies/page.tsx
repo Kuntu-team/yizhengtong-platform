@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { AppLayout } from "@/components/app-layout"
 import { FileText, Settings, ChevronLeft } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface Policy {
   id: string
@@ -152,7 +153,7 @@ function PolicyCard({ policy }: { policy: Policy }) {
         {/* 标题和查看详情按钮合并 */}
         <div className="flex items-start justify-between gap-4">
           <h3 className="text-xl font-bold text-slate-800 leading-tight tracking-wide flex-1">{policy.title}</h3>
-          {policy.status === "completed" && (
+          {/* {policy.status === "completed" && (
             <Button
               variant="outline"
               size="sm"
@@ -164,7 +165,7 @@ function PolicyCard({ policy }: { policy: Policy }) {
             >
               发现{policy.matchedProjects}个商机
             </Button>
-          )}
+          )} */}
         </div>
 
         {/* 来源和时间信息 - 移到标题下面 */}
@@ -440,6 +441,7 @@ export default function PoliciesPage() {
   const [policies, setPolicies] = useState<Policy[]>([])
   const [showFilter, setShowFilter] = useState(false)
   const [showInterestsManagement, setShowInterestsManagement] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   const [filters, setFilters] = useState({
     timeRange: "all",
@@ -448,6 +450,7 @@ export default function PoliciesPage() {
   })
 
   useEffect(() => {
+    setLoading(true)
     fetch("/api/policies")
       .then((res) => res.json())
       .then((data) => {
@@ -467,6 +470,7 @@ export default function PoliciesPage() {
           setPolicies(mapped)
         }
       })
+      .finally(() => setLoading(false))
   }, [])
 
   const filteredPolicies = useMemo(() => {
@@ -559,22 +563,32 @@ export default function PoliciesPage() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <div className="space-y-3">
             <AnimatePresence>
-              {filteredPolicies.map((policy, index) => (
-                <motion.div
-                  key={policy.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <PolicyCard policy={policy} />
-                </motion.div>
-              ))}
+              {loading
+                ? Array.from({ length: 5 }, (_, idx) => idx).map((idx) => (
+                    <div key={idx} className="bg-white border border-gray-200 shadow-sm rounded-lg p-4">
+                      <Skeleton className="h-6 w-2/3 mb-4" />
+                      <Skeleton className="h-4 w-1/3 mb-2" />
+                      <Skeleton className="h-4 w-1/4 mb-2" />
+                      <Skeleton className="h-4 w-full mb-2" />
+                      <Skeleton className="h-4 w-5/6" />
+                    </div>
+                  ))
+                : filteredPolicies.map((policy, index) => (
+                    <motion.div
+                      key={policy.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      <PolicyCard policy={policy} />
+                    </motion.div>
+                  ))}
             </AnimatePresence>
           </div>
         </motion.div>
 
         {/* 空状态 */}
-        {filteredPolicies.length === 0 && (
+        {!loading && filteredPolicies.length === 0 && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16 glass-card">
             <FileText className="h-16 w-16 text-slate-400 mx-auto mb-6" />
             <p className="text-slate-500 mb-2 font-light text-lg">

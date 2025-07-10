@@ -8,10 +8,9 @@ import { AnimatePresence, motion } from "framer-motion"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import React from "react"
-
-interface PolicyDetailProps {
-  params: Promise<{ id: string }>
-}
+import ReactMarkdown from "react-markdown"
+import QRCode from "qrcode"
+import { useParams } from "next/navigation"
 
 interface Project {
   id: string
@@ -33,8 +32,9 @@ interface PolicyDetail {
   fullContent: string
 }
 
-export default function PolicyDetailPage({ params }: PolicyDetailProps) {
-  const unwrappedParams = React.use(params) as { id: string }
+export default function PolicyDetailPage() {
+  const params = useParams();
+  const id = params.id as string;
   const router = useRouter()
   const [policy, setPolicy] = useState<PolicyDetail | null>(null)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
@@ -56,6 +56,11 @@ export default function PolicyDetailPage({ params }: PolicyDetailProps) {
     success: boolean
     message: string
   } | null>(null)
+
+  const [policyAnalysis, setPolicyAnalysis] = useState<string>("");
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [projectsLoading, setProjectsLoading] = useState(false);
 
   // 滚动到指定模块
   const scrollToSection = (sectionId: string) => {
@@ -94,7 +99,7 @@ export default function PolicyDetailPage({ params }: PolicyDetailProps) {
   }, [])
 
   useEffect(() => {
-    fetch(`/api/policies/${unwrappedParams.id}`)
+    fetch(`/api/policies/${id}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && data.data) {
@@ -112,7 +117,78 @@ export default function PolicyDetailPage({ params }: PolicyDetailProps) {
           })
         }
       })
-  }, [unwrappedParams.id])
+  }, [id])
+
+  useEffect(() => {
+    if (!policy?.id) return;
+    setPolicyAnalysis("");
+    setAnalysisError(null);
+    setAnalysisLoading(true);
+    setProjectsLoading(true);
+    fetch("http://47.94.55.173:8088/v1/chat-messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer app-yq8RC08xQU5OUnMMu5rO5itd",
+      },
+      body: JSON.stringify({
+        inputs: { policy_id: policy.id },
+        query: "start",
+        response_mode: "blocking",
+        conversation_id: "",
+        user: "wby",
+        files: [],
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.answer) {
+          console.log('政策解读 answer 字段:', data.answer);
+          // 提取“### 新闻解读”与“### 话术生成”之间内容
+          const match = data.answer.match(/### 新闻解读([\s\S]*?)### 话术生成/);
+          if (match && match[1]) {
+            setPolicyAnalysis(match[1].trim());
+          } else {
+            setPolicyAnalysis("未获取到政策解读内容。");
+          }
+
+          // 优化风格A/风格B/风格一/风格二提取逻辑
+          const styleAMatch = data.answer.match(/### ?(风格A|风格一)[：:]?[\s\S]*?(?:(?:话术[\n\r]+)|(?:\n\n)|(?:\r\n\r\n))([\s\S]*?)(?=### ?(风格B|风格二)|$)/);
+          const styleBMatch = data.answer.match(/### ?(风格B|风格二)[：:]?[\s\S]*?(?:(?:话术[\n\r]+)|(?:\n\n)|(?:\r\n\r\n))([\s\S]*)/);
+          let projects = [];
+          if (styleAMatch && styleAMatch[2]) {
+            projects.push({
+              id: "styleA",
+              name: "推荐话术1",
+              suitable: "",
+              requirements: "",
+              script: styleAMatch[2].trim(),
+            });
+          }
+          if (styleBMatch && styleBMatch[2]) {
+            projects.push({
+              id: "styleB",
+              name: "推荐话术2",
+              suitable: "",
+              requirements: "",
+              script: styleBMatch[2].trim(),
+            });
+          }
+          setPolicy((prev) => prev ? { ...prev, projects } : prev);
+        } else {
+          setPolicyAnalysis("未获取到政策解读内容。");
+          setPolicy((prev) => prev ? { ...prev, projects: [] } : prev);
+        }
+      })
+      .catch((err) => {
+        setAnalysisError("政策解读获取失败，请稍后重试。");
+        setPolicy((prev) => prev ? { ...prev, projects: [] } : prev);
+      })
+      .finally(() => {
+        setAnalysisLoading(false);
+        setProjectsLoading(false);
+      });
+  }, [policy?.id]);
 
   // 初始化分享文案
   useEffect(() => {
@@ -130,41 +206,30 @@ ${policy?.keyPoints
   // 复制话术
   const handleCopyScript = async (script: string, projectId: string) => {
     try {
-      await navigator.clipboard.writeText(script)
-      setCopiedScript(projectId)
-      setTimeout(() => setCopiedScript(null), 2000)
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(script)
+        setCopiedScript(projectId)
+        setTimeout(() => setCopiedScript(null), 2000)
+      } else {
+        // 兼容旧浏览器
+        const textarea = document.createElement('textarea')
+        textarea.value = script
+        textarea.style.position = 'fixed'
+        textarea.style.opacity = '0'
+        document.body.appendChild(textarea)
+        textarea.focus()
+        textarea.select()
+        document.execCommand('copy')
+        document.body.removeChild(textarea)
+        setCopiedScript(projectId)
+        setTimeout(() => setCopiedScript(null), 2000)
+      }
     } catch (err) {
-      console.error("复制失败:", err)
+      console.error('复制失败:', err)
     }
   }
 
-  // 在组件内添加高亮关键字的函数
-  const highlightKeywords = (text: string) => {
-    const keywords = [
-      "数字经济",
-      "政策",
-      "资金",
-      "项目",
-      "支持",
-      "建设",
-      "发展",
-      "申报",
-      "补贴",
-      "优惠",
-      "示范",
-      "试点",
-      "转型",
-      "升级",
-    ]
-    let highlightedText = text
-
-    keywords.forEach((keyword) => {
-      const regex = new RegExp(`(${keyword})`, "gi")
-      highlightedText = highlightedText.replace(regex, `<span class="text-blue-600 font-semibold text-base">$1</span>`)
-    })
-
-    return highlightedText
-  }
+  // 删除高亮关键词相关的函数和keywords数组
 
   const handleShare = async () => {
     console.log("🎉 分享按钮被点击了！")
@@ -207,12 +272,22 @@ ${policy?.keyPoints
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
   }
 
+  // 分享二维码弹窗逻辑
+  const [showQR, setShowQR] = useState(false);
+  const [qrUrl, setQrUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (showQR && typeof window !== 'undefined') {
+      const url = window.location.href;
+      QRCode.toDataURL(url).then(setQrUrl);
+    }
+  }, [showQR]);
+
   if (!policy) {
     return <div className="text-center py-16">加载中...</div>
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div>
       {/* 顶部导航 */}
       <header className="bg-white border-b sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center">
@@ -266,7 +341,7 @@ ${policy?.keyPoints
                   <span className="text-xs text-gray-500">{shareText.length}/200</span>
                 </div>
                 <Textarea
-                  value={shareText}
+                  value={shareText.replace(/\n{2,}/g, '\n').trim()}
                   onChange={(e) => setShareText(e.target.value)}
                   placeholder="编辑分享文案..."
                   className="min-h-[120px] resize-none text-sm"
@@ -293,8 +368,30 @@ ${policy?.keyPoints
                 </div>
               </div>
 
-              {/* 分享按钮 */}
+              {/* 二维码分享区域，仅PC端显示 */}
               <Button
+                onClick={() => setShowQR(true)}
+                className="w-full h-10 bg-yellow-300 hover:bg-yellow-400 text-gray-900 font-bold mt-2"
+              >
+                生成微信分享二维码
+              </Button>
+              {showQR && typeof window !== 'undefined' && (
+                <div style={{
+                  position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh',
+                  background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999
+                }}>
+                  <div style={{ background: '#fff', padding: 24, borderRadius: 8, textAlign: 'center' }}>
+                    <div style={{ marginBottom: 12 }}>微信扫码分享当前页面</div>
+                    {qrUrl && <img src={qrUrl} alt="二维码" style={{ width: 200, height: 200 }} />}
+                    <div>
+                      <Button onClick={() => setShowQR(false)} style={{ marginTop: 16 }}>关闭</Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 分享按钮 */}
+              {/* <Button
                 onClick={(e) => {
                   console.log("🖱️ 分享按钮点击事件", e.type)
                   handleShare()
@@ -310,7 +407,7 @@ ${policy?.keyPoints
                 ) : (
                   "一键分享到朋友圈"
                 )}
-              </Button>
+              </Button> */}
             </div>
           </div>
         </div>
@@ -361,7 +458,7 @@ ${policy?.keyPoints
       )}
 
       {/* 主体内容 */}
-      <main className="max-w-4xl mx-auto px-4 py-4">
+      <main className="max-w-4xl mx-auto px-4 py-4 min-h-screen bg-gray-50">
         {/* 政策内容和解读模块 */}
         <section id="policy-content" className="bg-white rounded-lg p-4 mb-4">
           <Tabs defaultValue="content" className="w-full">
@@ -430,52 +527,62 @@ ${policy?.keyPoints
 
             <TabsContent value="analysis" className="mt-4">
               <div className="space-y-3">
-                {policy.keyPoints.map((point, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="flex items-start gap-2"
-                  >
-                    <span className="text-blue-600 mt-0.5">•</span>
-                    <span className="text-sm text-gray-700">{point}</span>
-                  </motion.div>
-                ))}
+                {analysisLoading && <div className="text-gray-500 text-sm">政策解读生成中...</div>}
+                {analysisError && <div className="text-red-500 text-sm">{analysisError}</div>}
+                {!analysisLoading && !analysisError && policyAnalysis && (
+                  <div className="prose prose-sm max-w-none">
+                    <ReactMarkdown
+                      components={{
+                        strong: ({node, ...props}) => (
+                          <strong style={{ color: '#2563eb', fontWeight: 'bold', fontSize: '1.125rem' }} {...props} />
+                        ),
+                      }}
+                    >{policyAnalysis}</ReactMarkdown>
+                  </div>
+                )}
               </div>
             </TabsContent>
           </Tabs>
         </section>
 
         {/* 推荐项目及话术模块 */}
-        <section id="matching-projects" className="bg-white rounded-lg p-4 mb-4">
-          {policy.projects.length > 0 && (
+        <section id="matching-projects" className="bg-[#f8f9fa] rounded-lg p-4 mb-4">
+          {projectsLoading ? (
+            <div className="text-gray-400 text-center py-8 text-lg">推荐话术生成中...</div>
+          ) : policy.projects.length > 0 ? (
             <Tabs defaultValue={policy.projects[0].id} className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="w-full flex flex-row gap-4 bg-transparent p-2 mb-6">
                 {policy.projects.map((project, index) => (
-                  <TabsTrigger key={project.id} value={project.id} className="text-4xl font-medium">
+                  <TabsTrigger
+                    key={project.id}
+                    value={project.id}
+                    className="flex-1 text-2xl md:text-4xl font-bold py-4 rounded-xl bg-white shadow-sm transition min-w-0 data-[state=active]:bg-[#e8f0fe] data-[state=active]:text-[#2966d2] data-[state=active]:shadow-none"
+                  >
                     推荐话术{index + 1}
                   </TabsTrigger>
                 ))}
               </TabsList>
 
               {policy.projects.map((project, index) => (
-                <TabsContent key={project.id} value={project.id} className="mt-4">
+                <TabsContent key={project.id} value={project.id} className="mt-0">
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="border rounded-lg p-4"
+                    className="bg-[#f1f3f4] rounded-xl p-6 min-h-[80px] flex flex-col items-center shadow"
                   >
                     {/* 推荐话术 */}
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <p
-                        className="text-sm text-gray-700 leading-relaxed"
-                        dangerouslySetInnerHTML={{ __html: `"${highlightKeywords(project.script)}"` }}
-                      />
+                    <div className="w-full">
+                      <ReactMarkdown
+                        components={{
+                          strong: ({node, ...props}) => (
+                            <strong style={{ color: '#2563eb', fontWeight: 'bold', fontSize: '1.125rem' }} {...props} />
+                          ),
+                        }}
+                      >{project.script}</ReactMarkdown>
                     </div>
                     {/* 复制按钮移到框外 */}
-                    <div className="flex justify-end mt-3">
+                    <div className="flex justify-end mt-3 w-full">
                       <Button
                         size="sm"
                         variant="outline"
@@ -498,6 +605,8 @@ ${policy?.keyPoints
                 </TabsContent>
               ))}
             </Tabs>
+          ) : (
+            <div className="text-gray-400 text-center py-8 text-lg">暂无推荐话术</div>
           )}
         </section>
       </main>
