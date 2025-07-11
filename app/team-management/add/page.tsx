@@ -1,20 +1,35 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { useToast } from "@/hooks/use-toast"
-import { ArrowLeft, User, MapPin, Loader2, Plus, Trash2 } from "lucide-react"
-import { motion } from "framer-motion"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { ArrowLeft, User, MapPin, Loader2, Plus, Trash2 } from "lucide-react";
+import { motion } from "framer-motion";
 
 // 省份城市数据
 const PROVINCES_CITIES = {
-  上海市: ["黄浦区", "徐汇区", "长宁区", "静安区", "普陀区", "虹口区", "杨浦区", "浦东新区"],
+  上海市: [
+    "黄浦区",
+    "徐汇区",
+    "长宁区",
+    "静安区",
+    "普陀区",
+    "虹口区",
+    "杨浦区",
+    "浦东新区",
+  ],
   江苏省: [
     "南京市",
     "苏州市",
@@ -170,7 +185,18 @@ const PROVINCES_CITIES = {
     "怀化市",
     "娄底市",
   ],
-  陕西省: ["西安市", "铜川市", "宝鸡市", "咸阳市", "渭南市", "延安市", "汉中市", "榆林市", "安康市", "商洛市"],
+  陕西省: [
+    "西安市",
+    "铜川市",
+    "宝鸡市",
+    "咸阳市",
+    "渭南市",
+    "延安市",
+    "汉中市",
+    "榆林市",
+    "安康市",
+    "商洛市",
+  ],
   重庆市: [
     "万州区",
     "涪陵区",
@@ -190,32 +216,32 @@ const PROVINCES_CITIES = {
     "永川区",
     "南川区",
   ],
-}
+};
 
 // 职位列表
-const POSITIONS = ["商务经理", "商务专员", "商务助理", "区域总监"]
+const POSITIONS = ["商务经理", "商务专员", "商务助理", "区域总监"];
 
 interface RegionData {
-  province: string
-  cities: string[]
+  province: string;
+  cities: string[];
 }
 
 interface FormData {
-  name: string
-  phone: string
-  username: string
-  password: string
-  position: string
-  regions: RegionData[]
+  name: string;
+  phone: string;
+  username: string;
+  password: string;
+  position: string;
+  regions: RegionData[];
 }
 
 interface FormErrors {
-  name?: string
-  phone?: string
-  username?: string
-  password?: string
-  position?: string
-  regions?: string
+  name?: string;
+  phone?: string;
+  username?: string;
+  password?: string;
+  position?: string;
+  regions?: string;
 }
 
 export default function AddMemberPage() {
@@ -226,157 +252,169 @@ export default function AddMemberPage() {
     password: "",
     position: "",
     regions: [],
-  })
-  const [errors, setErrors] = useState<FormErrors>({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const router = useRouter()
-  const { toast } = useToast()
+  });
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
+  const { toast } = useToast();
 
   // 实时验证函数
   const validateField = (field: keyof FormData, value: any) => {
-    const newErrors = { ...errors }
+    const newErrors = { ...errors };
 
     switch (field) {
       case "name":
         if (!value.trim()) {
-          newErrors.name = "请输入姓名"
+          newErrors.name = "请输入姓名";
         } else if (value.trim().length < 2 || value.trim().length > 10) {
-          newErrors.name = "姓名长度应为2-10个字符"
+          newErrors.name = "姓名长度应为2-10个字符";
         } else {
-          delete newErrors.name
+          delete newErrors.name;
         }
-        break
+        break;
 
       case "phone":
         if (!value.trim()) {
-          newErrors.phone = "请输入手机号"
+          newErrors.phone = "请输入手机号";
         } else if (!/^1[3-9]\d{9}$/.test(value)) {
-          newErrors.phone = "请输入正确的11位手机号"
+          newErrors.phone = "请输入正确的11位手机号";
         } else {
-          delete newErrors.phone
+          delete newErrors.phone;
         }
-        break
+        break;
 
       case "username":
         if (!value.trim()) {
-          newErrors.username = "请输入用户名"
+          newErrors.username = "请输入用户名";
         } else if (value.trim().length < 3 || value.trim().length > 20) {
-          newErrors.username = "用户名长度应为3-20个字符"
+          newErrors.username = "用户名长度应为3-20个字符";
         } else {
-          delete newErrors.username
+          delete newErrors.username;
         }
-        break
+        break;
 
       case "password":
         if (!value.trim()) {
-          newErrors.password = "请输入密码"
+          newErrors.password = "请输入密码";
         } else if (value.trim().length < 6) {
-          newErrors.password = "密码长度不能少于6位"
+          newErrors.password = "密码长度不能少于6位";
         } else {
-          delete newErrors.password
+          delete newErrors.password;
         }
-        break
+        break;
 
       case "position":
         if (!value) {
-          newErrors.position = "请选择职位"
+          newErrors.position = "请选择职位";
         } else {
-          delete newErrors.position
+          delete newErrors.position;
         }
-        break
+        break;
 
       case "regions":
         if (value.length === 0) {
-          newErrors.regions = "请至少选择一个负责区域"
+          newErrors.regions = "请至少选择一个负责区域";
         } else {
-          const hasEmptyRegion = value.some((region: RegionData) => !region.province || region.cities.length === 0)
+          const hasEmptyRegion = value.some(
+            (region: RegionData) =>
+              !region.province || region.cities.length === 0
+          );
           if (hasEmptyRegion) {
-            newErrors.regions = "请完善所有区域的省份和城市选择"
+            newErrors.regions = "请完善所有区域的省份和城市选择";
           } else {
-            delete newErrors.regions
+            delete newErrors.regions;
           }
         }
-        break
+        break;
     }
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   // 表单验证
   const validateForm = () => {
-    const isNameValid = validateField("name", formData.name)
-    const isPhoneValid = validateField("phone", formData.phone)
-    const isUsernameValid = validateField("username", formData.username)
-    const isPasswordValid = validateField("password", formData.password)
-    const isPositionValid = validateField("position", formData.position)
-    const isRegionsValid = validateField("regions", formData.regions)
+    const isNameValid = validateField("name", formData.name);
+    const isPhoneValid = validateField("phone", formData.phone);
+    const isUsernameValid = validateField("username", formData.username);
+    const isPasswordValid = validateField("password", formData.password);
+    const isPositionValid = validateField("position", formData.position);
+    const isRegionsValid = validateField("regions", formData.regions);
 
-    return isNameValid && isPhoneValid && isUsernameValid && isPasswordValid && isPositionValid && isRegionsValid
-  }
+    return (
+      isNameValid &&
+      isPhoneValid &&
+      isUsernameValid &&
+      isPasswordValid &&
+      isPositionValid &&
+      isRegionsValid
+    );
+  };
 
   // 处理输入变化
   const handleInputChange = (field: keyof FormData, value: any) => {
     setFormData((prev) => {
-      const newData = { ...prev, [field]: value }
+      const newData = { ...prev, [field]: value };
 
       // 自动填充用户名和密码
       if (field === "phone" && value.length === 11) {
         if (!newData.username) {
-          newData.username = value
+          newData.username = value;
         }
         if (!newData.password && newData.name) {
-          const firstLetter = newData.name.charAt(0)
-          newData.password = firstLetter + value
+          const firstLetter = newData.name.charAt(0);
+          newData.password = firstLetter + value;
         }
       }
 
       if (field === "name" && value && newData.phone.length === 11) {
         if (!newData.password) {
-          const firstLetter = value.charAt(0)
-          newData.password = firstLetter + newData.phone
+          const firstLetter = value.charAt(0);
+          newData.password = firstLetter + newData.phone;
         }
       }
 
-      return newData
-    })
+      return newData;
+    });
 
     // 实时验证
-    setTimeout(() => validateField(field, value), 100)
-  }
+    setTimeout(() => validateField(field, value), 100);
+  };
 
   // 添加省份
   const addProvince = () => {
-    const newRegions = [...formData.regions, { province: "", cities: [] }]
-    setFormData((prev) => ({ ...prev, regions: newRegions }))
-  }
+    const newRegions = [...formData.regions, { province: "", cities: [] }];
+    setFormData((prev) => ({ ...prev, regions: newRegions }));
+  };
 
   // 删除省份
   const removeProvince = (index: number) => {
-    const newRegions = formData.regions.filter((_, i) => i !== index)
-    setFormData((prev) => ({ ...prev, regions: newRegions }))
-    validateField("regions", newRegions)
-  }
+    const newRegions = formData.regions.filter((_, i) => i !== index);
+    setFormData((prev) => ({ ...prev, regions: newRegions }));
+    validateField("regions", newRegions);
+  };
 
   // 更新省份
   const updateProvince = (index: number, province: string) => {
-    const newRegions = [...formData.regions]
-    newRegions[index] = { province, cities: [] }
-    setFormData((prev) => ({ ...prev, regions: newRegions }))
-    validateField("regions", newRegions)
-  }
+    const newRegions = [...formData.regions];
+    newRegions[index] = { province, cities: [] };
+    setFormData((prev) => ({ ...prev, regions: newRegions }));
+    validateField("regions", newRegions);
+  };
 
   // 处理城市选择
   const handleCityChange = (index: number, city: string, checked: boolean) => {
-    const newRegions = [...formData.regions]
+    const newRegions = [...formData.regions];
     if (checked) {
-      newRegions[index].cities = [...newRegions[index].cities, city]
+      newRegions[index].cities = [...newRegions[index].cities, city];
     } else {
-      newRegions[index].cities = newRegions[index].cities.filter((c) => c !== city)
+      newRegions[index].cities = newRegions[index].cities.filter(
+        (c) => c !== city
+      );
     }
-    setFormData((prev) => ({ ...prev, regions: newRegions }))
-    validateField("regions", newRegions)
-  }
+    setFormData((prev) => ({ ...prev, regions: newRegions }));
+    validateField("regions", newRegions);
+  };
 
   // 提交表单
   const handleSubmit = async () => {
@@ -385,45 +423,53 @@ export default function AddMemberPage() {
         title: "表单验证失败",
         description: "请检查表单信息",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
     try {
       // 模拟API调用
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
       toast({
         title: "添加成功",
         description: "成员添加成功",
         variant: "default",
-      })
+      });
 
-      router.push("/team-management")
+      router.push("/team-management");
     } catch (error) {
       toast({
         title: "添加失败",
         description: "添加失败，请重试",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   // 计算总选择数量
   const getTotalSelectedCount = () => {
-    return formData.regions.reduce((total, region) => total + region.cities.length, 0)
-  }
+    return formData.regions.reduce(
+      (total, region) => total + region.cities.length,
+      0
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* 页面头部 */}
       <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-10">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" className="p-2" onClick={() => router.back()}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="p-2"
+            onClick={() => router.back()}
+          >
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <h1 className="text-lg font-semibold text-gray-900">添加人员</h1>
@@ -433,7 +479,10 @@ export default function AddMemberPage() {
       {/* 表单内容 */}
       <div className="p-4 space-y-4">
         {/* 基本信息 */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
@@ -452,10 +501,14 @@ export default function AddMemberPage() {
                   value={formData.name}
                   onChange={(e) => handleInputChange("name", e.target.value)}
                   placeholder="请输入姓名（2-10个字符）"
-                  className={`mt-1 ${errors.name ? "border-red-500 focus:border-red-500" : ""}`}
+                  className={`mt-1 ${
+                    errors.name ? "border-red-500 focus:border-red-500" : ""
+                  }`}
                   maxLength={10}
                 />
-                {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
+                {errors.name && (
+                  <p className="text-xs text-red-500 mt-1">{errors.name}</p>
+                )}
               </div>
 
               {/* 手机号 */}
@@ -468,16 +521,20 @@ export default function AddMemberPage() {
                   value={formData.phone}
                   onChange={(e) => {
                     // 只允许输入数字
-                    const value = e.target.value.replace(/\D/g, "")
+                    const value = e.target.value.replace(/\D/g, "");
                     if (value.length <= 11) {
-                      handleInputChange("phone", value)
+                      handleInputChange("phone", value);
                     }
                   }}
                   placeholder="请输入11位手机号"
-                  className={`mt-1 ${errors.phone ? "border-red-500 focus:border-red-500" : ""}`}
+                  className={`mt-1 ${
+                    errors.phone ? "border-red-500 focus:border-red-500" : ""
+                  }`}
                   maxLength={11}
                 />
-                {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone}</p>}
+                {errors.phone && (
+                  <p className="text-xs text-red-500 mt-1">{errors.phone}</p>
+                )}
               </div>
 
               {/* 职位 */}
@@ -485,8 +542,17 @@ export default function AddMemberPage() {
                 <Label className="text-sm font-medium">
                   职位 <span className="text-red-500">*</span>
                 </Label>
-                <Select value={formData.position} onValueChange={(value) => handleInputChange("position", value)}>
-                  <SelectTrigger className={`mt-1 ${errors.position ? "border-red-500" : ""}`}>
+                <Select
+                  value={formData.position}
+                  onValueChange={(value) =>
+                    handleInputChange("position", value)
+                  }
+                >
+                  <SelectTrigger
+                    className={`mt-1 ${
+                      errors.position ? "border-red-500" : ""
+                    }`}
+                  >
                     <SelectValue placeholder="请选择职位" />
                   </SelectTrigger>
                   <SelectContent>
@@ -497,7 +563,9 @@ export default function AddMemberPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.position && <p className="text-xs text-red-500 mt-1">{errors.position}</p>}
+                {errors.position && (
+                  <p className="text-xs text-red-500 mt-1">{errors.position}</p>
+                )}
               </div>
 
               {/* 用户名 */}
@@ -508,11 +576,17 @@ export default function AddMemberPage() {
                 <Input
                   id="username"
                   value={formData.username}
-                  onChange={(e) => handleInputChange("username", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("username", e.target.value)
+                  }
                   placeholder="默认为手机号"
-                  className={`mt-1 ${errors.username ? "border-red-500 focus:border-red-500" : ""}`}
+                  className={`mt-1 ${
+                    errors.username ? "border-red-500 focus:border-red-500" : ""
+                  }`}
                 />
-                {errors.username && <p className="text-xs text-red-500 mt-1">{errors.username}</p>}
+                {errors.username && (
+                  <p className="text-xs text-red-500 mt-1">{errors.username}</p>
+                )}
               </div>
 
               {/* 密码 */}
@@ -524,18 +598,28 @@ export default function AddMemberPage() {
                   id="password"
                   type="password"
                   value={formData.password}
-                  onChange={(e) => handleInputChange("password", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("password", e.target.value)
+                  }
                   placeholder="默认为姓名首字母+手机号"
-                  className={`mt-1 ${errors.password ? "border-red-500 focus:border-red-500" : ""}`}
+                  className={`mt-1 ${
+                    errors.password ? "border-red-500 focus:border-red-500" : ""
+                  }`}
                 />
-                {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password}</p>}
+                {errors.password && (
+                  <p className="text-xs text-red-500 mt-1">{errors.password}</p>
+                )}
               </div>
             </CardContent>
           </Card>
         </motion.div>
 
         {/* 负责区域 */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -543,7 +627,12 @@ export default function AddMemberPage() {
                   <MapPin className="w-4 h-4" />
                   负责区域
                 </CardTitle>
-                <Button onClick={addProvince} size="sm" variant="outline" className="h-8 bg-transparent">
+                <Button
+                  onClick={addProvince}
+                  size="sm"
+                  variant="outline"
+                  className="h-8 bg-transparent"
+                >
                   <Plus className="w-3 h-3 mr-1" />
                   添加省份
                 </Button>
@@ -552,7 +641,10 @@ export default function AddMemberPage() {
             <CardContent>
               <div className="space-y-4">
                 {formData.regions.map((region, index) => (
-                  <div key={index} className="border border-gray-200 rounded-lg p-3">
+                  <div
+                    key={index}
+                    className="border border-gray-200 rounded-lg p-3"
+                  >
                     <div className="flex items-center justify-between mb-3">
                       <Label className="text-sm font-medium">省份选择</Label>
                       <Button
@@ -565,7 +657,10 @@ export default function AddMemberPage() {
                       </Button>
                     </div>
 
-                    <Select value={region.province} onValueChange={(value) => updateProvince(index, value)}>
+                    <Select
+                      value={region.province}
+                      onValueChange={(value) => updateProvince(index, value)}
+                    >
                       <SelectTrigger className="mb-3">
                         <SelectValue placeholder="请选择省份" />
                       </SelectTrigger>
@@ -580,23 +675,41 @@ export default function AddMemberPage() {
 
                     {region.province && (
                       <div>
-                        <Label className="text-sm font-medium mb-2 block">城市选择</Label>
+                        <Label className="text-sm font-medium mb-2 block">
+                          城市选择
+                        </Label>
                         <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
-                          {PROVINCES_CITIES[region.province as keyof typeof PROVINCES_CITIES]?.map((city) => (
-                            <div key={city} className="flex items-center space-x-2">
+                          {PROVINCES_CITIES[
+                            region.province as keyof typeof PROVINCES_CITIES
+                          ]?.map((city) => (
+                            <div
+                              key={city}
+                              className="flex items-center space-x-2"
+                            >
                               <Checkbox
                                 id={`${index}-${city}`}
                                 checked={region.cities.includes(city)}
-                                onCheckedChange={(checked) => handleCityChange(index, city, checked as boolean)}
+                                onCheckedChange={(checked) =>
+                                  handleCityChange(
+                                    index,
+                                    city,
+                                    checked as boolean
+                                  )
+                                }
                               />
-                              <Label htmlFor={`${index}-${city}`} className="text-xs cursor-pointer">
+                              <Label
+                                htmlFor={`${index}-${city}`}
+                                className="text-xs cursor-pointer"
+                              >
                                 {city}
                               </Label>
                             </div>
                           ))}
                         </div>
                         {region.cities.length > 0 && (
-                          <p className="text-xs text-gray-500 mt-2">已选 {region.cities.length} 个城市</p>
+                          <p className="text-xs text-gray-500 mt-2">
+                            已选 {region.cities.length} 个城市
+                          </p>
                         )}
                       </div>
                     )}
@@ -606,7 +719,9 @@ export default function AddMemberPage() {
                 {formData.regions.length === 0 && (
                   <div className="text-center py-8 text-gray-500">
                     <MapPin className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">暂无负责区域，请点击"添加省份"开始设置</p>
+                    <p className="text-sm">
+                      暂无负责区域，请点击"添加省份"开始设置
+                    </p>
                   </div>
                 )}
               </div>
@@ -616,14 +731,15 @@ export default function AddMemberPage() {
                 <div className="mt-4 pt-3 border-t border-gray-100">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600">
-                      已选：{formData.regions.length} 个省份，{getTotalSelectedCount()} 个城市
+                      已选：{formData.regions.length} 个省份，
+                      {getTotalSelectedCount()} 个城市
                     </span>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        setFormData((prev) => ({ ...prev, regions: [] }))
-                        validateField("regions", [])
+                        setFormData((prev) => ({ ...prev, regions: [] }));
+                        validateField("regions", []);
                       }}
                       className="text-xs text-gray-500 h-6 px-2"
                     >
@@ -633,7 +749,9 @@ export default function AddMemberPage() {
                 </div>
               )}
 
-              {errors.regions && <p className="text-xs text-red-500 mt-2">{errors.regions}</p>}
+              {errors.regions && (
+                <p className="text-xs text-red-500 mt-2">{errors.regions}</p>
+              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -641,7 +759,12 @@ export default function AddMemberPage() {
 
       {/* 固定底部保存按钮 */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
-        <Button onClick={handleSubmit} disabled={isSubmitting} className="w-full h-11 text-base font-medium" size="lg">
+        <Button
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+          className="w-full h-11 text-base font-medium"
+          size="lg"
+        >
           {isSubmitting ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -653,5 +776,5 @@ export default function AddMemberPage() {
         </Button>
       </div>
     </div>
-  )
+  );
 }
