@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { AppLayout } from "@/components/app-layout"
 import { FileText, Settings, ChevronLeft } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface Policy {
   id: string
@@ -121,6 +122,13 @@ const mockPolicies: Policy[] = [
   },
 ]
 
+function formatDate(date: string | Date) {
+  if (!date) return "-";
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(d.getTime())) return String(date);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
 function PolicyCard({ policy }: { policy: Policy }) {
   const router = useRouter()
 
@@ -145,7 +153,7 @@ function PolicyCard({ policy }: { policy: Policy }) {
         {/* 标题和查看详情按钮合并 */}
         <div className="flex items-start justify-between gap-4">
           <h3 className="text-xl font-bold text-slate-800 leading-tight tracking-wide flex-1">{policy.title}</h3>
-          {policy.status === "completed" && (
+          {/* {policy.status === "completed" && (
             <Button
               variant="outline"
               size="sm"
@@ -157,7 +165,7 @@ function PolicyCard({ policy }: { policy: Policy }) {
             >
               发现{policy.matchedProjects}个商机
             </Button>
-          )}
+          )} */}
         </div>
 
         {/* 来源和时间信息 - 移到标题下面 */}
@@ -165,7 +173,7 @@ function PolicyCard({ policy }: { policy: Policy }) {
           <div className="flex items-center gap-3">
             <span>{policy.source}</span>
             <span>•</span>
-            <span>{policy.publishDate.toLocaleDateString("zh-CN")}</span>
+            <span>{formatDate(policy.publishDate)}</span>
           </div>
           <span>{policy.timeAgo}</span>
         </div>
@@ -430,15 +438,40 @@ function InterestsManagementSheet({ open, onClose }: { open: boolean; onClose: (
 
 export default function PoliciesPage() {
   const router = useRouter()
-  const [policies, setPolicies] = useState<Policy[]>(mockPolicies)
+  const [policies, setPolicies] = useState<Policy[]>([])
   const [showFilter, setShowFilter] = useState(false)
   const [showInterestsManagement, setShowInterestsManagement] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   const [filters, setFilters] = useState({
     timeRange: "all",
     statusFilter: ["pending", "completed"],
     interests: [],
   })
+
+  useEffect(() => {
+    setLoading(true)
+    fetch("/api/policies")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.data)) {
+          const mapped = data.data.map((item: any) => ({
+            id: item.policy_id,
+            title: item.policy_title || "-",
+            source: item.issued_authority || "-",
+            publishDate: item.released_date ? new Date(item.released_date) : new Date(),
+            timeAgo: "", // 可根据需要计算
+            status: "completed", // 可根据需要调整
+            matchedProjects: 0, // 可根据需要调整
+            unread: false, // 可根据需要调整
+            category: item.category_name || "other",
+            salesPitch: item.policy_content ? item.policy_content.slice(0, 60) + "..." : "-",
+          }))
+          setPolicies(mapped)
+        }
+      })
+      .finally(() => setLoading(false))
+  }, [])
 
   const filteredPolicies = useMemo(() => {
     let filtered = [...policies]
@@ -530,22 +563,32 @@ export default function PoliciesPage() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <div className="space-y-3">
             <AnimatePresence>
-              {filteredPolicies.map((policy, index) => (
-                <motion.div
-                  key={policy.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <PolicyCard policy={policy} />
-                </motion.div>
-              ))}
+              {loading
+                ? Array.from({ length: 5 }, (_, idx) => idx).map((idx) => (
+                    <div key={idx} className="bg-white border border-gray-200 shadow-sm rounded-lg p-4">
+                      <Skeleton className="h-6 w-2/3 mb-4" />
+                      <Skeleton className="h-4 w-1/3 mb-2" />
+                      <Skeleton className="h-4 w-1/4 mb-2" />
+                      <Skeleton className="h-4 w-full mb-2" />
+                      <Skeleton className="h-4 w-5/6" />
+                    </div>
+                  ))
+                : filteredPolicies.map((policy, index) => (
+                    <motion.div
+                      key={policy.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      <PolicyCard policy={policy} />
+                    </motion.div>
+                  ))}
             </AnimatePresence>
           </div>
         </motion.div>
 
         {/* 空状态 */}
-        {filteredPolicies.length === 0 && (
+        {!loading && filteredPolicies.length === 0 && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16 glass-card">
             <FileText className="h-16 w-16 text-slate-400 mx-auto mb-6" />
             <p className="text-slate-500 mb-2 font-light text-lg">
