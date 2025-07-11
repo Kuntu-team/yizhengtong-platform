@@ -9,22 +9,27 @@ export async function GET(
     // 等待params解析
     const resolvedParams = await params;
     const { id } = resolvedParams;
-    // 执行原始SQL查询并返回所有字段
-    const result = await prisma.$queryRaw`
-      SELECT k.*, p.* 
-      FROM 
-        key_person_base_info k 
-      LEFT JOIN 
-        key_person_private_info p ON k.person_id = p.person_id 
-      WHERE k.person_id = ${id}
-    `;
 
-    if (!result || (Array.isArray(result) && result.length === 0)) {
+    // 1. 查找 key_person_base_info
+    const person = await prisma.key_person_base_info.findUnique({
+      where: { person_id: id },
+    });
+    if (!person) {
       return NextResponse.json(null, { status: 404 });
     }
 
-    // 返回原始数据，不进行字段转换
-    return NextResponse.json((result as unknown[])[0]);
+    // 2. 查找 key_person_private_info
+    const privateInfo = await prisma.key_person_private_info.findUnique({
+      where: { person_id: id },
+    });
+
+    // 3. 合并数据
+    const result = {
+      ...person,
+      ...privateInfo,
+    };
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Error fetching person data:', error);
     return NextResponse.json(

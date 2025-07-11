@@ -68,7 +68,7 @@ export default function VisualizationPage() {
   // 只在客户端生成二维码图片
   useEffect(() => {
     if (showQR && typeof window !== 'undefined') {
-      const url = window.location.href.replace('localhost', '192.168.30.48'); // 局域网IP
+      const url = window.location.href.replace('localhost', '172.18.0.6'); // 局域网IP
       QRCode.toDataURL(url).then(setQrUrl);
     }
   }, [showQR]);
@@ -79,35 +79,37 @@ export default function VisualizationPage() {
       const { data } = await res.json();
       // 适配后端数据为 Region 结构
       const regions: Region[] = [];
-      data.forEach((item: any) => {
-        // 省份
-        if (item.province_code && !regions.some(r => r.region_code === item.province_code)) {
-          regions.push({
-            region_code: item.province_code,
-            region_name: item.province_cn,
-            region_level: '1',
-            parent_code: null,
-          });
-        }
-        // 城市
-        if (item.city_code && !regions.some(r => r.region_code === item.city_code)) {
-          regions.push({
-            region_code: item.city_code,
-            region_name: item.city_cn,
-            region_level: '2',
-            parent_code: item.province_code,
-          });
-        }
-        // 区县
-        if (item.district_code && !regions.some(r => r.region_code === item.district_code)) {
-          regions.push({
-            region_code: item.district_code,
-            region_name: item.district_cn,
-            region_level: '3',
-            parent_code: item.city_code,
-          });
-        }
-      });
+      if (Array.isArray(data)) {
+        data.forEach((item: any) => {
+          // 省份
+          if (item.province_code && !regions.some(r => r.region_code === item.province_code)) {
+            regions.push({
+              region_code: item.province_code,
+              region_name: item.province_cn,
+              region_level: '1',
+              parent_code: null,
+            });
+          }
+          // 城市
+          if (item.city_code && !regions.some(r => r.region_code === item.city_code)) {
+            regions.push({
+              region_code: item.city_code,
+              region_name: item.city_cn,
+              region_level: '2',
+              parent_code: item.province_code,
+            });
+          }
+          // 区县
+          if (item.district_code && !regions.some(r => r.region_code === item.district_code)) {
+            regions.push({
+              region_code: item.district_code,
+              region_name: item.district_cn,
+              region_level: '3',
+              parent_code: item.city_code,
+            });
+          }
+        });
+      }
       setRegions(regions);
     }
     fetchRegions();
