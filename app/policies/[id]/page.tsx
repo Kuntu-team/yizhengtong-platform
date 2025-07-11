@@ -143,7 +143,7 @@ export default function PolicyDetailPage() {
       .then((res) => res.json())
       .then((data) => {
         if (data && data.answer) {
-          console.log('政策解读 answer 字段:', data.answer);
+          // console.log('政策解读 answer 字段:', data.answer);
           // 提取“### 新闻解读”与“### 话术生成”之间内容
           const match = data.answer.match(/### 新闻解读([\s\S]*?)### 话术生成/);
           if (match && match[1]) {
@@ -154,7 +154,8 @@ export default function PolicyDetailPage() {
 
           // 优化风格A/风格B/风格一/风格二提取逻辑
           const styleAMatch = data.answer.match(/### ?(风格A|风格一)[：:]?[\s\S]*?(?:(?:话术[\n\r]+)|(?:\n\n)|(?:\r\n\r\n))([\s\S]*?)(?=### ?(风格B|风格二)|$)/);
-          const styleBMatch = data.answer.match(/### ?(风格B|风格二)[：:]?[\s\S]*?(?:(?:话术[\n\r]+)|(?:\n\n)|(?:\r\n\r\n))([\s\S]*)/);
+          // 优化风格B正则，容错乱码或多余字符
+          const styleBMatch = data.answer.match(/###\s*[^\w\u4e00-\u9fa5]{0,3}?(风格B|风格二)[：:]?[\s\S]*?(?:(?:话术[\n\r]+)|(?:\n\n)|(?:\r\n\r\n))([\s\S]*)/);
           let projects = [];
           if (styleAMatch && styleAMatch[2]) {
             projects.push({
