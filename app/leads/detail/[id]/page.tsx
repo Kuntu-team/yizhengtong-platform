@@ -785,7 +785,8 @@ export default function DetailPage({
                           </div>
                           <div>
                             <div className="font-medium text-base text-gray-900">
-                              {material.title}
+                              {/* {material.title} */}
+                              重点项目投资分析报告
                             </div>
                             <div className="text-sm text-gray-500">
                               {material.type} • 预计{material.estimatedSize}
