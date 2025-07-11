@@ -6,6 +6,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Clock, User } from "lucide-react";
+import { useRouter } from "next/navigation";
+import axios from "axios";
 
 interface UserInfo {
   id: string;
@@ -21,60 +23,91 @@ interface UserInfo {
 }
 
 interface NewsItem {
-  id: string
-  title: string
-  summary: string
-  time: string
-  leader: string
-  tags: string
-  source: string
-  region: string
-  category: string
+  id: string;
+  title: string;
+  summary: string;
+  time: string;
+  leader: string;
+  tags: string;
+  source: string;
+  region: string;
+  category: string;
 }
 
 export default function HomePage() {
-  const [user, setUser] = useState<UserInfo | null>(null)
-  const [currentTime, setCurrentTime] = useState(new Date())
-  const [newsData, setNewsData] = useState<NewsItem[]>([])
-  const [total, setTotal] = useState(0)
-  const [page, setPage] = useState(1)
-  const pageSize = 10
-
+  const [user, setUser] = useState<UserInfo | null>(null);
+  const [userYk, setUserYk] = useState<any>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [newsData, setNewsData] = useState<NewsItem[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
+  const router = useRouter();
+  const [itemsCount, setItemsCount] = useState(0);
   useEffect(() => {
-    const userInfo = typeof window !== 'undefined' ? localStorage.getItem("userInfo") : null
-    if (userInfo) {
-      const userData = JSON.parse(userInfo);
-      setUser(userData);
-    } else {
-      const defaultUser = {
-        id: "default",
-        name: "王商务",
-        phone: "13800138000",
-        role: "商务经理",
-        employeeId: "EMP001",
-        team: "华东销售团队",
-        manager: "李总监",
-        regions: ["上海市", "江苏省", "浙江省"],
-        lastLoginTime: Date.now(),
-        lastLoginLocation: "上海市",
-      };
-      setUser(defaultUser);
-      localStorage.setItem("userInfo", JSON.stringify(defaultUser));
+    fetchData();
+    // 安全地获取localStorage中的数据
+    if (typeof window !== "undefined") {
+      // 获取userInfo
+      const userInfo = localStorage.getItem("userInfo");
+      if (userInfo) {
+        const userData = JSON.parse(userInfo);
+        setUser(userData);
+      } else {
+        const defaultUser = {
+          id: "default",
+          name: "王商务",
+          phone: "13800138000",
+          role: "商务经理",
+          employeeId: "EMP001",
+          team: "华东销售团队",
+          manager: "李总监",
+          regions: ["上海市", "江苏省", "浙江省"],
+          lastLoginTime: Date.now(),
+          lastLoginLocation: "上海市",
+        };
+        setUser(defaultUser);
+        localStorage.setItem("userInfo", JSON.stringify(defaultUser));
+      }
+
+      // 获取user_yk
+      const userYkData = localStorage.getItem("user_yk");
+      if (userYkData) {
+        try {
+          const parsedUserYk = JSON.parse(userYkData);
+          setUserYk(parsedUserYk);
+        } catch (error) {
+          console.error("解析user_yk失败:", error);
+          setUserYk({ business_person_name: "用户" });
+        }
+      } else {
+        setUserYk({ business_person_name: "用户" });
+      }
     }
+
     const timer = setInterval(() => {
-      setCurrentTime(new Date())
-    }, 1000)
-    return () => clearInterval(timer)
-  }, [])
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     fetch(`/api/business-person-news?page=${page}&pageSize=${pageSize}`)
-      .then(res => res.json())
-      .then(res => {
-        setNewsData(res.data || [])
-        setTotal(res.total || 0)
-      })
-  }, [page])
+      .then((res) => res.json())
+      .then((res) => {
+        setNewsData(res.data || []);
+        setTotal(res.total || 0);
+      });
+  }, [page]);
+  const fetchData = async () => {
+    try {
+      const response = await axios.get("/api/sales-lead");
+      console.log(response.data);
+      setItemsCount(response.data.length);
+    } catch (error) {
+      console.log("请求失败:", error);
+    }
+  };
 
   // 获取问候语
   const getGreeting = () => {
@@ -120,9 +153,11 @@ export default function HomePage() {
                     transition={{ delay: 0.3, duration: 0.6 }}
                   >
                     <h1 className="text-2xl font-light text-gray-900 tracking-tight">
-                      欢迎回来，曾春梅，你有
+                      欢迎回来，
+                      {userYk?.business_person_name || "用户"}
+                      ，你有
                       <span className="text-5xl font-medium text-red-500">
-                        8
+                        {itemsCount}
                       </span>
                       条新的任内动态
                     </h1>
@@ -157,8 +192,12 @@ export default function HomePage() {
               <CardContent className="px-6 py-6">
                 <div className="flex justify-between items-center mb-2">
                   <div>
-                    <h2 className="text-lg font-medium text-gray-900 tracking-wide">关注领导动态</h2>
-                    <p className="text-xs text-gray-500 mb-1">当前仅展示近一个月内的关注领导动态</p>
+                    <h2 className="text-lg font-medium text-gray-900 tracking-wide">
+                      关注领导动态
+                    </h2>
+                    <p className="text-xs text-gray-500 mb-1">
+                      当前仅展示近一个月内的关注领导动态
+                    </p>
                   </div>
                   <Badge variant="outline" className="text-xs font-light">
                     {total} 条更新
@@ -173,6 +212,9 @@ export default function HomePage() {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.4 + index * 0.1, duration: 0.5 }}
                       className="border-l-2 border-blue-100 pl-4 py-3 hover:border-blue-300 transition-colors duration-200 cursor-pointer"
+                      onClick={() => {
+                        router.push(`/leads/detail/${news.id}`);
+                      }}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
@@ -189,10 +231,17 @@ export default function HomePage() {
                             </div>
                             <div className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
-                              <span className="font-light">{news.time ? new Date(news.time).toLocaleDateString() : ''}</span>
+                              <span className="font-light">
+                                {news.time
+                                  ? new Date(news.time).toLocaleDateString()
+                                  : ""}
+                              </span>
                             </div>
                             {news.tags && (
-                              <Badge variant="secondary" className="text-xs font-light bg-blue-100 text-blue-600 hover:text-black transition-colors duration-200">
+                              <Badge
+                                variant="secondary"
+                                className="text-xs font-light bg-blue-100 text-blue-600 hover:text-black transition-colors duration-200"
+                              >
                                 {news.tags}
                               </Badge>
                             )}
@@ -220,7 +269,9 @@ export default function HomePage() {
                     >
                       上一页
                     </button>
-                    <span className="px-2 text-sm">{page} / {Math.ceil(total / pageSize)}</span>
+                    <span className="px-2 text-sm">
+                      {page} / {Math.ceil(total / pageSize)}
+                    </span>
                     <button
                       className="px-3 py-1 mx-1 border rounded disabled:opacity-50"
                       onClick={() => setPage(page + 1)}
@@ -230,7 +281,7 @@ export default function HomePage() {
                     </button>
                   </div>
                 )}
-                 </CardContent>
+              </CardContent>
             </Card>
           </motion.div>
         </div>
