@@ -1,15 +1,33 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema", "relationJoins"]
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  schemas  = ["front_dev", "public"]
 }
 
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model user {
+  id               Int      @id @default(autoincrement())
+  username         String   @unique(map: "username") @db.VarChar(50)
+  password         String   @db.VarChar(255)
+  role             String?  @default(dbgenerated("USER")) @db.VarChar(20)
+  created_time     DateTime @default(now()) @db.Timestamp(6)
+  updated_time     DateTime @default(now()) @db.Timestamp(6)
+  employee_id      String?  @db.VarChar(255)
+  supervisor       String?  @db.VarChar(255)
+  team             String?  @db.VarChar(255)
+  responsible_area String?  @db.VarChar(255)
+
+  @@schema("front_dev")
+}
+
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model business_manager_region_info {
+  id                   Int       @id @default(autoincrement())
   business_person_id   String?   @db.VarChar(36)
   business_person_name String?   @db.VarChar(50)
   region_code          String?   @db.VarChar(20)
@@ -22,7 +40,7 @@ model business_manager_region_info {
   created_time         DateTime  @default(now()) @db.Timestamp(6)
   updated_time         DateTime  @default(now()) @db.Timestamp(6)
 
-  @@ignore
+  @@schema("public")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -34,7 +52,7 @@ model business_person_base_info {
   gender               String?   @db.Char(1)
   department           String?   @db.VarChar(100)
   position             String?   @db.VarChar(100)
-  phone_number         String?   @db.VarChar(20)
+  phone_number         String?   @unique(map: "phone_number") @db.VarChar(20)
   email                String?   @db.VarChar(100)
   position_status      String?   @default("1") @db.Char(1)
   hire_date            DateTime? @db.Date
@@ -43,66 +61,114 @@ model business_person_base_info {
   data_status          String?   @default("1") @db.Char(1)
   created_time         DateTime  @default(now()) @db.Timestamp(6)
   updated_time         DateTime  @default(now()) @db.Timestamp(6)
+  password             String?   @db.VarChar(255)
+
+  @@schema("public")
 }
 
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model dim_dept_position_code {
+  id              Int     @id @default(autoincrement())
+  department_code String? @db.VarChar(20)
+  department      String? @db.VarChar(500)
+  position_code   String? @db.VarChar(20)
+  position        String? @db.VarChar(500)
+
+  @@schema("public")
+}
+
 model dim_region_code {
+  id           Int     @id @default(autoincrement())
   region_code  String? @db.VarChar(20)
   region_name  String? @db.VarChar(500)
   region_level String? @db.Char(1)
   parent_code  String? @db.VarChar(20)
   parent_cn    String? @db.VarChar(500)
 
+  @@schema("public")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model dim_region_code_dh {
+  province_code String? @db.VarChar
+  province_cn   String? @db.VarChar
+  city_code     String? @db.VarChar(20)
+  city_cn       String? @db.VarChar(500)
+  district_code String? @db.VarChar(20)
+  district_cn   String? @db.VarChar(500)
+
   @@ignore
+  @@schema("public")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model key_person_base_info {
-  person_id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  person_name         String   @db.VarChar(100)
-  department          String?  @db.VarChar(100)
-  position            String?  @db.VarChar(100)
-  leadership_division String?
-  person_desc         String?
-  province_code       String?  @db.VarChar(10)
-  province_cn         String?  @db.VarChar(50)
-  city_code           String?  @db.VarChar(10)
-  city_cn             String?  @db.VarChar(50)
-  district_code       String?  @db.VarChar(10)
-  district_cn         String?  @db.VarChar(50)
-  office_phone        String?  @db.VarChar(20)
-  office_address      String?
-  public_email        String?  @db.VarChar(100)
-  work_experience     String?
-  person_photo_url    String?  @db.VarChar(500)
-  ancestral_home      String?  @db.VarChar(100)
-  ethnic_group        String?  @db.VarChar(100)
-  gender              String?  @db.Char(1)
-  birth_date          String?  @db.VarChar(20)
-  graduate_school     String?  @db.VarChar(100)
-  baike_url           String?  @db.VarChar(500)
-  data_status         String?  @default("1") @db.Char(1)
-  created_time        DateTime @default(now()) @db.Timestamp(6)
-  updated_time        DateTime @default(now()) @db.Timestamp(6)
+  person_id                  String                       @id @db.VarChar(36)
+  person_name                String                       @db.VarChar(100)
+  department_code            String?                      @db.VarChar(20)
+  department                 String?                      @db.VarChar(100)
+  position_code              String?                      @db.VarChar(20)
+  position                   String?                      @db.VarChar(100)
+  leadership_division        String?
+  person_desc                String?
+  region_code                String?                      @db.VarChar(10)
+  region_cn                  String?                      @db.VarChar(100)
+  region_level               String?                      @db.Char(1)
+  province_code              String?                      @db.VarChar(10)
+  province_cn                String?                      @db.VarChar(100)
+  city_code                  String?                      @db.VarChar(10)
+  city_cn                    String?                      @db.VarChar(100)
+  district_code              String?                      @db.VarChar(10)
+  district_cn                String?                      @db.VarChar(100)
+  office_phone               String?                      @db.VarChar(20)
+  office_address             String?
+  public_email               String?                      @db.VarChar(100)
+  work_experience            String?
+  person_photo_url           String?                      @db.VarChar(500)
+  ancestral_home             String?                      @db.VarChar(100)
+  ethnic_group               String?                      @db.VarChar(100)
+  gender                     String?                      @db.Char(1)
+  birth_date                 String?                      @db.VarChar(20)
+  graduate_school            String?                      @db.VarChar(100)
+  baike_url                  String?                      @db.VarChar(500)
+  data_status                String?                      @default("1") @db.Char(1)
+  created_time               DateTime                     @default(now()) @db.Timestamp(6)
+  updated_time               DateTime                     @default(now()) @db.Timestamp(6)
+  wby_business_person_follow wby_business_person_follow[]
+
+  @@schema("public")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model key_person_news {
-  news_id      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  new_title    String    @db.VarChar(500)
-  new_url      String    @db.VarChar(500)
-  new_content  String    @db.VarChar(500)
-  new_time     DateTime? @db.Timestamp(6)
-  new_source   String    @db.VarChar(100)
-  person_id    String?   @db.VarChar(36)
-  data_status  String?   @default("1") @db.Char(1)
-  created_time DateTime  @default(now()) @db.Timestamp(6)
-  updated_time DateTime  @default(now()) @db.Timestamp(6)
+  news_id            String    @id @db.VarChar(36)
+  news_title         String    @db.VarChar(500)
+  news_url           String    @db.VarChar(500)
+  news_content       String    @db.VarChar(500)
+  news_time          DateTime? @db.Timestamp(6)
+  news_source        String    @db.VarChar(100)
+  news_region_code   String?   @db.VarChar(10)
+  news_region_cn     String?   @db.VarChar(100)
+  news_region_level  String?   @db.Char(1)
+  news_province_code String?   @db.VarChar(10)
+  news_province_cn   String?   @db.VarChar(100)
+  news_city_code     String?   @db.VarChar(10)
+  news_city_cn       String?   @db.VarChar(100)
+  news_district_code String?   @db.VarChar(10)
+  news_district_cn   String?   @db.VarChar(100)
+  person_id          String?   @db.VarChar(36)
+  data_status        String?   @default("1") @db.Char(1)
+  created_time       DateTime  @default(now()) @db.Timestamp(6)
+  updated_time       DateTime  @default(now()) @db.Timestamp(6)
+
+  @@schema("public")
 }
 
-/// We could not retrieve columns for the underlying table. Either it has none or you are missing rights to see them. Please check your privileges.
-// model key_person_news_tags {
-// }
+model key_person_news_tags {
+  news_id String  @id @db.VarChar(255)
+  tags    String?
+
+  @@schema("public")
+}
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model key_person_private_info {
@@ -121,20 +187,27 @@ model key_person_private_info {
   data_status          String?  @default("1") @db.Char(1)
   created_time         DateTime @default(now()) @db.Timestamp(6)
   updated_time         DateTime @default(now()) @db.Timestamp(6)
+
+  @@schema("public")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model policies_info {
-  policy_id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  policy_id           String   @id @db.VarChar(36)
   policy_title        String?
   policy_content      String?
   policy_url          String?  @db.VarChar(500)
   policy_level        String?  @db.VarChar(10)
   policy_code         String?  @db.VarChar(100)
+  region_code         String?  @db.VarChar(10)
+  region_cn           String?  @db.VarChar(100)
+  region_level        String?  @db.Char(1)
   province_code       String?  @db.VarChar(20)
   province_cn         String?  @db.VarChar(100)
   city_code           String?  @db.VarChar(20)
   city_cn             String?  @db.VarChar(100)
+  district_code       String?  @db.VarChar(10)
+  district_cn         String?  @db.VarChar(100)
   category_id         String?  @db.VarChar(20)
   category_name       String?  @db.VarChar(100)
   theme_category_id   String?  @db.VarChar(20)
@@ -148,11 +221,13 @@ model policies_info {
   data_status         String?  @default("1") @db.Char(1)
   created_time        DateTime @default(now()) @db.Timestamp(6)
   updated_time        DateTime @default(now()) @db.Timestamp(6)
+
+  @@schema("public")
 }
 
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model region_special_bond_stats {
+  id             Int      @id @default(autoincrement())
   region_code    String?  @db.VarChar(20)
   region_name    String?  @db.VarChar(500)
   region_level   String?  @db.Char(1)
@@ -162,5 +237,52 @@ model region_special_bond_stats {
   project_amount BigInt?
   issued_amount  Decimal? @db.Decimal(10, 2)
 
-  @@ignore
+  @@schema("public")
+}
+
+model wby_business_person_follow {
+  follow_id            String               @id(map: "business_person_follow_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  followed_person_id   String               @db.VarChar(50)
+  department_code      String               @db.VarChar(20)
+  follow_time          DateTime             @default(now()) @db.Timestamp(6)
+  is_active            Boolean              @default(true)
+  business_person_id   String               @db.VarChar(36)
+  key_person_base_info key_person_base_info @relation(fields: [followed_person_id], references: [person_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_followed_person")
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model yk_internal_projects {
+  project_id               Int      @id @default(autoincrement())
+  project_name             String   @db.VarChar(250)
+  total_investment         String?  @db.VarChar(250)
+  project_type             String?  @db.VarChar(100)
+  project_field_name       String?  @db.VarChar(100)
+  project_difficulty       String?
+  project_plan             String?
+  project_proposal_content String?
+  construction_content     String?
+  application_advice       String?
+  issued_result            String?  @db.VarChar(250)
+  income_source            String?  @db.VarChar(250)
+  capital_source           String?  @db.VarChar(250)
+  client_department        String?  @db.VarChar(250)
+  client_type              String?  @db.VarChar(250)
+  service_scope            String?  @db.VarChar(250)
+  project_date             String?
+  project_address          String?
+  project_result           String?  @db.VarChar(250)
+  project_amount           String?  @db.VarChar(250)
+  province_code            String?  @db.VarChar(10)
+  province_cn              String?  @db.VarChar(50)
+  city_code                String?  @db.VarChar(10)
+  city_cn                  String?  @db.VarChar(50)
+  district_code            String?  @db.VarChar(10)
+  district_cn              String?  @db.VarChar(50)
+  data_status              String?  @default("1") @db.Char(1)
+  created_time             DateTime @default(now()) @db.Timestamp(6)
+  updated_time             DateTime @default(now()) @db.Timestamp(6)
+
+  @@schema("public")
 }

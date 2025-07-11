@@ -5,23 +5,23 @@
 @layer base {
   :root {
     /* Apple风格配色方案 */
-    --background: 248 250 252;
+    --background: 239 246 255;
     --foreground: 15 23 42;
     --card: 255 255 255;
     --card-foreground: 15 23 42;
-    --popover: 255 255 255;
+    --popover: 0 0 255;
     --popover-foreground: 15 23 42;
     --primary: 59 130 246;
     --primary-foreground: 248 250 252;
     --secondary: 241 245 249;
-    --secondary-foreground: 51 65 85;
-    --muted: 248 250 252;
+    --secondary-foreground: 37 99 235;
+    --muted: 255 255 255;
     --muted-foreground: 100 116 139;
-    --accent: 241 245 249;
-    --accent-foreground: 51 65 85;
+    --accent: 239 246 255;
+    --accent-foreground: 0 0 0;
     --destructive: 239 68 68;
     --destructive-foreground: 248 250 252;
-    --border: 226 232 240;
+    --border: 229 231 235;
     --input: 226 232 240;
     --ring: 59 130 246;
     --radius: 0.75rem;

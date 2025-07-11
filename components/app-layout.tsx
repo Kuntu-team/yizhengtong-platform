@@ -1,93 +1,101 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState, useEffect } from "react"
-import { useRouter, usePathname } from "next/navigation"
-import Link from "next/link"
-import { NotificationDropdown } from "@/components/notification-dropdown"
-import { useToast } from "@/hooks/use-toast"
-import { LogOut, User, Users } from "lucide-react"
-import { motion } from "framer-motion"
+import type React from "react";
+import { useState, useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
+import { NotificationDropdown } from "@/components/notification-dropdown";
+import { useToast } from "@/hooks/use-toast";
+import { LogOut, User, Users } from "lucide-react";
+import { motion } from "framer-motion";
+import Cookies from "js-cookie";
 
 interface UserInfo {
-  id: string
-  name: string
-  phone: string
-  role: string
-  employeeId: string
-  team: string
-  manager: string
-  regions: string[]
-  lastLoginTime: number
-  lastLoginLocation: string
+  id: string;
+  name: string;
+  phone: string;
+  role: string;
+  employeeId: string;
+  team: string;
+  manager: string;
+  regions: string[];
+  lastLoginTime: number;
+  lastLoginLocation: string;
 }
 
 interface AppLayoutProps {
-  children: React.ReactNode
-  hideNavigation?: boolean
+  children: React.ReactNode;
+  hideNavigation?: boolean;
 }
 
-export function AppLayout({ children, hideNavigation = false }: AppLayoutProps) {
-  const [user, setUser] = useState<UserInfo | null>(null)
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const router = useRouter()
-  const pathname = usePathname()
-  const { toast } = useToast()
+export function AppLayout({
+  children,
+  hideNavigation = false,
+}: AppLayoutProps) {
+  const [user, setUser] = useState<UserInfo | null>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+  const { toast } = useToast();
 
-  const isSubPage = pathname !== "/" || hideNavigation
+  const isSubPage = pathname !== "/" || hideNavigation;
 
   useEffect(() => {
-    const userInfo = localStorage.getItem("userInfo")
+    const userInfo = localStorage.getItem("userInfo");
     if (userInfo) {
-      const userData = JSON.parse(userInfo)
-      setUser(userData)
+      const userData = JSON.parse(userInfo);
+      setUser(userData);
     }
-  }, [])
+  }, []);
 
   const handleLogout = () => {
-    localStorage.clear()
-    setIsMenuOpen(false)
-    router.push("/login")
+    localStorage.clear();
+    const allCookies = Cookies.get();
+    Object.keys(allCookies).forEach((key) => {
+      Cookies.remove(key, { path: "/" });
+    });
+    setIsMenuOpen(false);
+    router.push("/login");
     toast({
       description: "已退出登录",
-    })
-  }
+    });
+  };
 
   const handleProfileClick = () => {
-    setIsMenuOpen(false)
-    router.push("/profile")
-  }
+    setIsMenuOpen(false);
+    router.push("/profile");
+  };
 
   const handleTeamManagementClick = () => {
-    setIsMenuOpen(false)
-    router.push("/team-management")
-  }
+    setIsMenuOpen(false);
+    router.push("/team-management");
+  };
 
   const handleHomeClick = () => {
-    router.push("/")
-  }
+    router.push("/");
+  };
 
   const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen)
-  }
+    setIsMenuOpen(!isMenuOpen);
+  };
 
   // 点击外部关闭菜单
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Element
+      const target = event.target as Element;
       if (!target.closest(".user-menu-container")) {
-        setIsMenuOpen(false)
+        setIsMenuOpen(false);
       }
-    }
+    };
 
     if (isMenuOpen) {
-      document.addEventListener("click", handleClickOutside)
+      document.addEventListener("click", handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener("click", handleClickOutside)
-    }
-  }, [isMenuOpen])
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, [isMenuOpen]);
 
   return (
     <div className="min-h-screen bg-business-gray-50">
@@ -194,5 +202,5 @@ export function AppLayout({ children, hideNavigation = false }: AppLayoutProps) 
       {/* 页面内容 */}
       <main className={isSubPage ? "" : "pt-20"}>{children}</main>
     </div>
-  )
+  );
 }

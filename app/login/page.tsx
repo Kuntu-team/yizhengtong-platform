@@ -1,64 +1,91 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, use } from "react";
+import { useRouter } from "next/navigation";
+import axios from "axios";
+import { message } from "antd";
+import Cookies from "js-cookie";
 
 export default function Login() {
-  const [username, setUsername] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const router = useRouter()
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const [phone_number, setPhoneNumber] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const router = useRouter();
+  useEffect(() => {
+    // const fetchDetail = async () => {
+    //   const res = await axios.get("/api/users");
+    //   console.log(res.data);
+    // };
+    // fetchDetail();
+    const allCookies = Cookies.get();
+    Object.keys(allCookies).forEach((key) => {
+      Cookies.remove(key, { path: "/" });
+    });
+  }, []);
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError("");
+    if (phone_number.trim() === "" || password.trim() === "") {
+      setError("手机号和密码不能为空");
+      return;
+    }
 
     try {
-      const res = await fetch("/api/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username, password }),
-      })
+      const res = await axios.post("/api/login", { phone_number, password });
 
-      if (res.ok) {
-        // Reset the form
-        setUsername("")
-        setPassword("")
-        router.push("/dashboard")
+      if (res.data.token) {
+        // 弹出登录成功提示
+        message.success("登录成功！");
+        router.push("/");
+        // 24小时过期
+        document.cookie = `token_yk=${res.data.token}; path=/; max-age=86400`;
+        document.cookie = `business_person_id=${res.data.user.business_person_id}; path=/; max-age=86400`;
+
+        localStorage.setItem("user_yk", JSON.stringify(res.data.user));
+        setError("");
+        setPhoneNumber("");
+        setPassword("");
       } else {
         // Handle errors
-        const errorData = await res.json()
-        setError(errorData.message || "Invalid Credentials")
+        const errorData = res.data;
+        setError(errorData.message || "Invalid Credentials");
       }
-    } catch (error) {
-      console.error("Login failed:", error)
-      setError("Login failed. Please try again.")
+    } catch (error: any) {
+      // console.error("Login failed:", error)
+      setError("用户名或密码错误，请重试。");
     }
-  }
+  };
 
   return (
     <div className="flex items-center justify-center h-screen bg-gray-100">
       <div className="bg-white p-8 rounded shadow-md w-96">
-        <h2 className="text-2xl font-semibold mb-4 text-center">Welcome to 亿政通</h2>
+        <h2 className="text-2xl font-semibold mb-4 text-center">
+          Welcome to 亿政通
+        </h2>
         {error && <div className="text-red-500 mb-4">{error}</div>}
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label htmlFor="username" className="block text-gray-700 text-sm font-bold mb-2">
-              Username:
+            <label
+              htmlFor="phone_number"
+              className="block text-gray-700 text-sm font-bold mb-2"
+            >
+              手机号:
             </label>
             <input
               type="text"
-              id="username"
+              id="phone_number"
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Username"
+              value={phone_number}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              placeholder="请输入手机号"
             />
           </div>
           <div className="mb-6">
-            <label htmlFor="password" className="block text-gray-700 text-sm font-bold mb-2">
-              Password:
+            <label
+              htmlFor="password"
+              className="block text-gray-700 text-sm font-bold mb-2"
+            >
+              密码:
             </label>
             <input
               type="password"
@@ -66,7 +93,7 @@ export default function Login() {
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
+              placeholder="请输入密码"
             />
           </div>
           <div className="flex items-center justify-between">
@@ -74,14 +101,17 @@ export default function Login() {
               className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
               type="submit"
             >
-              Sign In
+              登录
             </button>
-            <a className="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800" href="#">
-              Forgot Password?
+            <a
+              className="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800"
+              href="#"
+            >
+              忘记密码?
             </a>
           </div>
         </form>
       </div>
     </div>
-  )
+  );
 }
