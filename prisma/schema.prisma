@@ -87,19 +87,6 @@ model dim_region_code {
   @@schema("public")
 }
 
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
-model dim_region_code_dh {
-  province_code String? @db.VarChar
-  province_cn   String? @db.VarChar
-  city_code     String? @db.VarChar(20)
-  city_cn       String? @db.VarChar(500)
-  district_code String? @db.VarChar(20)
-  district_cn   String? @db.VarChar(500)
-
-  @@ignore
-  @@schema("public")
-}
-
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model key_person_base_info {
   person_id                  String                       @id @db.VarChar(36)
@@ -283,6 +270,18 @@ model yk_internal_projects {
   data_status              String?  @default("1") @db.Char(1)
   created_time             DateTime @default(now()) @db.Timestamp(6)
   updated_time             DateTime @default(now()) @db.Timestamp(6)
+
+  @@schema("public")
+}
+
+model dim_region_code_dh {
+  province_code String? @db.VarChar
+  province_cn   String? @db.VarChar
+  city_code     String? @db.VarChar(20)
+  city_cn       String? @db.VarChar(500)
+  district_code String? @db.VarChar(20)
+  district_cn   String? @db.VarChar(500)
+  id            Int     @id @default(autoincrement())
 
   @@schema("public")
 }
