@@ -182,7 +182,7 @@ export default function DetailPage({
     },
   });
   const [aiContent, setAiContent] = useState({
-    news: "推荐话术生成中...",
+    news: "新闻内容生成中...",
     styleA: "推荐话术生成中...",
     styleB: "推荐话术生成中...",
   });
