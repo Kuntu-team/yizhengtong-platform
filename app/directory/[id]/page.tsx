@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -22,6 +22,7 @@ import {
   Target,
 } from "lucide-react"
 import { motion } from "framer-motion"
+import { useParams } from 'next/navigation';
 
 interface PersonDetailProps {
   params: {
@@ -40,8 +41,9 @@ interface PersonDetail {
   hometown: string
   age: number
   region: string
+  person_photo_url?: string
   focusAreas: string[]
-  workHistory: Array<{
+  workHistory: Array<string | {
     period: string
     organization: string
     position: string
@@ -66,6 +68,7 @@ interface PersonDetail {
     phone?: string
     wechat?: string
   }
+  person_desc?: string
 }
 
 // 模拟详细人物数据
@@ -163,6 +166,7 @@ const mockPersonDetails: Record<string, PersonDetail> = {
       phone: "0792-8****888",
       wechat: "zs_jiujiang",
     },
+    person_desc: "张三同志是一位经验丰富的经济管理专家，长期从事经济管理和政策研究工作。他在数字经济、产业发展、投资促进等方面有深入的研究和实践经验。",
   },
 }
 
@@ -183,7 +187,7 @@ function ScriptGenerationModal({
 张主任您好，我是亿科咨询的小王。听说您是南昌人，我也是江西老乡，上大学时经常去八一广场。很荣幸能有机会向您请教。
 
 【话题切入】
-看到您最近在数字经济论坛上的讲话，特别是关于产业数字化转型的观点很有启发。九江在长江经济带的区位优势确实得天独厚，您提出的"数字+港口+制造"的���展思路很有前瞻性。
+看到您最近在数字经济论坛上的讲话，特别是关于产业数字化转型的观点很有启发。九江在长江经济带的区位优势确实得天独厚，您提出的"数字+港口+制造"的   展思路很有前瞻性。
 
 【项目建议】
 基于九江的产业基础和您主导的三年行动计划，我们在数字工厂改造方面有成熟方案。比如我们帮助某地级市完成了200亿数字产业园的融资方案，现在园区入驻率已达85%，年产值突破300亿。
@@ -195,7 +199,7 @@ function ScriptGenerationModal({
 3. 招商引资专业服务
 4. 政策资金申报指导
 
-希望能有机会详细汇报我们的方案，为九江的数字经济发展贡献一份力量。
+ 希望能有机会详细汇报我们的方案，为九江的数字经济发展贡献一份力量。
 `
 
   const handleCopy = async () => {
@@ -266,15 +270,15 @@ function ScriptGenerationModal({
             </h3>
             <ul className="space-y-1 text-sm text-gray-700">
               <li className="flex items-start gap-2">
-                <span className="text-blue-600 mt-0.5">•</span>
+                
                 <span>{person?.focusAreas?.[0]}相关成功案例</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-blue-600 mt-0.5">•</span>
+                
                 <span>投资收益数据分析</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-blue-600 mt-0.5">•</span>
+                
                 <span>技术方案简要说明</span>
               </li>
               <li className="flex items-start gap-2">
@@ -319,34 +323,423 @@ function ScriptGenerationModal({
   )
 }
 
-export default function PersonDetailPage({ params }: PersonDetailProps) {
+// 清理函数，去除[]、多余逗号、空字符串、引号和首尾空格，并避免连续两个点
+function cleanText(str: string) {
+  return str
+    .replace(/\[\d+(?:-\d+)?\]/g, '') // 去除[5-6]、[11]等
+    .replace(/["'""']/g, '') // 去除各种引号
+    .replace(/,+/g, ',') // 连续逗号合并为一个
+    .replace(/^,+|,+$/g, '') // 去除首尾逗号
+    .replace(/\s+/g, ' ') // 多空格合一
+    .replace(/\.{2,}/g, '·') // 连续点替换为一个·
+    .replace(/^·+|·+$/g, '') // 去除首尾·
+    .trim();
+}
+
+// 计算最近一份工作任职年数
+function getCurrentTenure(workHistory: any[]): number | null {
+  if (!workHistory || workHistory.length === 0) return null;
+  const first = workHistory[0];
+  let period = '';
+  if (typeof first === 'object' && first !== null && first.period) {
+    period = first.period;
+  } else if (typeof first === 'string') {
+    period = first;
+  }
+  // 匹配起始年份
+  const match = period.match(/(\d{4})[.年-](\d{1,2})?/);
+  if (match) {
+    const startYear = parseInt(match[1], 10);
+    const now = new Date();
+    let years = now.getFullYear() - startYear;
+    // 如果有月份，且当前月份小于起始月份，则减一年
+    if (match[2]) {
+      const startMonth = parseInt(match[2], 10);
+      if (now.getMonth() + 1 < startMonth) years--;
+    }
+    return years >= 0 ? years : null;
+  }
+  return null;
+}
+
+// 获取履历时间区间
+function getPeriod(work: any): string {
+  if (typeof work === 'object' && work !== null && work.period) return cleanText(work.period);
+  if (typeof work === 'string') {
+    // 修正正则字符类顺序
+    const match = work.match(/(\d{4}[.\-年]\d{1,2}(?:[.\-月]\d{1,2})?(?:[—~至-][\d.年月今至]*)?)/);
+    return match ? match[0] : '';
+  }
+  return '';
+}
+
+function daysAgo(dateString: string): string {
+  if (!dateString) return '';
+  // 只取日期部分，兼容 ISO 字符串
+  const dateOnly = dateString.split('T')[0].replace(/-/g, '/').replace(/\./g, '/');
+  const date = new Date(dateOnly);
+  if (isNaN(date.getTime())) return dateString;
+  const now = new Date();
+  // 只保留年月日
+  const nowYMD = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dateYMD = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffTime = nowYMD.getTime() - dateYMD.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return '今天';
+  if (diffDays > 0) return `${diffDays}天前`;
+  if (diffDays === -1) return '明天';
+  return `未来${-diffDays}天`;
+}
+
+// 展示所有履历，按enddate和startdate倒序排列，enddate为'至今'的排最前
+function parseDate(str: string) {
+  if (!str) return 0;
+  if (str === '至今') return 99999999;
+  // 兼容'2018年09月'等格式
+  const match = str.match(/(\d{4})年(\d{1,2})月/);
+  if (match) return parseInt(match[1]) * 100 + parseInt(match[2]);
+  return 0;
+}
+
+export default function PersonDetailPage() {
+  const params = useParams();
+  const id = params.id as string;
   const router = useRouter()
   const { toast } = useToast()
   const [person, setPerson] = useState<PersonDetail | null>(null)
-  const [isFollowed, setIsFollowed] = useState(false)
+  const [followedPeople, setFollowedPeople] = useState<string[]>([]);
   const [expandedSections, setExpandedSections] = useState({
     achievements: false,
     activities: false,
   })
   const [showScriptModal, setShowScriptModal] = useState(false)
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const businessPersonId = searchParams?.get('businessPersonId') || 'e7558fb6-234c-475d-82b9-79db46840389';
+  const [graduateSchool, setGraduateSchool] = useState<string>('');
+  const [personDesc, setPersonDesc] = useState<string>('');
+  const [newsList, setNewsList] = useState<any[]>([]);
+  const [districtCn, setDistrictCn] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+  const [workExperiences, setWorkExperiences] = useState<Array<{ position_info: string; startdate: string; enddate: string }>>([]);
+
+  // 获取已关注ID
+  useEffect(() => {
+    async function fetchFollowed() {
+      try {
+        const res = await fetch(`/api/business-person/follow?businessPersonId=${businessPersonId}`);
+        if (!res.ok) throw new Error('获取关注列表失败');
+        const data = await res.json();
+        setFollowedPeople(Array.isArray(data.followedPersonIds) ? data.followedPersonIds : []);
+      } catch (e) {
+        setFollowedPeople([]);
+      }
+    }
+    fetchFollowed();
+  }, [businessPersonId]);
 
   useEffect(() => {
-    // 模拟获取人物详情
-    const personData = mockPersonDetails[params.id]
-    if (personData) {
-      setPerson(personData)
-      // 模拟检查是否已关注
-      setIsFollowed(Math.random() > 0.5)
-    }
-  }, [params.id])
+    // 从API获取数据
+    const fetchPersonData = async () => {
+      try {
+        const response = await fetch(`/api/key-persons/${id}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch person data');
+        }
+        const apiData = await response.json();
+        console.log(apiData,'______________')
+        // 映射API数据到PersonDetail结构
+        const mappedData = {
+          id: apiData.person_id,
+          name: apiData.person_name,
+          currentPosition: {
+            department: apiData.department,
+            title: apiData.position,
+            startDate: apiData.start_date
+          },
+          hometown: apiData.ancestral_home,
+          age: calculateAge(apiData.birth_date),
+          region: apiData.region,
+          person_photo_url: apiData.person_photo_url,
+          focusAreas: JSON.parse(apiData.focus_areas || '[]'),
+          workHistory: (() => {
+            const raw = apiData.work_experience || '';
+            try {
+              const parsed = JSON.parse(raw);
+              if (Array.isArray(parsed)) {
+                return parsed.flatMap(item => typeof item === 'string' ? parseWorkExperience(item) : item);
+              } else if (typeof parsed === 'string') {
+                return parseWorkExperience(parsed);
+              } else {
+                return [];
+              }
+            } catch {
+              // 如果不是 JSON，尝试用 parseWorkExperience 解析
+              if (typeof raw === 'string' && raw.trim()) {
+                return parseWorkExperience(raw);
+              }
+              return [];
+            }
+          })(),
+          education: JSON.parse(apiData.education || '[]'),
+          achievements: JSON.parse(apiData.achievements || '[]'),
+          recentActivities: JSON.parse(apiData.recent_activities || '[]'),
+          contact: (apiData.wechat_number || apiData.phone_number) ? { 
+            wechat: apiData.wechat_number, 
+            phone: apiData.phone_number 
+          } : undefined,
+          person_desc: apiData.person_desc || ''
+        };
+        if (mappedData.age !== null) {
+          setPerson(mappedData as PersonDetail);
+        } else {
+          // 如果年龄为 null，则将 age 设置为默认值 0
+          setPerson({ ...mappedData, age: 0 } as PersonDetail);
+        }
+        console.log('映射后的数据:', mappedData);
+        setGraduateSchool(apiData.graduate_school || '');
+        setPersonDesc(apiData.person_desc || '');
+        setDistrictCn(apiData.district_cn || '');
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching person data:', error);
+        setPerson(null);
+        setGraduateSchool('');
+        setLoading(false);
+      }
+    };
 
-  const handleToggleFollow = () => {
-    setIsFollowed(!isFollowed)
-    toast({
-      title: isFollowed ? "已取消关注" : "关注成功",
-      description: isFollowed ? "已取消关注该人物" : "已添加到关注列表",
-    })
+    fetchPersonData();
+        // 模拟获取人物详情
+    // const personData = mockPersonDetails[id]
+    // if (personData) {
+    //   setPerson(personData)
+    //   // 模拟检查是否已关注
+    //   setIsFollowed(Math.random() > 0.5)
+    // }
+    // console.log('查询到的数据-----',personData)
+  }, [id])
+
+  // 拉取新闻动态
+  useEffect(() => {
+    async function fetchNews() {
+      try {
+        const res = await fetch(`/api/key-persons/${id}/news`);
+        if (res.ok) {
+          const data = await res.json();
+          setNewsList(Array.isArray(data) ? data : []);
+        } else {
+          setNewsList([]);
+        }
+      } catch {
+        setNewsList([]);
+      }
+    }
+    fetchNews();
+  }, [id]);
+
+  useEffect(() => {
+    if (!id || !person?.name) return;
+    const cacheKey = `work-experience-${id}`;
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      setWorkExperiences(JSON.parse(cached));
+    } else {
+      fetch(`/api/persons/${id}/work-experience?name=${encodeURIComponent(person.name)}`)
+        .then(res => res.json())
+        .then(data => {
+          // 字段兜底，防止后端字段变动
+          const safeData = Array.isArray(data)
+            ? data.map(item => ({
+                position_info: item.position_info || '',
+                startdate: item.startdate || '',
+                enddate: item.enddate || '',
+              }))
+            : [];
+          setWorkExperiences(safeData);
+          sessionStorage.setItem(cacheKey, JSON.stringify(safeData));
+        });
+    }
+  }, [id, person?.name]);
+
+  // 计算年龄的辅助函数
+  const parseWorkExperience = (experienceStr: string): Array<{ period: string; organization: string; position: string; startYear: number; endYear: number }> => {
+    const getYearFromPeriod = (period: string): number => {
+      const yearMatch = period.match(/(\d{4})/);
+      return yearMatch ? parseInt(yearMatch[1]) : 0;
+    };
+
+    if (!experienceStr) return [];
+    // 分割主要条目（过滤空字符串）
+    const mainEntries = experienceStr.split(/；+/).map(entry => entry.trim()).filter(entry => entry);
+    const parsedItems = mainEntries.map(entry => {
+      // 提取时间段 (匹配年份格式)
+      const periodMatch = entry.match(/\d{4}年\d{1,2}月(?:--(?:\d{4}年\d{1,2}月|至今))?/);
+      const period = periodMatch?.[0] || '';
+    const startYear = getYearFromPeriod(period);
+    const endYear = period.includes('至今') ? new Date().getFullYear() : getYearFromPeriod(period.split('--')[1] || '');
+    // 提取剩余部分并清理
+    const remaining = period ? entry.replace(period, '').trim().replace(/^，+/, '').replace(/^任/, '') : entry.trim().replace(/^，+/, '').replace(/^任/, '');
+      // 分割组织和职位 (简单处理，实际可能需要更复杂逻辑)
+      const parts = remaining.split('，');
+      const organization = parts[0]?.trim() || '';
+      const position = parts.slice(1).join('，').trim() || '';
+      return {
+      period,
+      organization: organization.trim(),
+      position: position.trim(),
+      startYear,
+      endYear
+    };
+    });
+  return parsedItems
+    .filter(item => item.organization.trim() || item.position.trim() || item.period.trim())
+    .sort((a, b) => b.endYear - a.endYear || b.startYear - a.startYear);
   }
+
+  function calculateAge(birthDateString: string | undefined): number | null {
+    if (!birthDateString) return null;
+
+    // 全角字符转半角字符
+    const toHalfWidth = (str: string) => 
+      str.replace(/[！-～]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+           .replace(/　/g, ' ');
+
+    // 中文月份转数字
+    const chineseMonths: Record<string, string> = {
+      '一月': '1月', '二月': '2月', '三月': '3月', '四月': '4月', 
+      '五月': '5月', '六月': '6月', '七月': '7月', '八月': '8月', 
+      '九月': '9月', '十月': '10月', '十一月': '11月', '十二月': '12月'
+    };
+
+    // 统一转换所有数字为半角并处理中文月份
+    let normalizedDateString = toHalfWidth(birthDateString.trim());
+    for (const [cnMonth, numMonth] of Object.entries(chineseMonths)) {
+      normalizedDateString = normalizedDateString.replace(new RegExp(cnMonth, 'g'), numMonth);
+    }
+
+    // 尝试解析各种日期格式
+    let birthDate: Date | null = null;
+    
+    // 1. 尝试中文日期格式 (YYYY年MM月DD日 或 YYYY年MM月)
+    const chineseDateMatch = normalizedDateString.match(/(\d{4})\s*年\s*(\d{1,2})\s*月(?:\s*(\d{1,2})\s*日)?/);
+    if (chineseDateMatch) {
+      const year = parseInt(chineseDateMatch[1], 10);
+      const month = parseInt(chineseDateMatch[2], 10) - 1; // 月份从0开始
+      const day = chineseDateMatch[3] ? parseInt(chineseDateMatch[3], 10) : 1;
+      birthDate = new Date(year, month, day);
+    }
+    
+    // 2. 尝试ISO格式 (YYYY-MM-DD)
+    if (!birthDate || isNaN(birthDate.getTime())) {
+      const isoMatch = normalizedDateString.match(/(\d{4})-(\d{1,2})(?:-(\d{1,2}))?/);
+      if (isoMatch) {
+        const year = parseInt(isoMatch[1], 10);
+        const month = parseInt(isoMatch[2], 10) - 1;
+        const day = isoMatch[3] ? parseInt(isoMatch[3], 10) : 1;
+        birthDate = new Date(year, month, day);
+      }
+    }
+    
+    // 3. 尝试斜杠分隔格式 (YYYY/MM/DD 或 MM/DD/YYYY)
+    if (!birthDate || isNaN(birthDate.getTime())) {
+      const slashMatch = normalizedDateString.match(/(\d{1,4})\/(\d{1,2})(?:\/(\d{1,2}))?/);
+      if (slashMatch) {
+        let year, month, day;
+        const part1 = parseInt(slashMatch[1], 10);
+        const part2 = parseInt(slashMatch[2], 10);
+        const part3 = slashMatch[3] ? parseInt(slashMatch[3], 10) : 1;
+
+        // 判断是 YYYY/MM/DD 还是 MM/DD/YYYY
+        if (part1 > 1900) {
+          // YYYY/MM/DD 格式
+          year = part1;
+          month = part2 - 1;
+          day = part3;
+        } else {
+          // MM/DD/YYYY 格式
+          year = part3;
+          month = part1 - 1;
+          day = part2;
+
+          // 如果月份无效，尝试交换月和日
+          if (month < 0 || month > 11) {
+            month = day - 1;
+            day = part1;
+          }
+        }
+        birthDate = new Date(year, month, day);
+      }
+    }
+    
+    // 4. 尝试点分隔格式 (YYYY.MM.DD)
+    if (!birthDate || isNaN(birthDate.getTime())) {
+      const dotMatch = normalizedDateString.match(/(\d{4})\.(\d{1,2})(?:\.(\d{1,2}))?/);
+      if (dotMatch) {
+        const year = parseInt(dotMatch[1], 10);
+        const month = parseInt(dotMatch[2], 10) - 1;
+        const day = dotMatch[3] ? parseInt(dotMatch[3], 10) : 1;
+        birthDate = new Date(year, month, day);
+      }
+    }
+    
+    // 5. 最后尝试标准日期解析
+    if (!birthDate || isNaN(birthDate.getTime())) {
+      birthDate = new Date(normalizedDateString);
+    }
+
+    // 如果仍然无效，返回null
+    if (!birthDate || isNaN(birthDate.getTime())) {
+      return null;
+    }
+
+    // 计算年龄
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    // 考虑月份和日期因素
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    return age >= 0 ? age : null;
+  }
+  const handleToggleFollow = async () => {
+    if (!person) return;
+    const isFollowing = followedPeople.includes(person.id);
+    const departmentCode = person.currentPosition?.department || '';
+    try {
+      if (isFollowing) {
+        // 取消关注
+        const res = await fetch('/api/business-person/follow', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ business_person_id: businessPersonId, followed_person_id: person.id })
+        });
+        if (!res.ok) throw new Error('取消关注失败');
+        toast({ title: '已取消关注', description: '已取消关注该人物' });
+        setFollowedPeople(prev => prev.filter(pid => pid !== person.id));
+      } else {
+        // 关注
+        if (followedPeople.length >= 10) {
+          toast({ title: '关注失败', description: '最多关注10位关键人物', variant: 'destructive' });
+          return;
+        }
+        const res = await fetch('/api/business-person/follow', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ business_person_id: businessPersonId, followed_person_id: person.id, department_code: departmentCode, follow_time: new Date().toISOString() })
+        });
+        if (!res.ok) throw new Error('关注失败');
+        toast({ title: '关注成功', description: '已添加到关注列表' });
+        setFollowedPeople(prev => [...prev, person.id]);
+      }
+    } catch (e) {
+      toast({ title: '操作失败', description: e instanceof Error ? e.message : '关注/取消关注请求失败', variant: 'destructive' });
+    }
+  };
+
+  const isFollowed = person ? followedPeople.includes(person.id) : false;
 
   // 处理动态点击，跳转到对应的新闻详情页
   const handleActivityClick = (activity: PersonDetail["recentActivities"][0]) => {
@@ -360,6 +753,34 @@ export default function PersonDetailPage({ params }: PersonDetailProps) {
         description: "正在跳转到详情页面",
       })
     }
+  }
+
+  useEffect(() => {
+    console.log('workExperiences', workExperiences);
+  }, [workExperiences]);
+
+  // 只展示enddate为'至今'的履历
+  const filteredWorkExperiences = workExperiences.filter(exp => exp.enddate === '至今');
+
+  // 展示所有履历，按enddate和startdate倒序排列，enddate为'至今'的排最前
+  const sortedWorkExperiences = [...workExperiences].sort((a, b) => {
+    const endA = parseDate(a.enddate);
+    const endB = parseDate(b.enddate);
+    if (endA !== endB) return endB - endA;
+    const startA = parseDate(a.startdate);
+    const startB = parseDate(b.startdate);
+    return endB !== endA ? endB - endA : startB - startA;
+  });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-500">加载中...</p>
+        </div>
+      </div>
+    )
   }
 
   if (!person) {
@@ -401,41 +822,35 @@ export default function PersonDetailPage({ params }: PersonDetailProps) {
               <Calendar className="h-4 w-4" />
               近期动态
             </h2>
-            <Button variant="link" size="sm" className="text-blue-600 text-xs" onClick={() => router.push("/leads")}>
-              查看全部 <ChevronRight className="h-3 w-3 ml-1" />
-            </Button>
+            <Button variant="link" size="sm" className="text-blue-600 text-xs" onClick={() => router.push("/leads")}>查看全部 <ChevronRight className="h-3 w-3 ml-1" /></Button>
           </div>
           <div className="space-y-3">
-            {person.recentActivities.slice(0, expandedSections.activities ? undefined : 3).map((activity, index) => (
+            {newsList.length > 0 ? newsList.slice(0, expandedSections.activities ? undefined : 3).map((news, index) => (
               <motion.div
-                key={activity.id}
+                key={news.id || index}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
                 className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
-                onClick={() => handleActivityClick(activity)}
+                // 可根据需要添加 onClick 跳转
               >
-                <span className={`mt-0.5 ${activity.type === "internal" ? "text-red-500" : "text-blue-500"}`}>
-                  {activity.type === "internal" ? "●" : "🔄"}
-                </span>
+                <span className={`mt-0.5 text-red-500`}>●</span>
                 <div className="flex-1">
-                  <h4 className="font-medium text-gray-900 mb-1 text-sm">{activity.title}</h4>
-                  <p className="text-xs text-gray-600 mb-1">{activity.description}</p>
+                  <h4 className="font-medium text-gray-900 mb-1 text-sm">{news.title || news.news_title || '无标题'}</h4>
+                  <p className="text-xs text-gray-600 mb-1">{news.content || news.news_content || ''}</p>
                   <div className="flex items-center gap-3 text-xs text-gray-500">
-                    <span>{activity.timeAgo}</span>
-                    <span>•</span>
-                    <span>{activity.source}</span>
-                    <Badge variant="outline" className="text-xs px-1 py-0">
-                      {activity.type === "internal" ? "任内" : "任外"}
-                    </Badge>
+                    <span>{news.news_time ? daysAgo(news.news_time) : ''}</span>
+                    <span className="px-2 py-0.5 rounded bg-yellow-100 text-yellow-700 text-xs font-semibold">任内</span>
+                    {news.source && <span>{news.source}</span>}
                   </div>
                 </div>
                 <ChevronRight className="h-3 w-3 text-gray-400 mt-1" />
               </motion.div>
-            ))}
+            )) : (
+              <div className="text-gray-400 text-sm text-center py-6">暂无动态</div>
+            )}
           </div>
-
-          {person.recentActivities.length > 3 && (
+          {newsList.length > 3 && (
             <Button
               variant="link"
               size="sm"
@@ -443,9 +858,7 @@ export default function PersonDetailPage({ params }: PersonDetailProps) {
               onClick={() => setExpandedSections({ ...expandedSections, activities: !expandedSections.activities })}
             >
               {expandedSections.activities ? "收起" : "展开更多"}
-              <ChevronDown
-                className={`h-3 w-3 ml-1 transition-transform ${expandedSections.activities ? "rotate-180" : ""}`}
-              />
+              <ChevronDown className={`h-3 w-3 ml-1 transition-transform ${expandedSections.activities ? "rotate-180" : ""}`} />
             </Button>
           )}
         </section>
@@ -460,29 +873,32 @@ export default function PersonDetailPage({ params }: PersonDetailProps) {
           <div className="space-y-3">
             {/* 头像和姓名 */}
             <div className="flex items-start gap-3">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <User className="h-6 w-6 text-blue-600" />
+              <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+                <img
+                  src={person.person_photo_url || '/placeholder-user.jpg'}
+                  alt={person.name || '用户头像'}
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div>
                 <div className="flex gap-2">
-                  <h1 className="text-md font-bold text-gray-900">{person.name}</h1>
-                  <p className="text-md font-bold text-gray-700">{person.currentPosition.department}</p>
-                  <p className="text-md font-bold text-gray-700">· {person.currentPosition.title}</p>
+                  <h1 className="text-md font-bold text-gray-900">{person.name || '未知姓名'}</h1>
+                  <p className="text-md font-bold text-gray-700">{person.currentPosition?.department}</p>
+                  <p className="text-md font-bold text-gray-700">· {person.currentPosition?.title}</p>
                 </div>
                 <div className="flex gap-2">
                   <p className="text-sm font-bold text-gray-700">{person.hometown}</p>
-                  <p className="text-sm font-bold text-gray-700">· {person.age}岁</p>
-                  <p className="text-sm font-bold text-gray-700">
-                    · {new Date().getFullYear() - Number.parseInt(person.currentPosition.startDate.split("-")[0])}
-                    年任职
-                  </p>
+                  {districtCn && <p className="text-sm font-bold text-gray-700">{districtCn}</p>}
+                  <p className="text-sm font-bold text-gray-700">· {person.age>0 ? `${person.age}岁` : '年龄未知'}</p>
+                  <p className="text-sm font-bold text-gray-700">· {getCurrentTenure(person.workHistory)}年任职</p>
+                  
                   {person.contact && (
                     <>
-                      {person.contact.phone && (
-                        <p className="text-sm font-bold text-gray-700">· 电话: {person.contact.phone}</p>
+                      {person.contact?.phone && (
+                        <p className="text-sm font-bold text-gray-700">· 电话: {person.contact?.phone}</p>
                       )}
-                      {person.contact.wechat && (
-                        <p className="text-sm font-bold text-gray-700">· 微信: {person.contact.wechat}</p>
+                      {person.contact?.wechat && (
+                        <p className="text-sm font-bold text-gray-700">· 微信: {person.contact?.wechat}</p>
                       )}
                     </>
                   )}
@@ -501,71 +917,118 @@ export default function PersonDetailPage({ params }: PersonDetailProps) {
               {/* 工作履历 */}
               <TabsContent value="work" className="mt-4">
                 <div className="space-y-2">
-                  {person.workHistory.slice(0, 2).map((work, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"
-                    >
-                      <span className="font-semibold text-gray-900 text-sm">{work.position}</span>
-                      <span className="text-gray-600 text-sm">·</span>
-                      <span className="text-gray-600 text-sm">{work.organization}</span>
-                      <span className="text-gray-600 text-sm">·</span>
-                      <Badge variant={index === 0 ? "default" : "secondary"} className="text-xs">
-                        {work.period}
-                      </Badge>
-                      {index === 0 && (
-                        <Badge variant="outline" className="text-xs text-blue-600">
-                          当前
-                        </Badge>
-                      )}
-                    </motion.div>
-                  ))}
+                  {sortedWorkExperiences.length === 0 ? (
+                    <div className="text-gray-400 text-sm text-center py-6">暂无工作履历</div>
+                  ) : (
+                    sortedWorkExperiences.map((exp, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"
+                      >
+                        <span className="font-semibold text-gray-900 text-sm min-w-[80px]">{exp.position_info}</span>
+                        <span
+                          style={{
+                            background: '#FFF500',
+                            color: '#333',
+                            borderRadius: 4,
+                            padding: '2px 8px',
+                            fontWeight: 600,
+                            marginLeft: 8,
+                          }}
+                        >
+                          {exp.startdate} - {exp.enddate}
+                        </span>
+                        {exp.enddate === '至今' && (
+                          <span
+                            style={{
+                              background: '#E6F0FF',
+                              color: '#1677FF',
+                              borderRadius: 4,
+                              padding: '2px 8px',
+                              fontWeight: 600,
+                              marginLeft: 8,
+                            }}
+                          >
+                            当前
+                          </span>
+                        )}
+                      </div>
+                    ))
+                  )}
                 </div>
               </TabsContent>
 
               {/* 主要成就 */}
               <TabsContent value="achievements" className="mt-4">
                 <div className="space-y-2">
-                  {person.achievements.map((achievement, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="flex items-start gap-2"
-                    >
-                      <span className="text-green-600 mt-0.5">•</span>
-                      <span className="text-sm text-gray-700">{achievement}</span>
-                    </motion.div>
-                  ))}
+                  {(person.achievements && person.achievements.length > 0) ? (
+                    person.achievements.map((achievement, index) => (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="flex items-center gap-2"
+                      >
+                        <span className="text-green-500 mt-1">●</span>
+                        <span className="text-sm text-gray-700">{achievement.replace(/,/g, '')}</span>
+                      </motion.div>
+                    ))
+                  ) : (
+                    personDesc
+                      ? personDesc.split(/[。\n]/)
+                          .map(desc => desc.replace(/\[\d+(?:-\d+)?\]/g, '').replace(/^[,，\s"'""'']+/, '').replace(/[,，\s"'""'']+$/, '').trim())
+                          .filter(desc => desc && /[\u4e00-\u9fa5\w]/.test(desc))
+                          .map((desc, idx) => (
+                            <motion.div
+                              key={idx}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: idx * 0.1 }}
+                              className="flex items-center gap-2"
+                            >
+                              <span className="text-green-500 mt-1">●</span>
+                              <span className="text-sm text-gray-700">{desc}</span>
+                            </motion.div>
+                          ))
+                      : <span className="text-gray-400 text-sm">暂无主要成就</span>
+                  )}
                 </div>
               </TabsContent>
 
               {/* 教育经历 */}
               <TabsContent value="education" className="mt-4">
                 <div className="space-y-2">
-                  {person.education.map((edu, index) => (
+                  {(person.education && person.education.length > 0) ? (
+                    person.education.map((edu, index) => (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"
+                      >
+                        <span className="font-semibold text-gray-900 text-sm">{cleanText(edu.school)}</span>
+                        <span className="text-gray-600 text-sm">·</span>
+                        <span className="text-gray-600 text-sm">{cleanText(edu.degree)}</span>
+                        <span className="text-gray-600 text-sm">·</span>
+                        <span className="text-gray-600 text-sm">{cleanText(edu.major)}</span>
+                        <span className="text-gray-600 text-sm">·</span>
+                        <Badge variant="outline" className="text-xs">
+                          {cleanText(edu.period)}
+                        </Badge>
+                      </motion.div>
+                    ))
+                  ) : (
                     <motion.div
-                      key={index}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
+                      transition={{ delay: 0 }}
                       className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"
                     >
-                      <span className="font-semibold text-gray-900 text-sm">{edu.school}</span>
-                      <span className="text-gray-600 text-sm">·</span>
-                      <span className="text-gray-600 text-sm">{edu.degree}</span>
-                      <span className="text-gray-600 text-sm">·</span>
-                      <span className="text-gray-600 text-sm">{edu.major}</span>
-                      <span className="text-gray-600 text-sm">·</span>
-                      <Badge variant="outline" className="text-xs">
-                        {edu.period}
-                      </Badge>
+                      <span className="font-semibold text-gray-900 text-sm">{graduateSchool ? cleanText(graduateSchool) : '未知'}</span>
                     </motion.div>
-                  ))}
+                  )}
                 </div>
               </TabsContent>
             </Tabs>
@@ -574,7 +1037,7 @@ export default function PersonDetailPage({ params }: PersonDetailProps) {
       </main>
 
       {/* 话术生成弹窗 */}
-      <ScriptGenerationModal open={showScriptModal} onClose={() => setShowScriptModal(false)} person={person} />
+      <ScriptGenerationModal open={showScriptModal} onClose={() => setShowScriptModal(false)} person={person || {}} />
     </div>
   )
 }

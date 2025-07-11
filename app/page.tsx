@@ -21,81 +21,31 @@ interface UserInfo {
 }
 
 interface NewsItem {
-  id: string;
-  title: string;
-  summary: string;
-  time: string;
-  timestamp: number;
-  leader: string;
-  region: string;
-  category: string;
-  isFollowed: boolean;
+  id: string
+  title: string
+  summary: string
+  time: string
+  leader: string
+  tags: string
+  source: string
+  region: string
+  category: string
 }
 
-const mockNewsData: NewsItem[] = [
-  {
-    id: "news-1",
-    title: "张三主持召开数字经济发展座谈会",
-    summary:
-      "九江市发改委主任张三主持召开数字经济发展座谈会，讨论未来三年数字产业园建设规划",
-    time: "3天前",
-    timestamp: Date.now() - 3 * 24 * 60 * 60 * 1000,
-    leader: "张三",
-    region: "九江市",
-    category: "数字经济",
-    isFollowed: true,
-  },
-  {
-    id: "news-2",
-    title: "李四出席南昌港口物流园区奠基仪式",
-    summary:
-      "南昌市财政局局长李四出席港口物流园区奠基仪式，宣布200亿投资计划正式启动",
-    time: "5天前",
-    timestamp: Date.now() - 5 * 24 * 60 * 60 * 1000,
-    leader: "李四",
-    region: "南昌市",
-    category: "基础设施",
-    isFollowed: true,
-  },
-  {
-    id: "news-3",
-    title: "王五调研宜春教育城项目进展",
-    summary:
-      "宜春市市长王五实地调研教育城项目建设进展，强调要加快推进高校建设工作",
-    time: "1周前",
-    timestamp: Date.now() - 7 * 24 * 60 * 60 * 1000,
-    leader: "王五",
-    region: "宜春市",
-    category: "教育投资",
-    isFollowed: true,
-  },
-  {
-    id: "news-4",
-    title: "赵六参加城市建设规划会议",
-    summary:
-      "上饶市副市长赵六参加城市建设规划会议，部署下一阶段基础设施建设重点工作",
-    time: "2周前",
-    timestamp: Date.now() - 14 * 24 * 60 * 60 * 1000,
-    leader: "赵六",
-    region: "上饶市",
-    category: "城市建设",
-    isFollowed: true,
-  },
-];
-
 export default function HomePage() {
-  const [user, setUser] = useState<UserInfo | null>(null);
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [followedNews, setFollowedNews] = useState<NewsItem[]>([]);
+  const [user, setUser] = useState<UserInfo | null>(null)
+  const [currentTime, setCurrentTime] = useState(new Date())
+  const [newsData, setNewsData] = useState<NewsItem[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
+  const pageSize = 10
 
-  // 获取用户数据和更新时间
   useEffect(() => {
-    const userInfo = localStorage.getItem("userInfo");
+    const userInfo = typeof window !== 'undefined' ? localStorage.getItem("userInfo") : null
     if (userInfo) {
       const userData = JSON.parse(userInfo);
       setUser(userData);
     } else {
-      // 设置默认用户数据
       const defaultUser = {
         id: "default",
         name: "王商务",
@@ -111,20 +61,20 @@ export default function HomePage() {
       setUser(defaultUser);
       localStorage.setItem("userInfo", JSON.stringify(defaultUser));
     }
-
-    // 更新时间
     const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
+      setCurrentTime(new Date())
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [])
 
-    // 初始化关注的新闻数据，按时间从远到近排序
-    const sortedNews = mockNewsData
-      .filter((news) => news.isFollowed)
-      .sort((a, b) => a.timestamp - b.timestamp);
-    setFollowedNews(sortedNews);
-
-    return () => clearInterval(timer);
-  }, []);
+  useEffect(() => {
+    fetch(`/api/business-person-news?page=${page}&pageSize=${pageSize}`)
+      .then(res => res.json())
+      .then(res => {
+        setNewsData(res.data || [])
+        setTotal(res.total || 0)
+      })
+  }, [page])
 
   // 获取问候语
   const getGreeting = () => {
@@ -205,17 +155,18 @@ export default function HomePage() {
           >
             <Card className="bg-white border border-gray-200 shadow-sm rounded-lg">
               <CardContent className="px-6 py-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-medium text-gray-900 tracking-wide">
-                    关注领导动态
-                  </h2>
+                <div className="flex justify-between items-center mb-2">
+                  <div>
+                    <h2 className="text-lg font-medium text-gray-900 tracking-wide">关注领导动态</h2>
+                    <p className="text-xs text-gray-500 mb-1">当前仅展示近一个月内的关注领导动态</p>
+                  </div>
                   <Badge variant="outline" className="text-xs font-light">
-                    {followedNews.length} 条更新
+                    {total} 条更新
                   </Badge>
                 </div>
 
                 <div className="space-y-4">
-                  {followedNews.map((news, index) => (
+                  {newsData.map((news, index) => (
                     <motion.div
                       key={news.id}
                       initial={{ opacity: 0, x: -20 }}
@@ -238,14 +189,13 @@ export default function HomePage() {
                             </div>
                             <div className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
-                              <span className="font-light">{news.time}</span>
+                              <span className="font-light">{news.time ? new Date(news.time).toLocaleDateString() : ''}</span>
                             </div>
-                            <Badge
-                              variant="secondary"
-                              className="text-xs font-light bg-gray-100"
-                            >
-                              {news.category}
-                            </Badge>
+                            {news.tags && (
+                              <Badge variant="secondary" className="text-xs font-light bg-blue-100 text-blue-600 hover:text-black transition-colors duration-200">
+                                {news.tags}
+                              </Badge>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -253,14 +203,34 @@ export default function HomePage() {
                   ))}
                 </div>
 
-                {followedNews.length === 0 && (
+                {newsData.length === 0 && (
                   <div className="text-center py-8">
                     <p className="text-gray-500 font-light">
                       暂无关注的领导动态
                     </p>
                   </div>
                 )}
-              </CardContent>
+                {/* 分页控件 */}
+                {total > pageSize && (
+                  <div className="flex justify-center mt-6">
+                    <button
+                      className="px-3 py-1 mx-1 border rounded disabled:opacity-50"
+                      onClick={() => setPage(page - 1)}
+                      disabled={page === 1}
+                    >
+                      上一页
+                    </button>
+                    <span className="px-2 text-sm">{page} / {Math.ceil(total / pageSize)}</span>
+                    <button
+                      className="px-3 py-1 mx-1 border rounded disabled:opacity-50"
+                      onClick={() => setPage(page + 1)}
+                      disabled={page >= Math.ceil(total / pageSize)}
+                    >
+                      下一页
+                    </button>
+                  </div>
+                )}
+                 </CardContent>
             </Card>
           </motion.div>
         </div>

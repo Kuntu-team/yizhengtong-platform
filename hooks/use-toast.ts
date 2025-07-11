@@ -171,8 +171,24 @@ function toast({ ...props }: Toast) {
   }
 }
 
+
+
+try {
+  const savedState = typeof window !== 'undefined' ? localStorage.getItem('toastState') : null;
+  if (savedState) {
+    const parsedState = JSON.parse(savedState);
+    // 严格验证数据结构
+    if (typeof parsedState === 'object' && parsedState !== null && Array.isArray(parsedState.toasts)) {
+      memoryState = parsedState;
+    }
+  }
+} catch (error) {
+  console.error('Failed to parse toast state from localStorage:', error);
+  memoryState = { toasts: [] };
+}
+
 function useToast() {
-  const [state, setState] = React.useState<State>(memoryState)
+  const [state, setState] = React.useState<State>(memoryState);
 
   React.useEffect(() => {
     listeners.push(setState)
@@ -182,7 +198,7 @@ function useToast() {
         listeners.splice(index, 1)
       }
     }
-  }, [state])
+  }, []) // 只在挂载/卸载时注册/注销
 
   return {
     ...state,
