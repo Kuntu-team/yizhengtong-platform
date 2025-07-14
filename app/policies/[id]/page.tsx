@@ -1,61 +1,61 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronDown, CheckCircle, Users, X } from "lucide-react"
-import { AnimatePresence, motion } from "framer-motion"
-import { Textarea } from "@/components/ui/textarea"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import React from "react"
-import ReactMarkdown from "react-markdown"
-import QRCode from "qrcode"
-import { useParams } from "next/navigation"
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronDown, CheckCircle, Users, X } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import React from "react";
+import ReactMarkdown from "react-markdown";
+import QRCode from "qrcode";
+import { useParams } from "next/navigation";
 
 interface Project {
-  id: string
-  name: string
-  suitable: string
-  requirements: string
-  script: string
+  id: string;
+  name: string;
+  suitable: string;
+  requirements: string;
+  script: string;
 }
 
 interface PolicyDetail {
-  id: string
-  title: string
-  source: string
-  sourceUrl?: string // 添加这行
-  publishDate: string
-  status: "pending" | "completed"
-  keyPoints: string[]
-  projects: Project[]
-  fullContent: string
+  id: string;
+  title: string;
+  source: string;
+  sourceUrl?: string; // 添加这行
+  publishDate: string;
+  status: "pending" | "completed";
+  keyPoints: string[];
+  projects: Project[];
+  fullContent: string;
 }
 
 export default function PolicyDetailPage() {
   const params = useParams();
   const id = params.id as string;
-  const router = useRouter()
-  const [policy, setPolicy] = useState<PolicyDetail | null>(null)
+  const router = useRouter();
+  const [policy, setPolicy] = useState<PolicyDetail | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
     projects: true,
     content: false, // 政策内容默认收起
-  })
-  const [copiedScript, setCopiedScript] = useState<string | null>(null)
+  });
+  const [copiedScript, setCopiedScript] = useState<string | null>(null);
 
-  const [activeSection, setActiveSection] = useState("policy-content")
+  const [activeSection, setActiveSection] = useState("policy-content");
 
   // 使用简单的状态管理替代Dialog
-  const [shareModalOpen, setShareModalOpen] = useState(false)
-  const [shareText, setShareText] = useState("")
-  const [isGenerating, setIsGenerating] = useState(false)
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [shareText, setShareText] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // 添加结果弹窗状态
-  const [resultModalOpen, setResultModalOpen] = useState(false)
+  const [resultModalOpen, setResultModalOpen] = useState(false);
   const [shareResult, setShareResult] = useState<{
-    success: boolean
-    message: string
-  } | null>(null)
+    success: boolean;
+    message: string;
+  } | null>(null);
 
   const [policyAnalysis, setPolicyAnalysis] = useState<string>("");
   const [analysisLoading, setAnalysisLoading] = useState(false);
@@ -64,46 +64,46 @@ export default function PolicyDetailPage() {
 
   // 滚动到指定模块
   const scrollToSection = (sectionId: string) => {
-    const element = document.getElementById(sectionId)
+    const element = document.getElementById(sectionId);
     if (element) {
-      const headerHeight = 56 // 顶部导航栏高度
-      const elementPosition = element.offsetTop - headerHeight - 20
+      const headerHeight = 56; // 顶部导航栏高度
+      const elementPosition = element.offsetTop - headerHeight - 20;
       window.scrollTo({
         top: elementPosition,
         behavior: "smooth",
-      })
-      setActiveSection(sectionId)
+      });
+      setActiveSection(sectionId);
     }
-  }
+  };
 
   // 监听滚动事件，更新激活状态
   useEffect(() => {
     const handleScroll = () => {
-      const sections = ["policy-content", "matching-projects"]
-      const headerHeight = 56
+      const sections = ["policy-content", "matching-projects"];
+      const headerHeight = 56;
 
       for (let i = sections.length - 1; i >= 0; i--) {
-        const element = document.getElementById(sections[i])
+        const element = document.getElementById(sections[i]);
         if (element) {
-          const rect = element.getBoundingClientRect()
+          const rect = element.getBoundingClientRect();
           if (rect.top <= headerHeight + 100) {
-            setActiveSection(sections[i])
-            break
+            setActiveSection(sections[i]);
+            break;
           }
         }
       }
-    }
+    };
 
-    window.addEventListener("scroll", handleScroll)
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
     fetch(`/api/policies/${id}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && data.data) {
-          const item = data.data
+          const item = data.data;
           setPolicy({
             id: item.policy_id,
             title: item.policy_title || "-",
@@ -114,10 +114,10 @@ export default function PolicyDetailPage() {
             keyPoints: [], // 可根据需要解析
             projects: [], // 可根据需要解析
             fullContent: item.policy_content || "-",
-          })
+          });
         }
-      })
-  }, [id])
+      });
+  }, [id]);
 
   useEffect(() => {
     if (!policy?.id) return;
@@ -129,7 +129,7 @@ export default function PolicyDetailPage() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": "Bearer app-yq8RC08xQU5OUnMMu5rO5itd",
+        Authorization: "Bearer app-yq8RC08xQU5OUnMMu5rO5itd",
       },
       body: JSON.stringify({
         inputs: { policy_id: policy.id },
@@ -143,7 +143,7 @@ export default function PolicyDetailPage() {
       .then((res) => res.json())
       .then((data) => {
         if (data && data.answer) {
-          // console.log('政策解读 answer 字段:', data.answer);
+          console.log("政策解读 answer 字段:", data.answer);
           // 提取“### 新闻解读”与“### 话术生成”之间内容
           const match = data.answer.match(/### 新闻解读([\s\S]*?)### 话术生成/);
           if (match && match[1]) {
@@ -153,9 +153,13 @@ export default function PolicyDetailPage() {
           }
 
           // 优化风格A/风格B/风格一/风格二提取逻辑
-          const styleAMatch = data.answer.match(/### ?(风格A|风格一)[：:]?[\s\S]*?(?:(?:话术[\n\r]+)|(?:\n\n)|(?:\r\n\r\n))([\s\S]*?)(?=### ?(风格B|风格二)|$)/);
+          const styleAMatch = data.answer.match(
+            /### ?(风格A|风格一)[：:]?[\s\S]*?(?:(?:话术[\n\r]+)|(?:\n\n)|(?:\r\n\r\n))([\s\S]*?)(?=### ?(风格B|风格二)|$)/
+          );
           // 优化风格B正则，容错乱码或多余字符
-          const styleBMatch = data.answer.match(/###\s*[^\w\u4e00-\u9fa5]{0,3}?(风格B|风格二)[：:]?[\s\S]*?(?:(?:话术[\n\r]+)|(?:\n\n)|(?:\r\n\r\n))([\s\S]*)/);
+          const styleBMatch = data.answer.match(
+            /###\s*[^\w\u4e00-\u9fa5]{0,3}?(风格B|风格二)[：:]?[\s\S]*?(?:(?:话术[\n\r]+)|(?:\n\n)|(?:\r\n\r\n))([\s\S]*)/
+          );
           let projects = [];
           if (styleAMatch && styleAMatch[2]) {
             projects.push({
@@ -175,15 +179,15 @@ export default function PolicyDetailPage() {
               script: styleBMatch[2].trim(),
             });
           }
-          setPolicy((prev) => prev ? { ...prev, projects } : prev);
+          setPolicy((prev) => (prev ? { ...prev, projects } : prev));
         } else {
           setPolicyAnalysis("未获取到政策解读内容。");
-          setPolicy((prev) => prev ? { ...prev, projects: [] } : prev);
+          setPolicy((prev) => (prev ? { ...prev, projects: [] } : prev));
         }
       })
       .catch((err) => {
         setAnalysisError("政策解读获取失败，请稍后重试。");
-        setPolicy((prev) => prev ? { ...prev, projects: [] } : prev);
+        setPolicy((prev) => (prev ? { ...prev, projects: [] } : prev));
       })
       .finally(() => {
         setAnalysisLoading(false);
@@ -200,91 +204,101 @@ ${policy?.keyPoints
   .map((point) => `• ${point}`)
   .join("\n")}
 
-#政策解读 #${policy?.source}`
-    setShareText(defaultShareText)
-  }, [policy])
+#政策解读 #${policy?.source}`;
+    setShareText(defaultShareText);
+  }, [policy]);
 
   // 复制话术
   const handleCopyScript = async (script: string, projectId: string) => {
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(script)
-        setCopiedScript(projectId)
-        setTimeout(() => setCopiedScript(null), 2000)
+        await navigator.clipboard.writeText(script);
+        setCopiedScript(projectId);
+        setTimeout(() => setCopiedScript(null), 2000);
       } else {
         // 兼容旧浏览器
-        const textarea = document.createElement('textarea')
-        textarea.value = script
-        textarea.style.position = 'fixed'
-        textarea.style.opacity = '0'
-        document.body.appendChild(textarea)
-        textarea.focus()
-        textarea.select()
-        document.execCommand('copy')
-        document.body.removeChild(textarea)
-        setCopiedScript(projectId)
-        setTimeout(() => setCopiedScript(null), 2000)
+        const textarea = document.createElement("textarea");
+        textarea.value = script;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+        setCopiedScript(projectId);
+        setTimeout(() => setCopiedScript(null), 2000);
       }
     } catch (err) {
-      console.error('复制失败:', err)
+      console.error("复制失败:", err);
     }
-  }
+  };
 
   // 删除高亮关键词相关的函数和keywords数组
 
   const handleShare = async () => {
-    console.log("🎉 分享按钮被点击了！")
-    setIsGenerating(true)
+    console.log("🎉 分享按钮被点击了！");
+    setIsGenerating(true);
     try {
-      console.log("⏳ 开始生成分享内容...")
+      console.log("⏳ 开始生成分享内容...");
       // 模拟生成图片的过程
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-      console.log("📝 分享内容:", shareText)
-      console.log("✅ 分享完成，准备关闭弹窗")
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      console.log("📝 分享内容:", shareText);
+      console.log("✅ 分享完成，准备关闭弹窗");
 
       // 设置成功结果并显示结果弹窗
       setShareResult({
         success: true,
         message: "", // 删除原来的消息文本
-      })
-      setShareModalOpen(false)
-      setResultModalOpen(true)
+      });
+      setShareModalOpen(false);
+      setResultModalOpen(true);
     } catch (error) {
-      console.error("❌ 分享失败:", error)
+      console.error("❌ 分享失败:", error);
 
       // 设置失败结果并显示结果弹窗
       setShareResult({
         success: false,
         message: "分享生成失败，请稍后重试。",
-      })
-      setShareModalOpen(false)
-      setResultModalOpen(true)
+      });
+      setShareModalOpen(false);
+      setResultModalOpen(true);
     } finally {
-      console.log("🔄 重置生成状态")
-      setIsGenerating(false)
+      console.log("🔄 重置生成状态");
+      setIsGenerating(false);
     }
-  }
+  };
 
   function formatDate(dateStr: string) {
     if (!dateStr) return "-";
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return dateStr;
     // 输出 YYYY-MM-DD HH:mm
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    return (
+      d.getFullYear() +
+      "-" +
+      String(d.getMonth() + 1).padStart(2, "0") +
+      "-" +
+      String(d.getDate()).padStart(2, "0") +
+      " " +
+      String(d.getHours()).padStart(2, "0") +
+      ":" +
+      String(d.getMinutes()).padStart(2, "0")
+    );
   }
 
   // 分享二维码弹窗逻辑
   const [showQR, setShowQR] = useState(false);
   const [qrUrl, setQrUrl] = useState<string | null>(null);
   useEffect(() => {
-    if (showQR && typeof window !== 'undefined') {
+    if (showQR && typeof window !== "undefined") {
       const url = window.location.href;
       QRCode.toDataURL(url).then(setQrUrl);
     }
   }, [showQR]);
 
   if (!policy) {
-    return <div className="text-center py-16">加载中...</div>
+    return <div className="text-center py-16">加载中...</div>;
   }
 
   return (
@@ -295,13 +309,15 @@ ${policy?.keyPoints
           <Button variant="ghost" size="sm" onClick={() => router.back()}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <h1 className="ml-4 text-base font-medium truncate flex-1">{policy.title}</h1>
+          <h1 className="ml-4 text-base font-medium truncate flex-1">
+            {policy.title}
+          </h1>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => {
-              console.log("👆 Users按钮被点击")
-              setShareModalOpen(true)
+              console.log("👆 Users按钮被点击");
+              setShareModalOpen(true);
             }}
           >
             <Users className="h-4 w-4" />
@@ -319,8 +335,8 @@ ${policy?.keyPoints
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  console.log("🔙 返回按钮被点击")
-                  setShareModalOpen(false)
+                  console.log("🔙 返回按钮被点击");
+                  setShareModalOpen(false);
                 }}
                 className="p-0 h-auto text-blue-600 hover:text-blue-700"
               >
@@ -328,7 +344,12 @@ ${policy?.keyPoints
                 返回
               </Button>
               <h2 className="text-base font-medium">分享预览</h2>
-              <Button variant="ghost" size="sm" onClick={() => setShareModalOpen(false)} className="p-0 h-auto">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShareModalOpen(false)}
+                className="p-0 h-auto"
+              >
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -338,11 +359,15 @@ ${policy?.keyPoints
               {/* 文案编辑区域 */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-gray-700">朋友圈文案</label>
-                  <span className="text-xs text-gray-500">{shareText.length}/200</span>
+                  <label className="text-sm font-medium text-gray-700">
+                    朋友圈文案
+                  </label>
+                  <span className="text-xs text-gray-500">
+                    {shareText.length}/200
+                  </span>
                 </div>
                 <Textarea
-                  value={shareText.replace(/\n{2,}/g, '\n').trim()}
+                  value={shareText.replace(/\n{2,}/g, "\n").trim()}
                   onChange={(e) => setShareText(e.target.value)}
                   placeholder="编辑分享文案..."
                   className="min-h-[120px] resize-none text-sm"
@@ -352,7 +377,9 @@ ${policy?.keyPoints
 
               {/* 原新闻链接 */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">原文链接</label>
+                <label className="text-sm font-medium text-gray-700">
+                  原文链接
+                </label>
                 <div className="bg-gray-50 rounded-lg p-3 border">
                   {policy.sourceUrl ? (
                     <a
@@ -376,16 +403,44 @@ ${policy?.keyPoints
               >
                 生成微信分享二维码
               </Button>
-              {showQR && typeof window !== 'undefined' && (
-                <div style={{
-                  position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh',
-                  background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999
-                }}>
-                  <div style={{ background: '#fff', padding: 24, borderRadius: 8, textAlign: 'center' }}>
+              {showQR && typeof window !== "undefined" && (
+                <div
+                  style={{
+                    position: "fixed",
+                    left: 0,
+                    top: 0,
+                    width: "100vw",
+                    height: "100vh",
+                    background: "rgba(0,0,0,0.3)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    zIndex: 9999,
+                  }}
+                >
+                  <div
+                    style={{
+                      background: "#fff",
+                      padding: 24,
+                      borderRadius: 8,
+                      textAlign: "center",
+                    }}
+                  >
                     <div style={{ marginBottom: 12 }}>微信扫码分享当前页面</div>
-                    {qrUrl && <img src={qrUrl} alt="二维码" style={{ width: 200, height: 200 }} />}
+                    {qrUrl && (
+                      <img
+                        src={qrUrl}
+                        alt="二维码"
+                        style={{ width: 200, height: 200 }}
+                      />
+                    )}
                     <div>
-                      <Button onClick={() => setShowQR(false)} style={{ marginTop: 16 }}>关闭</Button>
+                      <Button
+                        onClick={() => setShowQR(false)}
+                        style={{ marginTop: 16 }}
+                      >
+                        关闭
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -439,14 +494,16 @@ ${policy?.keyPoints
               </h3>
 
               {/* 消息 */}
-              <p className="text-sm text-gray-600 mb-6 leading-relaxed">{shareResult.message}</p>
+              <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+                {shareResult.message}
+              </p>
 
               {/* 按钮 */}
               <div className="flex justify-center">
                 <Button
                   onClick={() => {
-                    setResultModalOpen(false)
-                    setShareResult(null)
+                    setResultModalOpen(false);
+                    setShareResult(null);
                   }}
                   className="px-8"
                 >
@@ -518,27 +575,46 @@ ${policy?.keyPoints
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setExpanded({ ...expanded, content: !expanded.content })}
+                onClick={() =>
+                  setExpanded({ ...expanded, content: !expanded.content })
+                }
                 className="mt-3 text-blue-600 hover:text-blue-700"
               >
                 {expanded.content ? "收起" : "展开全文"}
-                <ChevronDown className={`ml-1 h-3 w-3 transition-transform ${expanded.content ? "rotate-180" : ""}`} />
+                <ChevronDown
+                  className={`ml-1 h-3 w-3 transition-transform ${
+                    expanded.content ? "rotate-180" : ""
+                  }`}
+                />
               </Button>
             </TabsContent>
 
             <TabsContent value="analysis" className="mt-4">
               <div className="space-y-3">
-                {analysisLoading && <div className="text-gray-500 text-sm">政策解读生成中...</div>}
-                {analysisError && <div className="text-red-500 text-sm">{analysisError}</div>}
+                {analysisLoading && (
+                  <div className="text-gray-500 text-sm">政策解读生成中...</div>
+                )}
+                {analysisError && (
+                  <div className="text-red-500 text-sm">{analysisError}</div>
+                )}
                 {!analysisLoading && !analysisError && policyAnalysis && (
                   <div className="prose prose-sm max-w-none">
                     <ReactMarkdown
                       components={{
-                        strong: ({node, ...props}) => (
-                          <strong style={{ color: '#2563eb', fontWeight: 'bold', fontSize: '1.125rem' }} {...props} />
+                        strong: ({ node, ...props }) => (
+                          <strong
+                            style={{
+                              color: "#2563eb",
+                              fontWeight: "bold",
+                              fontSize: "1.125rem",
+                            }}
+                            {...props}
+                          />
                         ),
                       }}
-                    >{policyAnalysis}</ReactMarkdown>
+                    >
+                      {policyAnalysis}
+                    </ReactMarkdown>
                   </div>
                 )}
               </div>
@@ -547,9 +623,14 @@ ${policy?.keyPoints
         </section>
 
         {/* 推荐项目及话术模块 */}
-        <section id="matching-projects" className="bg-[#f8f9fa] rounded-lg p-4 mb-4">
+        <section
+          id="matching-projects"
+          className="bg-[#f8f9fa] rounded-lg p-4 mb-4"
+        >
           {projectsLoading ? (
-            <div className="text-gray-400 text-center py-8 text-lg">推荐话术生成中...</div>
+            <div className="text-gray-400 text-center py-8 text-lg">
+              推荐话术生成中...
+            </div>
           ) : policy.projects.length > 0 ? (
             <Tabs defaultValue={policy.projects[0].id} className="w-full">
               <TabsList className="w-full flex flex-row gap-4 bg-transparent p-2 mb-6">
@@ -565,7 +646,11 @@ ${policy?.keyPoints
               </TabsList>
 
               {policy.projects.map((project, index) => (
-                <TabsContent key={project.id} value={project.id} className="mt-0">
+                <TabsContent
+                  key={project.id}
+                  value={project.id}
+                  className="mt-0"
+                >
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -576,18 +661,29 @@ ${policy?.keyPoints
                     <div className="w-full">
                       <ReactMarkdown
                         components={{
-                          strong: ({node, ...props}) => (
-                            <strong style={{ color: '#2563eb', fontWeight: 'bold', fontSize: '1.125rem' }} {...props} />
+                          strong: ({ node, ...props }) => (
+                            <strong
+                              style={{
+                                color: "#2563eb",
+                                fontWeight: "bold",
+                                fontSize: "1.125rem",
+                              }}
+                              {...props}
+                            />
                           ),
                         }}
-                      >{project.script}</ReactMarkdown>
+                      >
+                        {project.script}
+                      </ReactMarkdown>
                     </div>
                     {/* 复制按钮移到框外 */}
                     <div className="flex justify-end mt-3 w-full">
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleCopyScript(project.script, project.id)}
+                        onClick={() =>
+                          handleCopyScript(project.script, project.id)
+                        }
                         className="px-4 py-2"
                       >
                         {copiedScript === project.id ? "已复制" : "复制"}
@@ -607,10 +703,12 @@ ${policy?.keyPoints
               ))}
             </Tabs>
           ) : (
-            <div className="text-gray-400 text-center py-8 text-lg">暂无推荐话术</div>
+            <div className="text-gray-400 text-center py-8 text-lg">
+              暂无推荐话术
+            </div>
           )}
         </section>
       </main>
     </div>
-  )
+  );
 }

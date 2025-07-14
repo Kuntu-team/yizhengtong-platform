@@ -176,13 +176,13 @@ export function AppLayout({
                       <User className="h-4 w-4" />
                       个人中心
                     </button>
-                    <button
+                    {/* <button
                       onClick={handleTeamManagementClick}
                       className="w-full px-4 py-3 text-left hover:bg-business-gray-50 flex items-center gap-3 text-business-gray-700"
                     >
                       <Users className="h-4 w-4" />
                       人员管理
-                    </button>
+                    </button> */}
                     <div className="border-t border-business-gray-100 my-1"></div>
                     <button
                       onClick={handleLogout}
