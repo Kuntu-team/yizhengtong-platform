@@ -113,3 +113,18 @@ body {
     @apply bg-business-red-600 hover:bg-business-red-700 text-white font-medium;
   }
 }
+
+/* 移动端抽屉菜单动画 */
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0.5;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+.animate-slideInLeft {
+  animation: slideInLeft 0.3s cubic-bezier(0.4,0,0.2,1);
+}

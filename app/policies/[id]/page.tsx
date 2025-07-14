@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronDown, CheckCircle, Users, X } from "lucide-react"
+import { ChevronLeft, ChevronDown, CheckCircle, Users, X, Copy } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -11,6 +11,7 @@ import React from "react"
 import ReactMarkdown from "react-markdown"
 import QRCode from "qrcode"
 import { useParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 
 interface Project {
   id: string
@@ -278,10 +279,21 @@ ${policy?.keyPoints
   const [qrUrl, setQrUrl] = useState<string | null>(null);
   useEffect(() => {
     if (showQR && typeof window !== 'undefined') {
-      const url = window.location.href;
+      let url = window.location.origin + window.location.pathname;
+      if (window.location.search) {
+        // 保留原有参数并追加from=wxshare
+        const params = new URLSearchParams(window.location.search);
+        params.set('from', 'wxshare');
+        url += '?' + params.toString();
+      } else {
+        url += '?from=wxshare';
+      }
       QRCode.toDataURL(url).then(setQrUrl);
     }
   }, [showQR]);
+
+  const searchParams = useSearchParams();
+  const isFromWxShare = searchParams?.get('from') === 'wxshare';
 
   if (!policy) {
     return <div className="text-center py-16">加载中...</div>
@@ -292,9 +304,11 @@ ${policy?.keyPoints
       {/* 顶部导航 */}
       <header className="bg-white border-b sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
+          {!isFromWxShare && (
+            <Button variant="ghost" size="sm" onClick={() => router.back()}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+          )}
           <h1 className="ml-4 text-base font-medium truncate flex-1">{policy.title}</h1>
           <Button
             variant="ghost"
@@ -345,7 +359,7 @@ ${policy?.keyPoints
                   value={shareText.replace(/\n{2,}/g, '\n').trim()}
                   onChange={(e) => setShareText(e.target.value)}
                   placeholder="编辑分享文案..."
-                  className="min-h-[120px] resize-none text-sm"
+                  className="min-h-[120px] resize-none text-sm border border-gray-300 focus:border-gray-400 focus:ring-0"
                   maxLength={200}
                 />
               </div>
@@ -372,7 +386,7 @@ ${policy?.keyPoints
               {/* 二维码分享区域，仅PC端显示 */}
               <Button
                 onClick={() => setShowQR(true)}
-                className="w-full h-10 bg-yellow-300 hover:bg-yellow-400 text-gray-900 font-bold mt-2"
+                className="w-full h-10 bg-[#07C160] hover:bg-[#06AD56] text-white font-bold mt-2"
               >
                 生成微信分享二维码
               </Button>
@@ -496,7 +510,7 @@ ${policy?.keyPoints
               </div>
 
               <AnimatePresence>
-                {expanded.content && (
+                {expanded.content && policy.fullContent.split("\n").length > 5 && (
                   <motion.div
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: "auto", opacity: 1 }}
@@ -507,7 +521,7 @@ ${policy?.keyPoints
                     <div className="mt-4 bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
                       <div className="prose prose-sm max-w-none">
                         <div className="text-sm leading-relaxed text-gray-700 whitespace-pre-line">
-                          {policy.fullContent}
+                          {policy.fullContent.split("\n").slice(5).join("\n")}
                         </div>
                       </div>
                     </div>
@@ -515,15 +529,19 @@ ${policy?.keyPoints
                 )}
               </AnimatePresence>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setExpanded({ ...expanded, content: !expanded.content })}
-                className="mt-3 text-blue-600 hover:text-blue-700"
-              >
-                {expanded.content ? "收起" : "展开全文"}
-                <ChevronDown className={`ml-1 h-3 w-3 transition-transform ${expanded.content ? "rotate-180" : ""}`} />
-              </Button>
+              {policy.fullContent.split("\n").length > 5 && (
+                <div className="flex justify-end mt-3">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setExpanded({ ...expanded, content: !expanded.content })}
+                    className="text-blue-600 hover:text-blue-700"
+                  >
+                    {expanded.content ? "收起" : "展开全文"}
+                    <ChevronDown className={`ml-1 h-3 w-3 transition-transform ${expanded.content ? "rotate-180" : ""}`} />
+                  </Button>
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="analysis" className="mt-4">
@@ -587,10 +605,20 @@ ${policy?.keyPoints
                       <Button
                         size="sm"
                         variant="outline"
+                        className="bg-white text-gray-700 border-white hover:bg-blue-50"
                         onClick={() => handleCopyScript(project.script, project.id)}
-                        className="px-4 py-2"
                       >
-                        {copiedScript === project.id ? "已复制" : "复制"}
+                        {copiedScript === project.id ? (
+                          <>
+                            <CheckCircle className="h-3 w-3 mr-1 text-green-600" />
+                            <span className="text-green-600">已复制</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-3 w-3 mr-1" />
+                            复制
+                          </>
+                        )}
                       </Button>
                     </div>
                     {copiedScript === project.id && (

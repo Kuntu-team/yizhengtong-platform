@@ -153,7 +153,7 @@ function CompactPersonCard({
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md transition-all duration-300 cursor-pointer hover:bg-gray-50"
+      className="bg-white border border-gray-200 rounded-lg p-2 sm:p-3 hover:shadow-md transition-all duration-300 cursor-pointer hover:bg-gray-50"
       onClick={(e) => {
         const target = e.target as HTMLElement
         if (!target.closest("button")) {
@@ -161,7 +161,7 @@ function CompactPersonCard({
         }
       }}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         {/* 头像 */}
         {person.avatar ? (
           <img 
@@ -182,7 +182,7 @@ function CompactPersonCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-1">
             {/* 第一行：姓名 */}
-            <h3 className="font-bold text-gray-900 text-base truncate">{person.name}</h3>
+            <h3 className="font-bold text-gray-900 text-base truncate max-w-[80px] sm:max-w-[120px]" title={person.name}>{person.name}</h3>
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
@@ -197,28 +197,28 @@ function CompactPersonCard({
           </div>
 
           {/* 第二行：部门、职位、地区、年龄 */}
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-sm font-medium text-gray-800">{person.department}</span>
+          <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2 flex-wrap">
+            <span className="text-sm font-medium text-gray-800 truncate max-w-[60px]" title={person.department}>{person.department}</span>
             <span className="text-xs text-slate-400">·</span>
-            <span className="text-sm font-medium text-gray-800">{person.position}</span>
+            <span className="text-sm font-medium text-gray-800 truncate max-w-[60px]" title={person.position}>{person.position}</span>
             {/* <span className="text-xs text-slate-400">·</span> */}
-            <span className="text-xs text-gray-700">{person.hometown}</span>
+            <span className="text-xs text-gray-700 truncate max-w-[60px]" title={person.hometown}>{person.hometown}</span>
             <span className="text-xs text-slate-400">·</span>
             <span className="text-xs text-gray-600">{person.age !== null ? `${person.age}岁` : '未知'}</span>
           </div>
 
           {/* 第三行：电话和微信 */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center gap-1">
               <Phone className="h-3 w-3 text-slate-400 flex-shrink-0" />
-              <span className="text-xs text-gray-900 font-medium">{person.office_phone || '暂无办公电话'}</span>
+              <span className="text-xs text-gray-900 font-medium truncate max-w-[80px]" title={person.office_phone}>{person.office_phone || '暂无办公电话'}</span>
             </div>
             <div className="flex items-center gap-1">
               <svg className="h-3 w-3 text-green-600 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.295.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 4.882-1.900 7.6.5.5-3.187-2.75-6.874-8.372-6.874zm-3.375 5.25a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5zm6.75 0a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5z" />
+                <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.295.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 4.882-1.900 7.6.5-3.187-2.75-6.874-8.372-6.874zm-3.375 5.25a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5zm6.75 0a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5z" />
                 <path d="M15.312 9.531c-4.157 0-7.5 2.69-7.5 6.094 0 1.875.937 3.563 2.438 4.688-.188.75-.375 1.313-.375 1.313s1.313-.375 2.063-.75c.375.094.75.188 1.125.188 4.156 0 7.5-2.69 7.5-6.094s-3.344-6.094-7.5-6.094zm-2.25 3.75a.563.563 0 1 1 0-1.125.563.563 0 0 1 0 1.125zm4.5 0a.563.563 0 1 1 0-1.125.563.563 0 0 1 0 1.125z" />
               </svg>
-              <span className="text-xs text-gray-900 font-medium">{person.contact?.wechat || "未提供"}</span>
+              <span className="text-xs text-gray-900 font-medium truncate max-w-[80px]" title={person.contact?.wechat}>{person.contact?.wechat || "未提供"}</span>
             </div>
           </div>
         </div>
@@ -363,16 +363,23 @@ const response = await fetch(`/api/key-persons?businessPersonId=${businessPerson
 
   // 过滤人物列表
   const filteredPeople = useMemo(() => {
-    return people.filter((person) => {
+    let filtered = people.filter((person) => {
       // 首先按tab筛选
       if (activeTab === "followed" && !followedPeople.includes(person.id)) {
         return false
       }
-
       const matchesDepartment = selectedDepartment === "全部部门" || person.department === selectedDepartment
       const matchesPosition = selectedPosition === "全部岗位" || person.position === selectedPosition
       return matchesDepartment && matchesPosition
-    })
+    });
+    // 全部人物时，已关注的优先展示
+    if (activeTab === "all") {
+      filtered = [
+        ...filtered.filter(p => followedPeople.includes(p.id)),
+        ...filtered.filter(p => !followedPeople.includes(p.id)),
+      ];
+    }
+    return filtered;
   }, [people, selectedDepartment, selectedPosition, activeTab, followedPeople])
 
   // 切换关注状态
@@ -529,7 +536,7 @@ const response = await fetch(`/api/key-persons?businessPersonId=${businessPerson
             </Tabs>
 
             {/* 筛选按钮组 */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 ml-2 sm:ml-0">
               {/* 筛选按钮 */}
               <div className="relative">
                 <Button
@@ -613,14 +620,14 @@ const response = await fetch(`/api/key-persons?businessPersonId=${businessPerson
       </div>
 
       {/* 主体内容 */}
-      <main className="max-w-7xl mx-auto px-6 py-4">
+      <main className="max-w-7xl mx-auto px-2 sm:px-6 py-2 sm:py-4">
         {isLoading ? (
           <div className="text-center py-12">加载中...</div>
         ) : (
           <Tabs value={activeTab} className="w-full">
             <TabsContent value="all" className="mt-0">
               {filteredPeople.length > 0 ? (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                   {filteredPeople.map((person, index) => (
                     <motion.div
                       key={person.id}
@@ -659,7 +666,7 @@ const response = await fetch(`/api/key-persons?businessPersonId=${businessPerson
 
             <TabsContent value="followed" className="mt-0">
               {filteredPeople.length > 0 ? (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                   {filteredPeople.map((person, index) => (
                     <motion.div
                       key={person.id}

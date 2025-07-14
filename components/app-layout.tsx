@@ -6,7 +6,7 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { NotificationDropdown } from "@/components/notification-dropdown";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, User, Users } from "lucide-react";
+import { LogOut, User, Users, Menu, Users as UsersIcon, ListChecks, BookOpen, BarChart3 } from "lucide-react";
 import { motion } from "framer-motion";
 import Cookies from "js-cookie";
 
@@ -33,7 +33,8 @@ export function AppLayout({
   hideNavigation = false,
 }: AppLayoutProps) {
   const [user, setUser] = useState<UserInfo | null>(null);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
@@ -54,7 +55,7 @@ export function AppLayout({
     Object.keys(allCookies).forEach((key) => {
       Cookies.remove(key, { path: "/" });
     });
-    setIsMenuOpen(false);
+    setIsUserMenuOpen(false);
     router.push("/login");
     toast({
       description: "已退出登录",
@@ -62,12 +63,12 @@ export function AppLayout({
   };
 
   const handleProfileClick = () => {
-    setIsMenuOpen(false);
+    setIsUserMenuOpen(false);
     router.push("/profile");
   };
 
   const handleTeamManagementClick = () => {
-    setIsMenuOpen(false);
+    setIsUserMenuOpen(false);
     router.push("/team-management");
   };
 
@@ -76,26 +77,24 @@ export function AppLayout({
   };
 
   const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
+    setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
-  // 点击外部关闭菜单
+  // 点击外部关闭个人中心菜单
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
       if (!target.closest(".user-menu-container")) {
-        setIsMenuOpen(false);
+        setIsUserMenuOpen(false);
       }
     };
-
-    if (isMenuOpen) {
+    if (isUserMenuOpen) {
       document.addEventListener("click", handleClickOutside);
     }
-
     return () => {
       document.removeEventListener("click", handleClickOutside);
     };
-  }, [isMenuOpen]);
+  }, [isUserMenuOpen]);
 
   return (
     <div className="min-h-screen bg-business-gray-50">
@@ -107,13 +106,21 @@ export function AppLayout({
           transition={{ duration: 0.6 }}
           className="bg-white border-b border-business-gray-200 fixed top-0 w-full z-50 shadow-sm"
         >
-          <div className="h-20 px-8 flex items-center justify-between max-w-7xl mx-auto">
-            <div className="flex items-center gap-12">
+          <div className="h-20 px-4 sm:px-8 flex items-center justify-between max-w-7xl mx-auto">
+            <div className="flex items-center gap-4 sm:gap-12">
+              {/* 移动端汉堡菜单按钮 */}
+              <button
+                className="block md:hidden p-2 rounded-lg hover:bg-business-gray-100 focus:outline-none"
+                onClick={e => { e.stopPropagation(); setIsMobileMenuOpen(true); }}
+                aria-label="打开菜单"
+              >
+                <Menu className="h-6 w-6 text-business-gray-900" />
+              </button>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={handleHomeClick}
-                className="text-2xl font-semibold text-business-gray-900 hover:text-business-blue-600 transition-colors duration-300"
+                className="text-2xl font-semibold text-business-gray-900 hover:text-business-blue-600 transition-colors duration-300 select-none"
               >
                 亿政通
               </motion.button>
@@ -155,14 +162,14 @@ export function AppLayout({
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={toggleMenu}
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="hover:bg-business-gray-100 flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300"
                 >
                   <User className="h-5 w-5 text-business-gray-700" />
                 </motion.button>
 
                 {/* 下拉菜单 */}
-                {isMenuOpen && (
+                {isUserMenuOpen && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -201,6 +208,36 @@ export function AppLayout({
 
       {/* 页面内容 */}
       <main className={isSubPage ? "" : "pt-20"}>{children}</main>
+
+      {/* 移动端下拉菜单 */}
+      {!isSubPage && isMobileMenuOpen && (
+        <div className="fixed inset-0 z-[999]" onClick={() => setIsMobileMenuOpen(false)}>
+          <div className="absolute left-2 top-16 w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-2 animate-fadeIn" onClick={e => e.stopPropagation()}>
+            <nav className="flex flex-col gap-1">
+              <Link href="/directory" onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-5 py-3 text-base font-medium text-gray-800 hover:bg-blue-50 active:bg-blue-100 transition rounded-lg">
+                <UsersIcon className="h-5 w-5 text-blue-500" />
+                关键人物花名册
+              </Link>
+              <Link href="/leads" onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-5 py-3 text-base font-medium text-gray-800 hover:bg-blue-50 active:bg-blue-100 transition rounded-lg">
+                <ListChecks className="h-5 w-5 text-green-500" />
+                销售线索
+              </Link>
+              <Link href="/policies" onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-5 py-3 text-base font-medium text-gray-800 hover:bg-blue-50 active:bg-blue-100 transition rounded-lg">
+                <BookOpen className="h-5 w-5 text-orange-500" />
+                新政新知
+              </Link>
+              <Link href="/visualization" onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-5 py-3 text-base font-medium text-gray-800 hover:bg-blue-50 active:bg-blue-100 transition rounded-lg">
+                <BarChart3 className="h-5 w-5 text-purple-500" />
+                竞态看板
+              </Link>
+            </nav>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
