@@ -78,6 +78,8 @@ interface Person {
 
 export default function LeadsPage() {
   const router = useRouter();
+  const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+  const personIdParam = searchParams?.get("person_id") || null;
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
   const [selectedPeople, setSelectedPeople] = useState<string[]>([]);
@@ -125,20 +127,24 @@ export default function LeadsPage() {
     }
   }, [activeTab]);
 
+  // 修改filteredData逻辑：如果有person_id参数，只展示该人员线索，否则展示全部
   const filteredData = useMemo(() => {
-    if (selectedRegions.length === 0 && selectedPeople.length === 0) {
-      return filteredItems;
+    let data = filteredItems;
+    if (personIdParam) {
+      data = data.filter((item) => item.person_id === personIdParam);
     }
-    return filteredItems.filter((item) => {
+    if (selectedRegions.length === 0 && selectedPeople.length === 0) {
+      return data;
+    }
+    return data.filter((item) => {
       const matchesRegion =
         selectedRegions.length === 0 ||
         selectedRegions.includes(item.news_province_code);
       const matchesPerson =
         selectedPeople.length === 0 || selectedPeople.includes(item.person_id);
-
       return matchesRegion && matchesPerson;
     });
-  }, [selectedRegions, selectedPeople, filteredItems]);
+  }, [selectedRegions, selectedPeople, filteredItems, personIdParam]);
   const fetchData = async () => {
     try {
       const response = await axios.get("api/sales-lead");

@@ -269,8 +269,19 @@ export default function DirectoryPage() {
   // 检查是否有筛选条件
   const hasFilter = selectedDepartment !== "全部部门" || selectedPosition !== "全部岗位"
 
-  // 根据部门选择更新岗位选项
-  const availablePositions = departmentPositions[selectedDepartment] || ["全部岗位"]
+  // 当前筛选下所有人（不管是否关注）
+  const filteredAllPeople = useMemo(() => {
+    return people.filter((person) => {
+      const matchesDepartment = selectedDepartment === "全部部门" || person.department === selectedDepartment;
+      const matchesPosition = selectedPosition === "全部岗位" || person.position === selectedPosition;
+      return matchesDepartment && matchesPosition;
+    });
+  }, [people, selectedDepartment, selectedPosition]);
+
+  // 当前筛选下被关注的人
+  const filteredFollowedPeople = useMemo(() => {
+    return filteredAllPeople.filter((person) => followedPeople.includes(person.id));
+  }, [filteredAllPeople, followedPeople]);
 
   // 获取人物数据
   useEffect(() => {
@@ -506,13 +517,13 @@ const response = await fetch(`/api/key-persons?businessPersonId=${businessPerson
                   value="followed"
                   className="text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=inactive]:text-gray-600 data-[state=inactive]:bg-transparent"
                 >
-                  我关注的 ({followedPeople.length})
+                  我关注的 ({hasFilter ? filteredFollowedPeople.length : followedPeople.length})
                 </TabsTrigger>
                 <TabsTrigger
                   value="all"
                   className="text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=inactive]:text-gray-600 data-[state=inactive]:bg-transparent"
                 >
-                  全部人物 ({people.length})
+                  全部人物 ({hasFilter ? filteredAllPeople.length : people.length})
                 </TabsTrigger>
               </TabsList>
             </Tabs>

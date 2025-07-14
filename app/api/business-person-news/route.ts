@@ -79,5 +79,6 @@ export async function GET(req: NextRequest) {
     page,
     pageSize,
     data: result,
+    followedPersonIds, // 新增
   });
 } 
