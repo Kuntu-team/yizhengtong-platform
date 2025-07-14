@@ -44,6 +44,7 @@ export default function HomePage() {
   const pageSize = 10;
   const router = useRouter();
   const [itemsCount, setItemsCount] = useState(0);
+  const [followedPersonIds, setFollowedPersonIds] = useState<string[]>([]); // 新增
   useEffect(() => {
     fetchData();
     // 安全地获取localStorage中的数据
@@ -97,6 +98,7 @@ export default function HomePage() {
       .then((res) => {
         setNewsData(res.data || []);
         setTotal(res.total || 0);
+        setFollowedPersonIds(res.followedPersonIds || []); // 新增
         console.log('当前商务人员关注的followed_person_id:', res.followedPersonIds); // 新增
       });
   }, [page]);
@@ -138,7 +140,7 @@ export default function HomePage() {
   return (
     <AppLayout>
       <div className="min-h-screen bg-white">
-        <div className="max-w-4xl mx-auto px-6 py-8">
+        <div className="max-w-4xl mx-auto px-2 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-8">
           {/* 简化的问候语区域 */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -146,30 +148,27 @@ export default function HomePage() {
             transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
           >
             <Card className="bg-white border border-gray-200 shadow-sm rounded-lg">
-              <CardContent className="px-6 py-6">
-                <div className="text-center space-y-2">
+              <CardContent className="px-2 sm:px-6 py-4 sm:py-6">
+                <div className="text-center space-y-1 sm:space-y-2">
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.3, duration: 0.6 }}
                   >
-                    <h1 className="text-2xl font-light text-gray-900 tracking-tight">
-                      欢迎回来，
-                      {userYk?.business_person_name || "用户"}
-                      ，你有
-                      <span className="text-5xl font-medium text-red-500">
+                    <h1 className="text-lg sm:text-2xl font-light text-gray-900 tracking-tight">
+                      欢迎回来，{userYk?.business_person_name || "用户"}，你有
+                      <span className="text-2xl sm:text-5xl font-bold text-red-500 mx-1">
                         {itemsCount}
                       </span>
                       条新的任内动态
                     </h1>
                   </motion.div>
-
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.5, duration: 0.6 }}
                   >
-                    <p className="text-base font-light text-gray-600 tracking-wide">
+                    <p className="text-xs sm:text-base font-light text-gray-600 tracking-wide">
                       {getDateString()}
                     </p>
                   </motion.div>
@@ -187,25 +186,31 @@ export default function HomePage() {
               delay: 0.2,
               ease: [0.25, 0.46, 0.45, 0.94],
             }}
-            className="mt-8"
+            className="mt-2 sm:mt-8"
           >
             <Card className="bg-white border border-gray-200 shadow-sm rounded-lg">
-              <CardContent className="px-6 py-6">
-                <div className="flex justify-between items-center mb-2">
+              <CardContent className="px-2 sm:px-6 py-4 sm:py-6">
+                <div className="flex flex-row justify-between items-center mb-2 gap-1">
                   <div>
-                    <h2 className="text-lg font-medium text-gray-900 tracking-wide">
+                    <h2 className="text-base sm:text-lg font-medium text-gray-900 tracking-wide">
                       关注领导动态
                     </h2>
                     <p className="text-xs text-gray-500 mb-1">
                       当前仅展示近一个月内的关注领导动态
                     </p>
                   </div>
-                  <Badge variant="outline" className="text-xs font-light">
+                  <Badge
+                    variant="outline"
+                    className="text-[11px] sm:text-xs font-light cursor-pointer max-w-[72px] truncate px-2 sm:px-3 ml-auto"
+                    onClick={() => {
+                      router.push(`/leads?followedPersonIds=${encodeURIComponent(JSON.stringify(followedPersonIds))}`);
+                    }}
+                  >
                     {total} 条更新
                   </Badge>
                 </div>
 
-                <div className="space-y-4">
+                <div className="flex flex-col gap-2 sm:gap-4">
                   {newsData.map((news, index) => (
                     <motion.div
                       key={news.id}
@@ -228,7 +233,7 @@ export default function HomePage() {
                           <div className="flex items-center gap-3 text-xs text-gray-500">
                             <div className="flex items-center gap-1">
                               <User className="h-3 w-3" />
-                              <span className="font-light">{news.leader}</span>
+                              <span className="font-light truncate max-w-[64px] inline-block align-bottom" title={news.leader}>{news.leader}</span>
                             </div>
                             <div className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
