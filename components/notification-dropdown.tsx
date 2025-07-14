@@ -1,23 +1,23 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Bell, User, FileText, Star, CheckCircle, X } from "lucide-react"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Bell, User, FileText, Star, CheckCircle, X } from "lucide-react";
 
 interface Notification {
-  id: string
-  type: "leader_news" | "new_policy"
-  title: string
-  description: string
-  time: string
-  timeAgo: string
-  read: boolean
-  leaderId?: string
-  leaderName?: string
-  policyId?: string
-  newsId?: string
+  id: string;
+  type: "leader_news" | "new_policy";
+  title: string;
+  description: string;
+  time: string;
+  timeAgo: string;
+  read: boolean;
+  leaderId?: string;
+  leaderName?: string;
+  policyId?: string;
+  newsId?: string;
 }
 
 const mockNotifications: Notification[] = [
@@ -25,7 +25,8 @@ const mockNotifications: Notification[] = [
     id: "notif1",
     type: "leader_news",
     title: "张三：九江将建5个数字产业园",
-    description: "您关注的张三发改委主任发布了新动态：谈数字经济3年规划，投资500亿",
+    description:
+      "您关注的张三发改委主任发布了新动态：谈数字经济3年规划，投资500亿",
     time: "2025-06-24 14:30",
     timeAgo: "2小时前",
     read: false,
@@ -37,7 +38,8 @@ const mockNotifications: Notification[] = [
     id: "notif2",
     type: "new_policy",
     title: "关于推进数字经济发展的指导意见",
-    description: "国务院发布新政策，涉及数字经济发展指导意见，可能影响您的业务领域",
+    description:
+      "国务院发布新政策，涉及数字经济发展指导意见，可能影响您的业务领域",
     time: "2025-06-24 10:00",
     timeAgo: "6小时前",
     read: false,
@@ -47,7 +49,8 @@ const mockNotifications: Notification[] = [
     id: "notif3",
     type: "leader_news",
     title: "李四：南昌港口物流园区规划",
-    description: "您关注的李四财政局长发布了新动态：介绍新港区建设，预计投资200亿",
+    description:
+      "您关注的李四财政局长发布了新动态：介绍新港区建设，预计投资200亿",
     time: "2025-06-24 08:15",
     timeAgo: "8小时前",
     read: true,
@@ -55,49 +58,52 @@ const mockNotifications: Notification[] = [
     leaderName: "李四",
     newsId: "2",
   },
-]
+];
 
 export function NotificationDropdown() {
-  const router = useRouter()
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications)
-  const [activeTab, setActiveTab] = useState("all")
-  const [isOpen, setIsOpen] = useState(false)
+  const router = useRouter();
+  const [notifications, setNotifications] =
+    useState<Notification[]>(mockNotifications);
+  const [activeTab, setActiveTab] = useState("all");
+  const [isOpen, setIsOpen] = useState(false);
 
-  const unreadCount = notifications.filter((n) => !n.read).length
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   const filteredNotifications = notifications.filter((notification) => {
-    if (activeTab === "all") return true
-    if (activeTab === "leader") return notification.type === "leader_news"
-    if (activeTab === "policy") return notification.type === "new_policy"
-    if (activeTab === "unread") return !notification.read
-    return true
-  })
+    if (activeTab === "all") return true;
+    if (activeTab === "leader") return notification.type === "leader_news";
+    if (activeTab === "policy") return notification.type === "new_policy";
+    if (activeTab === "unread") return !notification.read;
+    return true;
+  });
 
   const handleToggle = () => {
-    setIsOpen(!isOpen)
-  }
+    setIsOpen(!isOpen);
+  };
 
   const handleClose = () => {
-    setIsOpen(false)
-  }
+    setIsOpen(false);
+  };
 
   const handleNotificationClick = (notification: Notification) => {
-    setIsOpen(false)
+    setIsOpen(false);
     if (notification.type === "leader_news" && notification.newsId) {
-      router.push(`/leads/detail/${notification.newsId}`)
+      router.push(`/leads/detail/${notification.newsId}`);
     } else if (notification.type === "new_policy" && notification.policyId) {
-      router.push(`/policies/${notification.policyId}`)
+      router.push(`/policies/${notification.policyId}`);
     }
-  }
+  };
 
   const handleMarkAsRead = (notificationId: string, e: React.MouseEvent) => {
-    e.stopPropagation()
-    setNotifications((prev) => prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n)))
-  }
+    e.stopPropagation();
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
+    );
+  };
 
   const handleMarkAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
-  }
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
 
   return (
     <div className="relative">
@@ -129,16 +135,24 @@ export function NotificationDropdown() {
                 <Bell className="h-5 w-5 text-slate-600" />
                 <h3 className="font-semibold text-slate-800">通知</h3>
                 {unreadCount > 0 && (
-                  <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{unreadCount}</span>
+                  <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                    {unreadCount}
+                  </span>
                 )}
               </div>
               <div className="flex items-center gap-2">
                 {unreadCount > 0 && (
-                  <button onClick={handleMarkAllAsRead} className="text-xs px-2 py-1 hover:bg-gray-100 rounded">
+                  <button
+                    onClick={handleMarkAllAsRead}
+                    className="text-xs px-2 py-1 hover:bg-gray-100 rounded"
+                  >
                     全部已读
                   </button>
                 )}
-                <button onClick={handleClose} className="p-1 hover:bg-gray-100 rounded">
+                <button
+                  onClick={handleClose}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
                   <X className="h-4 w-4" />
                 </button>
               </div>
@@ -149,9 +163,12 @@ export function NotificationDropdown() {
               <div className="flex space-x-1">
                 {[
                   { key: "all", label: "全部" },
-                  { key: "unread", label: `未读${unreadCount > 0 ? ` (${unreadCount})` : ""}` },
+                  {
+                    key: "unread",
+                    label: `未读${unreadCount > 0 ? ` (${unreadCount})` : ""}`,
+                  },
                   { key: "leader", label: "关注" },
-                  { key: "policy", label: "政策" },
+                  // { key: "policy", label: "政策" },
                 ].map((tab) => (
                   <button
                     key={tab.key}
@@ -206,8 +223,12 @@ export function NotificationDropdown() {
                             {notification.title}
                           </h4>
                           <div className="flex items-center gap-1 ml-2">
-                            {!notification.read && <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />}
-                            <span className="text-xs text-gray-500 whitespace-nowrap">{notification.timeAgo}</span>
+                            {!notification.read && (
+                              <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />
+                            )}
+                            <span className="text-xs text-gray-500 whitespace-nowrap">
+                              {notification.timeAgo}
+                            </span>
                           </div>
                         </div>
 
@@ -224,7 +245,9 @@ export function NotificationDropdown() {
                                   : "bg-gray-100 text-gray-600"
                               }`}
                             >
-                              {notification.type === "leader_news" ? "关注动态" : "新政策"}
+                              {notification.type === "leader_news"
+                                ? "关注动态"
+                                : "新政策"}
                             </span>
                             {notification.leaderName && (
                               <div className="flex items-center gap-1 text-xs text-gray-500">
@@ -233,7 +256,9 @@ export function NotificationDropdown() {
                               </div>
                             )}
                           </div>
-                          {notification.read && <CheckCircle className="h-3 w-3 text-green-500" />}
+                          {notification.read && (
+                            <CheckCircle className="h-3 w-3 text-green-500" />
+                          )}
                         </div>
                       </div>
                     </div>
@@ -246,17 +271,17 @@ export function NotificationDropdown() {
                     {activeTab === "unread"
                       ? "暂无未读通知"
                       : activeTab === "leader"
-                        ? "暂无关注动态"
-                        : activeTab === "policy"
-                          ? "暂无新政策通知"
-                          : "暂无通知"}
+                      ? "暂无关注动态"
+                      : activeTab === "policy"
+                      ? "暂无新政策通知"
+                      : "暂无通知"}
                   </p>
                   <p className="text-xs text-gray-400">
                     {activeTab === "leader"
                       ? "关注感兴趣的领导获取最新动态"
                       : activeTab === "policy"
-                        ? "设置关注领域接收政策更新"
-                        : "有新动态时我们会及时通知您"}
+                      ? "设置关注领域接收政策更新"
+                      : "有新动态时我们会及时通知您"}
                   </p>
                 </div>
               )}
@@ -265,5 +290,5 @@ export function NotificationDropdown() {
         </>
       )}
     </div>
-  )
+  );
 }
