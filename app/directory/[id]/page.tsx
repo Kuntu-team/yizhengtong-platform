@@ -418,6 +418,27 @@ function parseDate(str: string) {
   return 0;
 }
 
+// 计算当前任职年数（基于workExperiences）
+function getCurrentTenureFromWorkExperiences(workExperiences: Array<{ startdate: string; enddate: string }>): number | null {
+  if (!workExperiences || workExperiences.length === 0) return null;
+  // 找到enddate为“至今”的那条
+  const current = workExperiences.find((exp) => exp.enddate === "至今");
+  if (!current || !current.startdate) return null;
+  // 支持“2018年09月”或“2018-09”或“2018.09”格式
+  const match = current.startdate.match(/(\d{4})[年.-](\d{1,2})?/);
+  if (match) {
+    const startYear = parseInt(match[1], 10);
+    const now = new Date();
+    let years = now.getFullYear() - startYear;
+    if (match[2]) {
+      const startMonth = parseInt(match[2], 10);
+      if (now.getMonth() + 1 < startMonth) years--;
+    }
+    return years >= 0 ? years : null;
+  }
+  return null;
+}
+
 export default function PersonDetailPage() {
   const params = useParams();
   const id = params.id as string;
@@ -937,7 +958,7 @@ export default function PersonDetailPage() {
               variant="link"
               size="sm"
               className="text-blue-600 text-xs"
-              onClick={() => router.push("/leads")}
+              onClick={() => router.push(`/leads?person_id=${id}`)}
             >
               查看全部 <ChevronRight className="h-3 w-3 ml-1" />
             </Button>
@@ -1051,7 +1072,7 @@ export default function PersonDetailPage() {
                     · {person.age > 0 ? `${person.age}岁` : "年龄未知"}
                   </p>
                   <p className="text-sm font-bold text-gray-700">
-                    · {getCurrentTenure(person.workHistory)}年任职
+                    · {getCurrentTenureFromWorkExperiences(workExperiences) ? `${getCurrentTenureFromWorkExperiences(workExperiences)}年任职` : "任职年限未知"}
                   </p>
 
                   {person.contact && (

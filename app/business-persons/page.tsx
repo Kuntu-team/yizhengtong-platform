@@ -24,30 +24,46 @@ interface BusinessPerson {
   // 联查字段
   private_phone?: string | null;
   wechat_number?: string | null;
+  // 额外字段
+  person_photo_url?: string | null;
+  region_cn?: string | null;
+  birth_date?: Date | string | null;
 }
 
 // 服务器组件获取数据（多表联查）
 async function getBusinessPersons(): Promise<BusinessPerson[]> {
   try {
-    // 使用Prisma raw查询进行多表联查
-    const data = await prisma.$queryRaw`
-      SELECT 
-        p.person_photo_url, 
-        p.person_name, 
-        p.department, 
-        p.position, 
-        p.region_cn, 
-        p.birth_date, 
-        c.wechat_number 
-      FROM 
-        key_person_base_info p 
-      LEFT JOIN 
-        key_person_private_info c 
-      ON 
-        p.person_id = c.person_id
-      ORDER BY 
-        p.person_name ASC
-    `;
+    // 1. 查询 key_person_base_info
+    const baseList = await prisma.key_person_base_info.findMany({
+      orderBy: { person_name: 'asc' },
+    });
+    // 2. 查询 key_person_private_info
+    const privateList = await prisma.key_person_private_info.findMany();
+    // 3. 合并数据
+    const data = baseList.map((p) => {
+      const privateInfo = privateList.find((c) => c.person_id === p.person_id);
+      return {
+        business_person_id: p.person_id,
+        business_person_name: p.person_name,
+        business_person_type: undefined,
+        staff_id: undefined,
+        gender: p.gender ?? undefined,
+        department: p.department ?? undefined,
+        position: p.position ?? undefined,
+        phone_number: undefined,
+        email: undefined,
+        hire_date: undefined,
+        leave_date: undefined,
+        manager_name: undefined,
+        position_status: undefined,
+        private_phone: undefined,
+        wechat_number: privateInfo?.wechat_number ?? null,
+        // 额外字段
+        person_photo_url: p.person_photo_url ?? undefined,
+        region_cn: p.region_cn ?? undefined,
+        birth_date: p.birth_date ?? undefined,
+      } as BusinessPerson;
+    });
     return data as BusinessPerson[];
   } catch (error) {
     console.error('获取数据失败:', error);

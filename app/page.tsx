@@ -97,6 +97,7 @@ export default function HomePage() {
       .then((res) => {
         setNewsData(res.data || []);
         setTotal(res.total || 0);
+        console.log('当前商务人员关注的followed_person_id:', res.followedPersonIds); // 新增
       });
   }, [page]);
   const fetchData = async () => {
