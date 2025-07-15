@@ -124,7 +124,7 @@ export default function PolicyDetailPage() {
     setAnalysisError(null);
     setAnalysisLoading(true);
     setProjectsLoading(true);
-    fetch("http://47.94.55.173:8088/v1/chat-messages", {
+    fetch("https://dify.ktt.team/v1/chat-messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
