@@ -3,10 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "next build",
+    "build": "next build && npm run move",
     "dev": "next dev",
     "lint": "next lint",
-    "start": "next start"
+    "start": "next start",
+    "move": "xcopy /e /i .next\\static .next\\standalone\\.next\\static"
   },
   "dependencies": {
     "@ant-design/nextjs-registry": "^1.0.2",
