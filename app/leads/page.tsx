@@ -528,7 +528,7 @@ export default function LeadsPage() {
                         {item.person_name + "：" + item.news_title}
                       </h3>
                     </div>
-                    <div className="flex items-center justify-between">
+                    {/* <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3 text-sm text-slate-500">
                         <span>{item.news_source}</span>
                         <span>•</span>
@@ -537,6 +537,21 @@ export default function LeadsPage() {
                       <div className="text-base text-slate-600">
                         <span className="font-medium">商务抓手：</span>
                         <span className="text-blue-600 font-medium">
+                          {item.tags_name ?? "暂无"}
+                        </span>
+                      </div>
+                    </div> */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 sm:flex-nowrap">
+                      <div className="flex items-center gap-3 text-sm text-slate-500 w-full sm:w-auto sm:justify-end">
+                        <span>{item.news_source}</span>
+                        <span>•</span>
+                        <span>{getTimeAgo(item.news_time)}</span>
+                      </div>
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <span className="text-sm font-medium text-slate-700 whitespace-nowrap">
+                          商务抓手：
+                        </span>
+                        <span className="text-base text-blue-600 font-medium max-w-[200px] sm:max-w-none">
                           {item.tags_name ?? "暂无"}
                         </span>
                       </div>

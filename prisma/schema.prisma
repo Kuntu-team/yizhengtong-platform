@@ -26,6 +26,17 @@ model user {
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model user_notification_read {
+  id        Int      @id @default(autoincrement())
+  user_id   String   @db.VarChar(255)
+  news_id   String   @db.VarChar(255)
+  read_time DateTime @db.Timestamp(6)
+
+  @@unique([user_id, news_id], map: "user_id_news_id")
+  @@schema("front_dev")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model business_manager_region_info {
   id                   Int       @id @default(autoincrement())
   business_person_id   String?   @db.VarChar(36)
@@ -83,6 +94,18 @@ model dim_region_code {
   region_level String? @db.Char(1)
   parent_code  String? @db.VarChar(20)
   parent_cn    String? @db.VarChar(500)
+
+  @@schema("public")
+}
+
+model dim_region_code_dh {
+  province_code String? @db.VarChar
+  province_cn   String? @db.VarChar
+  city_code     String? @db.VarChar(20)
+  city_cn       String? @db.VarChar(500)
+  district_code String? @db.VarChar(20)
+  district_cn   String? @db.VarChar(500)
+  id            Int     @id @default(autoincrement())
 
   @@schema("public")
 }
@@ -270,18 +293,6 @@ model yk_internal_projects {
   data_status              String?  @default("1") @db.Char(1)
   created_time             DateTime @default(now()) @db.Timestamp(6)
   updated_time             DateTime @default(now()) @db.Timestamp(6)
-
-  @@schema("public")
-}
-
-model dim_region_code_dh {
-  province_code String? @db.VarChar
-  province_cn   String? @db.VarChar
-  city_code     String? @db.VarChar(20)
-  city_cn       String? @db.VarChar(500)
-  district_code String? @db.VarChar(20)
-  district_cn   String? @db.VarChar(500)
-  id            Int     @id @default(autoincrement())
 
   @@schema("public")
 }

@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useParams } from "next/navigation";
+import Cookies from "js-cookie";
 
 interface PersonDetailProps {
   params: {
@@ -430,13 +431,15 @@ export default function PersonDetailPage() {
     activities: false,
   });
   const [showScriptModal, setShowScriptModal] = useState(false);
-  const searchParams =
-    typeof window !== "undefined"
-      ? new URLSearchParams(window.location.search)
-      : null;
-  const businessPersonId =
-    searchParams?.get("businessPersonId") ||
-    "e7558fb6-234c-475d-82b9-79db46840389";
+  const businessPersonId = Cookies.get("business_person_id");
+  console.log("business_person_id", businessPersonId);
+  // const searchParams =
+  //   typeof window !== "undefined"
+  //     ? new URLSearchParams(window.location.search)
+  //     : null;
+  // const businessPersonId =
+  //   searchParams?.get("businessPersonId") ||
+  //   "e7558fb6-234c-475d-82b9-79db46840389";
   const [graduateSchool, setGraduateSchool] = useState<string>("");
   const [personDesc, setPersonDesc] = useState<string>("");
   const [newsList, setNewsList] = useState<any[]>([]);
