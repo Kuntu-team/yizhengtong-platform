@@ -214,7 +214,7 @@ export default function DetailPage({
 
     try {
       const res2 = await axios.post(
-        "http://47.94.55.173:8088/v1/chat-messages",
+        "https://dify.ktt.team/v1/chat-messages",
         params,
         {
           headers: {
