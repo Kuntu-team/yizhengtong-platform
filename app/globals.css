@@ -174,3 +174,91 @@
 .shadow-apple-lg {
   box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.25);
 }
+
+/* 移动端优化样式 */
+@layer utilities {
+  /* 移动端触摸优化 */
+  .active\:scale-98:active {
+    transform: scale(0.98);
+  }
+  
+  /* 移动端文字截断优化 */
+  .truncate-mobile {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  /* 移动端间距优化 */
+  .space-y-mobile > * + * {
+    margin-top: 0.75rem;
+  }
+  
+  /* 移动端卡片优化 */
+  .card-mobile {
+    @apply bg-white border border-gray-200 shadow-sm rounded-lg;
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .card-mobile:active {
+    transform: scale(0.98);
+    box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.1);
+  }
+  
+  /* 移动端按钮优化 */
+  .btn-mobile {
+    @apply px-4 py-2 rounded-lg font-medium;
+    min-height: 44px; /* 确保触摸目标足够大 */
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .btn-mobile:active {
+    transform: scale(0.95);
+  }
+  
+  /* 移动端滚动优化 */
+  .scroll-smooth-mobile {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+  
+  /* 移动端字体优化 */
+  .text-mobile-sm {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+  
+  .text-mobile-base {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+  
+  .text-mobile-lg {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+  }
+}
+
+/* 移动端媒体查询优化 */
+@media (max-width: 640px) {
+  /* 优化移动端触摸体验 */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* 优化移动端滚动 */
+  body {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* 优化移动端字体渲染 */
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* 优化移动端卡片阴影 */
+  .card-mobile {
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  }
+}

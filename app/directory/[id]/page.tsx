@@ -1034,40 +1034,62 @@ export default function PersonDetailPage() {
             基本信息
           </h2>
 
-          <div className="space-y-2 sm:space-y-3">
-            {/* 头像和姓名 */}
-            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3">
-              <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 mx-auto sm:mx-0">
+          <div className="space-y-3">
+            {/* 头像和基本信息 */}
+            <div className="flex items-start gap-3">
+              <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
                 <img
                   src={person.person_photo_url || "/placeholder-user.jpg"}
                   alt={person.name || "用户头像"}
                   className="w-full h-full object-cover"
                 />
               </div>
-              <div className="flex-1 min-w-0 flex flex-col items-center sm:items-start">
-                <div className="flex flex-col sm:flex-row flex-wrap gap-0.5 sm:gap-2 items-center sm:items-center overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent w-full">
-                  <h1 className="text-base sm:text-md font-bold text-gray-900 text-center sm:text-left w-full" title={person.name}>{person.name || "未知姓名"}</h1>
-                  <p className="text-xs sm:text-md font-bold text-gray-700 text-center sm:text-left w-full" title={person.currentPosition?.department}>{person.currentPosition?.department}</p>
-                  <p className="text-xs sm:text-md font-bold text-gray-700 text-center sm:text-left w-full" title={person.currentPosition?.title}>· {person.currentPosition?.title}</p>
+              <div className="flex-1 min-w-0">
+                {/* 姓名和职位信息 */}
+                <div className="flex flex-wrap items-center gap-1 mb-1">
+                  <h1 className="text-base font-bold text-gray-900" title={person.name}>
+                    {person.name || "未知姓名"}
+                  </h1>
+                  <span className="text-sm font-medium text-gray-700">·</span>
+                  <span className="text-sm font-medium text-gray-700" title={person.currentPosition?.department}>
+                    {person.currentPosition?.department || "未知部门"}
+                  </span>
+                  <span className="text-sm font-medium text-gray-700">·</span>
+                  <span className="text-sm font-medium text-gray-700" title={person.currentPosition?.title}>
+                    {person.currentPosition?.title || "未知职位"}
+                  </span>
                 </div>
-                <div className="flex flex-col sm:flex-row flex-wrap gap-0.5 sm:gap-2 items-center sm:items-center mt-1 overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent w-full">
-                  <div className="flex flex-row flex-wrap gap-1 items-center w-full justify-center sm:justify-start">
-                    <p className="text-xs sm:text-sm font-bold text-gray-700 text-center sm:text-left" title={person.hometown}>{person.hometown}</p>
-                    {districtCn && (
-                      <p className="text-xs sm:text-sm font-bold text-gray-700 text-center sm:text-left" title={districtCn}>{districtCn}</p>
-                    )}
-                    <p className="text-xs sm:text-sm font-bold text-gray-700 text-center sm:text-left">· {person.age > 0 ? `${person.age}岁` : "年龄未知"}</p>
-                    <p className="text-xs sm:text-sm font-bold text-gray-700 text-center sm:text-left">· {getCurrentTenureFromWorkExperiences(workExperiences) ? `${getCurrentTenureFromWorkExperiences(workExperiences)}年任职` : "任职年限未知"}</p>
-                  </div>
+                
+                {/* 详细信息 */}
+                <div className="flex flex-wrap items-center gap-1 text-sm text-gray-700">
+                  <span title={person.hometown}>{person.hometown || "未知地区"}</span>
+                  <span>·</span>
+                  {districtCn && (
+                    <>
+                      <span title={districtCn}>{districtCn}</span>
+                      <span>·</span>
+                    </>
+                  )}
+                  <span>{person.age > 0 ? `${person.age}岁` : "年龄未知"}</span>
+                  <span>·</span>
+                  <span>{getCurrentTenureFromWorkExperiences(workExperiences) ? `${getCurrentTenureFromWorkExperiences(workExperiences)}年任职` : "任职年限未知"}</span>
+                  
+                  {/* 联系方式 */}
                   {person.contact && (
-                    <div className="flex flex-row flex-wrap gap-1 items-center mt-0.5 w-full justify-center sm:justify-start">
+                    <>
                       {person.contact?.phone && (
-                        <p className="text-xs sm:text-sm font-bold text-gray-700 text-center sm:text-left" title={person.contact?.phone}>· 电话: {person.contact?.phone}</p>
+                        <>
+                          <span>·</span>
+                          <span>电话: {person.contact.phone}</span>
+                        </>
                       )}
                       {person.contact?.wechat && (
-                        <p className="text-xs sm:text-sm font-bold text-gray-700 text-center sm:text-left" title={person.contact?.wechat}>· 微信: {person.contact?.wechat}</p>
+                        <>
+                          <span>·</span>
+                          <span>微信: {person.contact.wechat}</span>
+                        </>
                       )}
-                    </div>
+                    </>
                   )}
                 </div>
               </div>
@@ -1092,41 +1114,41 @@ export default function PersonDetailPage() {
                     sortedWorkExperiences.map((exp, idx) => (
                       <div
                         key={idx}
-                        className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 p-2 bg-gray-50 rounded-lg overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent text-center sm:text-left justify-center items-center"
+                        className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-2 p-2 bg-gray-50 rounded-lg overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent text-center sm:text-left"
                       >
-                        <span className="font-semibold text-gray-900 text-xs sm:text-sm w-full sm:w-auto">
+                        <span className="font-semibold text-gray-900 text-xs sm:text-sm w-full sm:w-auto sm:text-left">
                           {exp.position_info}
                         </span>
-                        <span
-                          className="text-xs sm:text-sm font-semibold w-full sm:w-auto mx-auto"
-                          style={{
-                            background: "#E6F0FF",
-                            color: "#1677FF",
-                            borderRadius: 4,
-                            padding: "2px 8px",
-                            fontWeight: 600,
-                            marginLeft: 0,
-                            display: 'inline-block',
-                          }}
-                        >
-                          {exp.startdate} - {exp.enddate}
-                        </span>
-                        {exp.enddate === "至今" && (
+                        <div className="flex items-center gap-1 justify-center sm:justify-start">
                           <span
-                            className="text-xs sm:text-sm font-semibold w-full sm:w-auto mx-auto"
+                            className="text-xs sm:text-sm font-semibold"
                             style={{
-                              background: "#1677FF",
-                              color: "#fff",
+                              background: "#E6F0FF",
+                              color: "#1677FF",
                               borderRadius: 4,
                               padding: "2px 8px",
                               fontWeight: 600,
-                              marginLeft: 0,
                               display: 'inline-block',
                             }}
                           >
-                            当前
+                            {exp.startdate} - {exp.enddate}
                           </span>
-                        )}
+                          {exp.enddate === "至今" && (
+                            <span
+                              className="text-xs sm:text-sm font-semibold"
+                              style={{
+                                background: "#1677FF",
+                                color: "#fff",
+                                borderRadius: 4,
+                                padding: "2px 8px",
+                                fontWeight: 600,
+                                display: 'inline-block',
+                              }}
+                            >
+                              当前
+                            </span>
+                          )}
+                        </div>
                       </div>
                     ))
                   )}
