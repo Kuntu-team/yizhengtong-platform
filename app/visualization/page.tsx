@@ -22,6 +22,7 @@ import {
 } from "lucide-react"
 import QRCode from 'qrcode';
 import { useSearchParams } from "next/navigation"
+import { Suspense } from "react";
 
 interface ProjectData {
   region: string
@@ -48,7 +49,17 @@ interface Region {
   counties?: Region[];
 }
 
+export const dynamic = "force-dynamic";
+
 export default function VisualizationPage() {
+  return (
+    <Suspense fallback={<div>加载中...</div>}>
+      <MainContent />
+    </Suspense>
+  );
+}
+
+function MainContent() {
   const router = useRouter()
   const searchParams = useSearchParams();
   const isFromWxShare = searchParams?.get('from') === 'wxshare';
