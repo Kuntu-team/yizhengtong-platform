@@ -954,7 +954,7 @@ export default function PersonDetailPage() {
             <Button
               variant="link"
               size="sm"
-              className="text-blue-600 text-xs px-1"
+              className="text-blue-600 text-xs px-1 self-end"
               onClick={() => router.push(`/leads?person_id=${id}`)}
             >
               查看全部 <ChevronRight className="h-3 w-3 ml-1" />
