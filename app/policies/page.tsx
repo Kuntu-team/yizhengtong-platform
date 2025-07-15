@@ -138,55 +138,48 @@ function PolicyCard({ policy }: { policy: Policy }) {
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ scale: 1.01, y: -2 }}
       transition={{ duration: 0.3 }}
-      className="bg-white border border-gray-200 shadow-sm rounded-lg p-4 cursor-pointer hover:shadow-lg transition-all duration-300 relative"
+      className="card-mobile p-3 sm:p-4 cursor-pointer hover:shadow-lg transition-all duration-300 relative"
       onClick={() => router.push(`/policies/${policy.id}`)}
     >
       {policy.unread && (
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          className="absolute top-4 right-4 w-3 h-3 bg-red-400 rounded-full"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 w-2 h-2 sm:w-3 sm:h-3 bg-red-400 rounded-full"
         />
       )}
 
-      <div className="space-y-2">
-        {/* 标题和查看详情按钮合并 */}
-        <div className="flex items-start justify-between gap-4">
-          <h3 className="text-xl font-bold text-slate-800 leading-tight tracking-wide flex-1">{policy.title}</h3>
-          {/* {policy.status === "completed" && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-green-300 text-green-700 hover:bg-green-100 text-xs shrink-0"
-              onClick={(e) => {
-                e.stopPropagation()
-                router.push(`/policies/${policy.id}`)
-              }}
-            >
-              发现{policy.matchedProjects}个商机
-            </Button>
-          )} */}
+      <div className="space-y-2 sm:space-y-3">
+        {/* 标题 */}
+        <div className="flex items-start justify-between gap-2 sm:gap-4">
+          <h3 className="text-base sm:text-xl font-bold text-slate-800 leading-tight tracking-wide flex-1 line-clamp-2 sm:line-clamp-none">
+            {policy.title}
+          </h3>
         </div>
 
-        {/* 来源和时间信息 - 移到标题下面 */}
+        {/* 来源和时间信息 */}
         <div className="flex items-center justify-between text-xs text-slate-400">
-          <div className="flex items-center gap-3">
-            <span>{policy.source}</span>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <span className="truncate max-w-24 sm:max-w-none">{policy.source}</span>
             <span>•</span>
             <span>{formatDate(policy.publishDate)}</span>
           </div>
-          <span>{policy.timeAgo}</span>
+          <span className="text-xs">{policy.timeAgo}</span>
         </div>
 
-        {/* 话术预览 - 直接可用的销售话术 */}
-        <p className="text-base text-slate-700 leading-relaxed line-clamp-3">{policy.salesPitch}</p>
+        {/* 话术预览 */}
+        <p className="text-sm sm:text-base text-slate-700 leading-relaxed break-words">
+          {policy.salesPitch}
+        </p>
 
         {/* 状态指示器 */}
         {policy.status === "pending" && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 sm:p-3">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium text-amber-800">解读进行中 - 预计{policy.estimatedDate}完成</span>
+              <span className="text-xs sm:text-sm font-medium text-amber-800">
+                解读进行中 - 预计{policy.estimatedDate}完成
+              </span>
             </div>
           </div>
         )}
@@ -451,23 +444,76 @@ export default function PoliciesPage() {
 
   useEffect(() => {
     setLoading(true)
-    fetch("/api/policies")
+    // 获取 businessPersonId
+    let businessPersonId = ''
+    if (typeof window !== 'undefined') {
+      const userYk = localStorage.getItem('user_yk')
+      if (userYk) {
+        try {
+          const user = JSON.parse(userYk)
+          businessPersonId = user.business_person_id
+        } catch {}
+      }
+      if (!businessPersonId) {
+        const userInfo = localStorage.getItem('userInfo')
+        if (userInfo) {
+          try {
+            const user = JSON.parse(userInfo)
+            businessPersonId = user.business_person_id || user.id
+          } catch {}
+        }
+      }
+    }
+    if (!businessPersonId) {
+      setPolicies([])
+      setLoading(false)
+      return
+    }
+    // 先获取 policy_id 列表
+    fetch(`/api/policies?businessPersonId=${businessPersonId}`)
       .then((res) => res.json())
-      .then((data) => {
+      .then(async (data) => {
         if (data.success && Array.isArray(data.data)) {
-          const mapped = data.data.map((item: any) => ({
-            id: item.policy_id,
-            title: item.policy_title || "-",
-            source: item.issued_authority || "-",
-            publishDate: item.released_date ? new Date(item.released_date) : new Date(),
-            timeAgo: "", // 可根据需要计算
-            status: "completed", // 可根据需要调整
-            matchedProjects: 0, // 可根据需要调整
-            unread: false, // 可根据需要调整
-            category: item.category_name || "other",
-            salesPitch: item.policy_content ? item.policy_content.slice(0, 60) + "..." : "-",
-          }))
-          setPolicies(mapped)
+          // data.data 是 policy_id 数组
+          // 需要批量获取政策详情
+          if (data.data.length === 0) {
+            setPolicies([])
+            return
+          }
+          // 并发获取详情
+          const policyIds: string[] = Array.isArray(data.data) ? data.data : [];
+          const detailResults = await Promise.all(
+            policyIds.map((policyId) =>
+              fetch(`/api/policies/${policyId}`).then((res) => res.json())
+            )
+          )
+          const mapped = detailResults
+            .filter((d) => d.success && d.data)
+            .map((d) => {
+              const item = d.data
+              // 兼容 Policy 类型
+              let status: 'pending' | 'completed' = 'completed';
+              if (item.status === 'pending' || item.status === 'completed') {
+                status = item.status;
+              }
+              return {
+                id: item.policy_id,
+                title: item.policy_title || "-",
+                source: item.issued_authority || "-",
+                publishDate: item.released_date ? new Date(item.released_date) : new Date(),
+                timeAgo: "", // 可根据需要计算
+                status,
+                matchedProjects: 0, // 可根据需要调整
+                unread: false, // 可根据需要调整
+                category: item.category_name || "other",
+                salesPitch: item.policy_content ? item.policy_content.slice(0, 60) + "..." : "-",
+              } as Policy
+            })
+          // 按发布时间倒序排序
+          mapped.sort((a, b) => b.publishDate.getTime() - a.publishDate.getTime());
+          setPolicies(mapped as Policy[])
+        } else {
+          setPolicies([])
         }
       })
       .finally(() => setLoading(false))
@@ -518,40 +564,40 @@ export default function PoliciesPage() {
         animate={{ opacity: 1, y: 0 }}
         className="bg-white border-b border-gray-200 sticky top-0 z-50"
       >
-        <div className="h-16 px-6 flex items-center justify-between max-w-6xl mx-auto">
-          <div className="flex items-center gap-4">
+        <div className="h-14 sm:h-16 px-4 sm:px-6 flex items-center justify-between">
+          <div className="flex items-center gap-3 sm:gap-4">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => router.push("/")}
-              className="p-2 rounded-xl hover:bg-white/30 transition-all duration-200"
+              className="p-1.5 sm:p-2 rounded-xl hover:bg-white/30 transition-all duration-200"
             >
-              <ChevronLeft className="h-5 w-5 text-slate-600" />
+              <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5 text-slate-600" />
             </motion.button>
-            <h1 className="text-xl font-light text-slate-800 tracking-wide">新政新知</h1>
+            <h1 className="text-lg sm:text-xl font-light text-slate-800 tracking-wide">新政新知</h1>
           </div>
 
           <div></div>
         </div>
       </motion.header>
 
-      <div className="min-h-screen bg-white px-6 py-6 max-w-6xl mx-auto">
+      <div className="min-h-screen bg-white px-4 sm:px-6 py-4 sm:py-6">
         {/* 筛选结果提示 */}
         {activeFilterCount > 0 && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 glass-card border-blue-200/50"
+            className="mb-4 sm:mb-6 p-3 sm:p-4 glass-card border-blue-200/50"
           >
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-blue-700 font-light">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0">
+              <span className="text-xs sm:text-sm text-blue-700 font-light">
                 已应用 {activeFilterCount} 个筛选条件，共找到 {filteredPolicies.length} 条政策
               </span>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setFilters({ timeRange: "all", statusFilter: ["pending", "completed"], interests: [] })}
-                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50/50 font-light"
+                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50/50 font-light text-xs sm:text-sm"
               >
                 清除筛选
               </Button>
@@ -561,16 +607,16 @@ export default function PoliciesPage() {
 
         {/* 政策Feed流列表 */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <div className="space-y-3">
+          <div className="max-w-5xl mx-auto space-y-2 sm:space-y-3">
             <AnimatePresence>
               {loading
                 ? Array.from({ length: 5 }, (_, idx) => idx).map((idx) => (
-                    <div key={idx} className="bg-white border border-gray-200 shadow-sm rounded-lg p-4">
-                      <Skeleton className="h-6 w-2/3 mb-4" />
-                      <Skeleton className="h-4 w-1/3 mb-2" />
-                      <Skeleton className="h-4 w-1/4 mb-2" />
-                      <Skeleton className="h-4 w-full mb-2" />
-                      <Skeleton className="h-4 w-5/6" />
+                    <div key={idx} className="bg-white border border-gray-200 shadow-sm rounded-lg p-3 sm:p-4">
+                      <Skeleton className="h-5 sm:h-6 w-2/3 mb-3 sm:mb-4" />
+                      <Skeleton className="h-3 sm:h-4 w-1/3 mb-2" />
+                      <Skeleton className="h-3 sm:h-4 w-1/4 mb-2" />
+                      <Skeleton className="h-3 sm:h-4 w-full mb-2" />
+                      <Skeleton className="h-3 sm:h-4 w-5/6" />
                     </div>
                   ))
                 : filteredPolicies.map((policy, index) => (
@@ -589,18 +635,18 @@ export default function PoliciesPage() {
 
         {/* 空状态 */}
         {!loading && filteredPolicies.length === 0 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16 glass-card">
-            <FileText className="h-16 w-16 text-slate-400 mx-auto mb-6" />
-            <p className="text-slate-500 mb-2 font-light text-lg">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12 sm:py-16 glass-card">
+            <FileText className="h-12 w-12 sm:h-16 sm:w-16 text-slate-400 mx-auto mb-4 sm:mb-6" />
+            <p className="text-slate-500 mb-2 font-light text-base sm:text-lg">
               {activeFilterCount > 0 ? "没有符合筛选条件的政策" : "暂无政策更新"}
             </p>
-            <p className="text-sm text-slate-400 font-light">
+            <p className="text-xs sm:text-sm text-slate-400 font-light">
               {activeFilterCount > 0 ? "尝试调整筛选条件" : "请稍后再试"}
             </p>
             {activeFilterCount > 0 && (
               <Button
                 variant="outline"
-                className="mt-6 glass border-white/20 hover:bg-white/30 font-light"
+                className="mt-4 sm:mt-6 glass border-white/20 hover:bg-white/30 font-light text-sm"
                 onClick={() => setFilters({ timeRange: "all", statusFilter: ["pending", "completed"], interests: [] })}
               >
                 清除筛选条件

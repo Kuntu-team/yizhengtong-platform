@@ -21,6 +21,7 @@ import {
   BarChart3,
 } from "lucide-react"
 import QRCode from 'qrcode';
+import { useSearchParams } from "next/navigation"
 
 interface ProjectData {
   region: string
@@ -49,6 +50,8 @@ interface Region {
 
 export default function VisualizationPage() {
   const router = useRouter()
+  const searchParams = useSearchParams();
+  const isFromWxShare = searchParams?.get('from') === 'wxshare';
   const [selectedProvince, setSelectedProvince] = useState<Region | null>(null)
   const [selectedCity, setSelectedCity] = useState<Region | null>(null)
   const [selectedCounty, setSelectedCounty] = useState<Region | null>(null)
@@ -68,7 +71,14 @@ export default function VisualizationPage() {
   // 只在客户端生成二维码图片
   useEffect(() => {
     if (showQR && typeof window !== 'undefined') {
-      const url = window.location.href.replace('localhost', '172.18.0.6'); // 局域网IP
+      let url = window.location.origin + window.location.pathname;
+      if (window.location.search) {
+        const params = new URLSearchParams(window.location.search);
+        params.set('from', 'wxshare');
+        url += '?' + params.toString();
+      } else {
+        url += '?from=wxshare';
+      }
       QRCode.toDataURL(url).then(setQrUrl);
     }
   }, [showQR]);
@@ -519,9 +529,11 @@ export default function VisualizationPage() {
       <header className="bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={() => router.push("/")} className="-ml-2">
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
+            {!isFromWxShare && (
+              <Button variant="ghost" size="sm" onClick={() => router.push("/")} className="-ml-2">
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+            )}
             <div className="flex items-center gap-3">
               <BarChart3 className="h-6 w-6 text-blue-600" />
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900">竞态看板</h1>
@@ -547,7 +559,7 @@ export default function VisualizationPage() {
                 <div>
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-3">选择省份</label>
                   <Select value={selectedProvince?.region_code || ""} onValueChange={handleProvinceChange}>
-                    <SelectTrigger className="h-11">
+                    <SelectTrigger className="h-11 border-gray-300">
                       <SelectValue placeholder="请选择省份" />
                     </SelectTrigger>
                     <SelectContent>
@@ -568,7 +580,7 @@ export default function VisualizationPage() {
                     onValueChange={handleCityChange}
                     disabled={isCityDisabled}
                   >
-                    <SelectTrigger className="h-11">
+                    <SelectTrigger className="h-11 border-gray-300">
                       <SelectValue placeholder={selectedProvince ? "请选择城市" : "请先选择省份"} />
                     </SelectTrigger>
                     <SelectContent>
@@ -595,7 +607,7 @@ export default function VisualizationPage() {
                     onValueChange={handleCountyChange}
                     disabled={!selectedCity}
                   >
-                    <SelectTrigger className="h-11">
+                    <SelectTrigger className="h-11 border-gray-300">
                       <SelectValue placeholder={selectedCity ? "请选择区县" : "请先选择城市"} />
                     </SelectTrigger>
                     <SelectContent>
@@ -619,7 +631,7 @@ export default function VisualizationPage() {
                         variant={selectedTimeRange === range.value ? "default" : "outline"}
                         size="sm"
                         onClick={() => setSelectedTimeRange(range.value)}
-                        className="w-full justify-start text-xs sm:text-sm"
+                        className={`w-full justify-start text-xs sm:text-sm${selectedTimeRange !== range.value ? ' border-gray-300' : ''}`}
                       >
                         {range.label}
                       </Button>
@@ -685,15 +697,15 @@ export default function VisualizationPage() {
                         </p>
                       </div>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={toggleFullscreen} className="rounded-md">
+                        <Button variant="outline" size="sm" onClick={toggleFullscreen} className="rounded-md border-gray-300">
                           <Maximize2 className="h-4 w-4 mr-2" />
                           查看详情
                         </Button>
-                        <Button variant="outline" size="sm" onClick={handleShare} className="rounded-md">
+                        <Button variant="outline" size="sm" onClick={handleShare} className="rounded-md border-gray-300">
                           <Share2 className="h-4 w-4 mr-2" />
                           分享
                         </Button>
-                        <Button variant="outline" size="sm" onClick={handleDownloadChart} className="rounded-md">
+                        <Button variant="outline" size="sm" onClick={handleDownloadChart} className="rounded-md border-gray-300">
                           <Download className="h-4 w-4 mr-2" />
                           下载
                         </Button>
@@ -707,11 +719,11 @@ export default function VisualizationPage() {
 
                     {/* 关键洞察 */}
                     <h4 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6">关键洞察</h4>
-                    <div className="flex flex-col sm:grid sm:grid-cols-3 gap-4 sm:gap-6 w-full">
+                    <div className="flex flex-col items-center sm:grid sm:grid-cols-3 gap-4 sm:gap-6 w-full">
                       {insights.map((insight, index) => (
                         <div
                           key={index}
-                          className="flex flex-col items-center justify-center gap-2 bg-blue-50 rounded-2xl shadow-md p-6 min-w-[220px] max-w-[340px] w-full text-center h-28"
+                          className="flex flex-col items-center justify-center gap-2 bg-blue-50 rounded-2xl shadow-md p-6 min-w-[220px] max-w-[340px] w-full sm:w-full text-center h-28 mx-auto"
                         >
                           <div className="text-blue-600 text-2xl flex-shrink-0 flex items-center justify-center mb-1">{insight.icon}</div>
                           <div className="font-semibold text-xs sm:text-base text-gray-900 break-words text-center w-full">
@@ -729,20 +741,25 @@ export default function VisualizationPage() {
 
       {/* 全屏图表对话框 */}
       <Dialog open={isFullscreen} onOpenChange={setIsFullscreen}>
-        <DialogContent className="max-w-[95vw] max-h-[95vh] p-6">
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-6" hideCloseButton>
           <DialogHeader>
             <DialogTitle className="text-base sm:text-xl">
               {selectedCounty?.region_name}项目对比分析 - {getTimeRangeLabel()}
             </DialogTitle>
             <DialogDescription className="text-xs sm:text-base text-black">详细的区县项目数量和发行规模对比分析图表</DialogDescription>
           </DialogHeader>
+          {/* 右上角绝对定位的退出全屏按钮 */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={toggleFullscreen}
+            className="border-gray-300 absolute right-2 top-2 sm:right-4 sm:top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-base"
+          >
+            <Minimize2 className="h-3 w-3 mr-1 sm:h-4 sm:w-4 sm:mr-2" />
+            <span className="hidden sm:inline">退出全屏</span>
+            <span className="inline sm:hidden">退出</span>
+          </Button>
           <div className="mt-4">
-            <div className="flex justify-end mb-4">
-              <Button variant="outline" size="sm" onClick={toggleFullscreen}>
-                <Minimize2 className="h-4 w-4 mr-2" />
-                退出全屏
-              </Button>
-            </div>
             <CanvasBarChart data={chartData} isFullscreen={true} showDataLabels={showDataLabels} />
           </div>
         </DialogContent>

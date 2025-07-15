@@ -419,6 +419,27 @@ function parseDate(str: string) {
   return 0;
 }
 
+// 计算当前任职年数（基于workExperiences）
+function getCurrentTenureFromWorkExperiences(workExperiences: Array<{ startdate: string; enddate: string }>): number | null {
+  if (!workExperiences || workExperiences.length === 0) return null;
+  // 找到enddate为“至今”的那条
+  const current = workExperiences.find((exp) => exp.enddate === "至今");
+  if (!current || !current.startdate) return null;
+  // 支持“2018年09月”或“2018-09”或“2018.09”格式
+  const match = current.startdate.match(/(\d{4})[年.-](\d{1,2})?/);
+  if (match) {
+    const startYear = parseInt(match[1], 10);
+    const now = new Date();
+    let years = now.getFullYear() - startYear;
+    if (match[2]) {
+      const startMonth = parseInt(match[2], 10);
+      if (now.getMonth() + 1 < startMonth) years--;
+    }
+    return years >= 0 ? years : null;
+  }
+  return null;
+}
+
 export default function PersonDetailPage() {
   const params = useParams();
   const id = params.id as string;
@@ -910,17 +931,14 @@ export default function PersonDetailPage() {
     <div className="min-h-screen bg-white">
       {/* 顶部导航 */}
       <header className="bg-white border-b sticky top-0 z-50">
-        <div className="max-w-full mx-auto px-3 h-12 flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
+        <div className="max-w-full mx-auto px-2 sm:px-3 h-12 flex items-center justify-between">
+          <Button variant="ghost" size="sm" onClick={() => router.back()} className="text-xs sm:text-sm px-2">
             <ChevronLeft className="h-4 w-4 mr-1" />
             返回
           </Button>
-
-          <Button variant="ghost" size="sm" onClick={handleToggleFollow}>
+          <Button variant="ghost" size="sm" onClick={handleToggleFollow} className="text-xs sm:text-sm px-2">
             <Star
-              className={`h-4 w-4 mr-1 ${
-                isFollowed ? "fill-yellow-400 text-yellow-400" : ""
-              }`}
+              className={`h-4 w-4 mr-1 ${isFollowed ? "fill-yellow-400 text-yellow-400" : ""}`}
             />
             {isFollowed ? "已关注" : "关注"}
           </Button>
@@ -928,19 +946,19 @@ export default function PersonDetailPage() {
       </header>
 
       {/* 主体内容区 */}
-      <main className="px-3 py-4 w-full">
+      <main className="px-1 sm:px-3 py-2 sm:py-4 w-full">
         {/* 近期动态 */}
-        <section className="bg-white border border-gray-200 shadow-sm rounded-lg p-4 mb-2">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900">
+        <section className="bg-white border border-gray-200 shadow-sm rounded-lg p-2 sm:p-4 mb-2">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 sm:mb-4 gap-2 sm:gap-0">
+            <h2 className="flex items-center gap-2 text-base sm:text-lg font-semibold text-gray-900">
               <Calendar className="h-4 w-4" />
               近期动态
             </h2>
             <Button
               variant="link"
               size="sm"
-              className="text-blue-600 text-xs"
-              onClick={() => router.push("/leads")}
+              className="text-blue-600 text-xs px-1 self-end"
+              onClick={() => router.push(`/leads?person_id=${id}`)}
             >
               查看全部 <ChevronRight className="h-3 w-3 ml-1" />
             </Button>
@@ -968,7 +986,7 @@ export default function PersonDetailPage() {
                       <h4 className="font-medium text-gray-900 mb-1 text-sm">
                         {news.title || news.news_title || "无标题"}
                       </h4>
-                      <p className="text-xs text-gray-600 mb-1">
+                      <p className="text-xs text-gray-600 mb-1 line-clamp-2 sm:line-clamp-none">
                         {news.content || news.news_content || ""}
                       </p>
                       <div className="flex items-center gap-3 text-xs text-gray-500">
@@ -1013,14 +1031,14 @@ export default function PersonDetailPage() {
         </section>
 
         {/* 基本信息 */}
-        <section className="bg-white border border-gray-200 shadow-sm rounded-lg p-4 mb-2">
-          <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 mb-4">
+        <section className="bg-white border border-gray-200 shadow-sm rounded-lg p-2 sm:p-4 mb-2">
+          <h2 className="flex items-center gap-2 text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-4">
             <User className="h-4 w-4" />
             基本信息
           </h2>
 
           <div className="space-y-3">
-            {/* 头像和姓名 */}
+            {/* 头像和基本信息 */}
             <div className="flex items-start gap-3">
               <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
                 <img
@@ -1029,45 +1047,50 @@ export default function PersonDetailPage() {
                   className="w-full h-full object-cover"
                 />
               </div>
-              <div>
-                <div className="flex gap-2">
-                  <h1 className="text-md font-bold text-gray-900">
+              <div className="flex-1 min-w-0">
+                {/* 姓名和职位信息 */}
+                <div className="flex flex-wrap items-center gap-1 mb-1">
+                  <h1 className="text-base font-bold text-gray-900" title={person.name}>
                     {person.name || "未知姓名"}
                   </h1>
-                  <p className="text-md font-bold text-gray-700">
-                    {person.currentPosition?.department}
-                  </p>
-                  <p className="text-md font-bold text-gray-700">
-                    · {person.currentPosition?.title}
-                  </p>
+                  <span className="text-sm font-medium text-gray-700">·</span>
+                  <span className="text-sm font-medium text-gray-700" title={person.currentPosition?.department}>
+                    {person.currentPosition?.department || "未知部门"}
+                  </span>
+                  <span className="text-sm font-medium text-gray-700">·</span>
+                  <span className="text-sm font-medium text-gray-700" title={person.currentPosition?.title}>
+                    {person.currentPosition?.title || "未知职位"}
+                  </span>
                 </div>
-                <div className="flex gap-2">
-                  <p className="text-sm font-bold text-gray-700">
-                    {person.hometown}
-                  </p>
+                
+                {/* 详细信息 */}
+                <div className="flex flex-wrap items-center gap-1 text-sm text-gray-700">
+                  <span title={person.hometown}>{person.hometown || "未知地区"}</span>
+                  <span>·</span>
                   {districtCn && (
-                    <p className="text-sm font-bold text-gray-700">
-                      {districtCn}
-                    </p>
+                    <>
+                      <span title={districtCn}>{districtCn}</span>
+                      <span>·</span>
+                    </>
                   )}
-                  <p className="text-sm font-bold text-gray-700">
-                    · {person.age > 0 ? `${person.age}岁` : "年龄未知"}
-                  </p>
-                  <p className="text-sm font-bold text-gray-700">
-                    · {getCurrentTenure(person.workHistory)}年任职
-                  </p>
-
+                  <span>{person.age > 0 ? `${person.age}岁` : "年龄未知"}</span>
+                  <span>·</span>
+                  <span>{getCurrentTenureFromWorkExperiences(workExperiences) ? `${getCurrentTenureFromWorkExperiences(workExperiences)}年任职` : "任职年限未知"}</span>
+                  
+                  {/* 联系方式 */}
                   {person.contact && (
                     <>
                       {person.contact?.phone && (
-                        <p className="text-sm font-bold text-gray-700">
-                          · 电话: {person.contact?.phone}
-                        </p>
+                        <>
+                          <span>·</span>
+                          <span>电话: {person.contact.phone}</span>
+                        </>
                       )}
                       {person.contact?.wechat && (
-                        <p className="text-sm font-bold text-gray-700">
-                          · 微信: {person.contact?.wechat}
-                        </p>
+                        <>
+                          <span>·</span>
+                          <span>微信: {person.contact.wechat}</span>
+                        </>
                       )}
                     </>
                   )}
@@ -1094,37 +1117,41 @@ export default function PersonDetailPage() {
                     sortedWorkExperiences.map((exp, idx) => (
                       <div
                         key={idx}
-                        className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"
+                        className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-2 p-2 bg-gray-50 rounded-lg overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent text-center sm:text-left"
                       >
-                        <span className="font-semibold text-gray-900 text-sm min-w-[80px]">
+                        <span className="font-semibold text-gray-900 text-xs sm:text-sm w-full sm:w-auto sm:text-left">
                           {exp.position_info}
                         </span>
-                        <span
-                          style={{
-                            background: "#FFF500",
-                            color: "#333",
-                            borderRadius: 4,
-                            padding: "2px 8px",
-                            fontWeight: 600,
-                            marginLeft: 8,
-                          }}
-                        >
-                          {exp.startdate} - {exp.enddate}
-                        </span>
-                        {exp.enddate === "至今" && (
+                        <div className="flex items-center gap-1 justify-center sm:justify-start">
                           <span
+                            className="text-xs sm:text-sm font-semibold"
                             style={{
                               background: "#E6F0FF",
                               color: "#1677FF",
                               borderRadius: 4,
                               padding: "2px 8px",
                               fontWeight: 600,
-                              marginLeft: 8,
+                              display: 'inline-block',
                             }}
                           >
-                            当前
+                            {exp.startdate} - {exp.enddate}
                           </span>
-                        )}
+                          {exp.enddate === "至今" && (
+                            <span
+                              className="text-xs sm:text-sm font-semibold"
+                              style={{
+                                background: "#1677FF",
+                                color: "#fff",
+                                borderRadius: 4,
+                                padding: "2px 8px",
+                                fontWeight: 600,
+                                display: 'inline-block',
+                              }}
+                            >
+                              当前
+                            </span>
+                          )}
+                        </div>
                       </div>
                     ))
                   )}
@@ -1144,7 +1171,7 @@ export default function PersonDetailPage() {
                         className="flex items-center gap-2"
                       >
                         <span className="text-green-500 mt-1">●</span>
-                        <span className="text-sm text-gray-700">
+                        <span className="text-sm text-gray-700 line-clamp-2 sm:line-clamp-none">
                           {achievement.replace(/,/g, "")}
                         </span>
                       </motion.div>
@@ -1169,7 +1196,7 @@ export default function PersonDetailPage() {
                           className="flex items-center gap-2"
                         >
                           <span className="text-green-500 mt-1">●</span>
-                          <span className="text-sm text-gray-700">{desc}</span>
+                          <span className="text-sm text-gray-700 line-clamp-2 sm:line-clamp-none">{desc}</span>
                         </motion.div>
                       ))
                   ) : (

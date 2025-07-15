@@ -1,16 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronDown, CheckCircle, Users, X } from "lucide-react";
+import { ChevronLeft, ChevronDown, CheckCircle, Users, X, Copy } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import React from "react";
 import ReactMarkdown from "react-markdown";
 import QRCode from "qrcode";
-import { useParams } from "next/navigation";
 
 interface Project {
   id: string;
@@ -125,7 +124,7 @@ export default function PolicyDetailPage() {
     setAnalysisError(null);
     setAnalysisLoading(true);
     setProjectsLoading(true);
-    fetch("http://47.94.55.173:8088/v1/chat-messages", {
+    fetch("https://dify.ktt.team/v1/chat-messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -297,6 +296,9 @@ ${policy?.keyPoints
     }
   }, [showQR]);
 
+  const searchParams = useSearchParams();
+  const isFromWxShare = searchParams?.get('from') === 'wxshare';
+
   if (!policy) {
     return <div className="text-center py-16">加载中...</div>;
   }
@@ -370,7 +372,7 @@ ${policy?.keyPoints
                   value={shareText.replace(/\n{2,}/g, "\n").trim()}
                   onChange={(e) => setShareText(e.target.value)}
                   placeholder="编辑分享文案..."
-                  className="min-h-[120px] resize-none text-sm"
+                  className="min-h-[120px] resize-none text-sm border border-gray-300 focus:border-gray-400 focus:ring-0"
                   maxLength={200}
                 />
               </div>
@@ -399,7 +401,7 @@ ${policy?.keyPoints
               {/* 二维码分享区域，仅PC端显示 */}
               <Button
                 onClick={() => setShowQR(true)}
-                className="w-full h-10 bg-yellow-300 hover:bg-yellow-400 text-gray-900 font-bold mt-2"
+                className="w-full h-10 bg-[#07C160] hover:bg-[#06AD56] text-white font-bold mt-2"
               >
                 生成微信分享二维码
               </Button>
@@ -553,7 +555,7 @@ ${policy?.keyPoints
               </div>
 
               <AnimatePresence>
-                {expanded.content && (
+                {expanded.content && policy.fullContent.split("\n").length > 5 && (
                   <motion.div
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: "auto", opacity: 1 }}
@@ -564,7 +566,7 @@ ${policy?.keyPoints
                     <div className="mt-4 bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
                       <div className="prose prose-sm max-w-none">
                         <div className="text-sm leading-relaxed text-gray-700 whitespace-pre-line">
-                          {policy.fullContent}
+                          {policy.fullContent.split("\n").slice(5).join("\n")}
                         </div>
                       </div>
                     </div>
@@ -686,7 +688,17 @@ ${policy?.keyPoints
                         }
                         className="px-4 py-2"
                       >
-                        {copiedScript === project.id ? "已复制" : "复制"}
+                        {copiedScript === project.id ? (
+                          <>
+                            <CheckCircle className="h-3 w-3 mr-1 text-green-600" />
+                            <span className="text-green-600">已复制</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-3 w-3 mr-1" />
+                            复制
+                          </>
+                        )}
                       </Button>
                     </div>
                     {copiedScript === project.id && (
