@@ -134,8 +134,10 @@ const CircularProgress = ({
 const extractSections = (text: string) => {
   const newsRegex =
     /###\s*新闻解读\s*([\s\S]*?)(?=###\s*话术生成|###\s*风格A|$)/;
-  const styleARegex = /###\s*风格A[\s\S]*?\n([\s\S]*?)(?=###\s*风格B|$)/;
-  const styleBRegex = /###\s*风格B[\s\S]*?\n([\s\S]*)/;
+  const styleARegex =
+    /###\s*(?:\*\*)?风格A：数据驱动型(?:\*\*)?(?:\s*\n[\s\S]*?)?\n([\s\S]*?)(?=###\s*(?:\*\*)?风格B(?:\*\*)?|\s*$)/;
+  const styleBRegex =
+    /###\s*(?:\*\*)?风格B：关系建立型(?:\*\*)?(?:\s*\n[\s\S]*?)?\n([\s\S]*)/;
 
   const newsMatch = text.match(newsRegex);
   const styleAMatch = text.match(styleARegex);
