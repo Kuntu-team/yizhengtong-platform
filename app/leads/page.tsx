@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -78,6 +78,10 @@ interface Person {
 
 export default function LeadsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // 所有Hook顶层声明
+  const [followedPersonIds, setFollowedPersonIds] = useState<string[]>([]);
+  const [personIdParam, setPersonIdParam] = useState<string | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
   const [selectedPeople, setSelectedPeople] = useState<string[]>([]);
@@ -87,6 +91,18 @@ export default function LeadsPage() {
   const [filteredItems, setFilteredItems] = useState<LeadItem[]>([]);
   const [regions, setRegions] = useState<Region[]>([]);
   const [people, setPeople] = useState<Person[]>([]);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const followedPersonIdsParam = searchParams.get("followedPersonIds");
+    setPersonIdParam(searchParams.get("person_id") || null);
+    if (followedPersonIdsParam) {
+      setFollowedPersonIds(JSON.parse(followedPersonIdsParam));
+    } else {
+      setFollowedPersonIds([]);
+    }
+    setReady(true);
+  }, [searchParams]);
 
   const activeFilterCount = selectedRegions.length + selectedPeople.length;
 
@@ -101,7 +117,6 @@ export default function LeadsPage() {
         // console.error("Failed to parse saved filters:", error)
       }
     }
-
     fetchData();
     getSelectData();
   }, []);
@@ -116,6 +131,7 @@ export default function LeadsPage() {
     );
     console.log(selectedRegions);
   }, [selectedRegions, selectedPeople]);
+
   useEffect(() => {
     console.log("Active Tab Changed:", activeTab);
     if (activeTab != "internal") {
@@ -125,20 +141,28 @@ export default function LeadsPage() {
     }
   }, [activeTab]);
 
+  // 修改filteredData逻辑：如果有person_id参数，只展示该人员线索，否则展示全部
   const filteredData = useMemo(() => {
-    if (selectedRegions.length === 0 && selectedPeople.length === 0) {
-      return filteredItems;
+    let data = filteredItems;
+    // 新增逻辑：如果有followedPersonIds，只展示匹配的
+    if (followedPersonIds && followedPersonIds.length > 0) {
+      data = data.filter((item) => followedPersonIds.includes(item.person_id));
+    } else if (personIdParam) {
+      // 原有逻辑：如果有person_id参数
+      data = data.filter((item) => item.person_id === personIdParam);
     }
-    return filteredItems.filter((item) => {
+    if (selectedRegions.length === 0 && selectedPeople.length === 0) {
+      return data;
+    }
+    return data.filter((item) => {
       const matchesRegion =
         selectedRegions.length === 0 ||
         selectedRegions.includes(item.news_province_code);
       const matchesPerson =
         selectedPeople.length === 0 || selectedPeople.includes(item.person_id);
-
       return matchesRegion && matchesPerson;
     });
-  }, [selectedRegions, selectedPeople, filteredItems]);
+  }, [selectedRegions, selectedPeople, filteredItems, personIdParam, followedPersonIds]);
   const fetchData = async () => {
     try {
       const response = await axios.get("api/sales-lead");
@@ -223,6 +247,11 @@ export default function LeadsPage() {
         : [...selectedPeople, personId]
     );
   };
+
+  if (!ready) {
+    // SSR和客户端初次渲染时都渲染空内容，避免hydration mismatch
+    return <div />;
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -401,7 +430,7 @@ export default function LeadsPage() {
                   </div>
                 </div>
 
-                {/* ���选择的筛选条件 */}
+                {/*    选择的筛选条件 */}
                 {(selectedRegions.length > 0 || selectedPeople.length > 0) && (
                   <div>
                     <label className="text-sm font-medium text-slate-700 mb-3 block tracking-wide">

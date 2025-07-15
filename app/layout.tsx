@@ -1,7 +1,7 @@
 import type React from "react";
 import type { Metadata } from "next";
 import "./globals.css";
-import { AntdRegistry } from "@ant-design/nextjs-registry";
+import AntdClientWrapper from "@/components/AntdClientWrapper";
 import "@ant-design/v5-patch-for-react-19";
 
 export const metadata: Metadata = {
@@ -15,9 +15,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" style={{ WebkitTouchCallout: 'none' }}>
       <body>
-        <AntdRegistry>{children}</AntdRegistry>
+        <AntdClientWrapper>{children}</AntdClientWrapper>
       </body>
     </html>
   );
