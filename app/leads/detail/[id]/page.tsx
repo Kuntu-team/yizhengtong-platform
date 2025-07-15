@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import axios from "axios";
 import { getTimeAgo } from "@/lib/utils";
 import { marked } from "marked";
+import ReactMarkdown from "react-markdown";
 
 interface DetailPageProps {
   params: {
@@ -180,6 +181,7 @@ export default function DetailPage({
       phone_number: "联系人电话",
       wechat_number: "联系人微信",
     },
+    news_region_cn: "",
   });
   const [aiContent, setAiContent] = useState({
     news: "新闻内容生成中...",
@@ -554,18 +556,7 @@ export default function DetailPage({
                   <div className="flex items-start justify-between">
                     <div>
                       <h3 className="font-medium text-gray-900 text-lg">
-                        {newsData.news_url ? (
-                          <a
-                            href={newsData.news_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-gray-900 hover:text-blue-600 hover:underline cursor-pointer transition-colors"
-                          >
-                            {newsData.news_title}
-                          </a>
-                        ) : (
-                          newsData.person_name + "：" + newsData.news_title
-                        )}
+                        {newsData.person_name + "：" + newsData.news_title}
                       </h3>
                     </div>
                   </div>
@@ -659,11 +650,27 @@ export default function DetailPage({
                 <TabsContent key={1} value={"script1"}>
                   <div className="bg-white mb-4">
                     <div className="bg-gray-50 rounded-lg p-4 text-sm leading-relaxed whitespace-pre-line mb-3 text-black mt-11">
-                      <div
+                      {/* <div
                         dangerouslySetInnerHTML={{
                           __html: marked.parse(aiContent.styleA),
                         }}
-                      />
+                      /> */}
+                      <ReactMarkdown
+                        components={{
+                          strong: ({ node, ...props }) => (
+                            <strong
+                              style={{
+                                color: "#2563eb",
+                                fontWeight: "bold",
+                                fontSize: "1.125rem",
+                              }}
+                              {...props}
+                            />
+                          ),
+                        }}
+                      >
+                        {aiContent.styleA}
+                      </ReactMarkdown>
                     </div>
                     <div className="flex justify-end">
                       <Button
@@ -690,11 +697,22 @@ export default function DetailPage({
                 <TabsContent key={2} value={"script2"}>
                   <div className="bg-white mb-4">
                     <div className="bg-gray-50 rounded-lg p-4 text-sm leading-relaxed whitespace-pre-line mb-3 text-black mt-11">
-                      <div
-                        dangerouslySetInnerHTML={{
-                          __html: marked.parse(aiContent.styleB),
+                      <ReactMarkdown
+                        components={{
+                          strong: ({ node, ...props }) => (
+                            <strong
+                              style={{
+                                color: "#2563eb",
+                                fontWeight: "bold",
+                                fontSize: "1.125rem",
+                              }}
+                              {...props}
+                            />
+                          ),
                         }}
-                      />
+                      >
+                        {aiContent.styleB}
+                      </ReactMarkdown>
                     </div>
                     <div className="flex justify-end">
                       <Button
@@ -786,7 +804,7 @@ export default function DetailPage({
                           <div>
                             <div className="font-medium text-base text-gray-900">
                               {/* {material.title} */}
-                              重点项目投资分析报告
+                              {newsData.news_region_cn}项目清单
                             </div>
                             <div className="text-sm text-gray-500">
                               {material.type} • 预计{material.estimatedSize}
