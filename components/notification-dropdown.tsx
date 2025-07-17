@@ -182,11 +182,11 @@ export function NotificationDropdown() {
         aria-label="通知"
       >
         <Bell className="h-5 w-5 text-slate-600" />
-        {unreadCount && unreadCount > 0 && (
+        {unreadCount && unreadCount > 0 ? (
           <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
-        )}
+        ) : null}
       </button>
 
       {/* 弹窗内容 */}
@@ -201,21 +201,21 @@ export function NotificationDropdown() {
               <div className="flex items-center gap-2">
                 <Bell className="h-5 w-5 text-slate-600" />
                 <h3 className="font-semibold text-slate-800">通知</h3>
-                {unreadCount && unreadCount > 0 && (
+                {unreadCount && unreadCount > 0 ? (
                   <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
                     {unreadCount}
                   </span>
-                )}
+                ) : null}
               </div>
               <div className="flex items-center gap-2">
-                {unreadCount && unreadCount > 0 && (
+                {unreadCount && unreadCount > 0 ? (
                   <button
                     onClick={handleMarkAllAsRead}
                     className="text-xs px-2 py-1 hover:bg-gray-100 rounded"
                   >
                     全部已读
                   </button>
-                )}
+                ) : null}
                 <button
                   onClick={handleClose}
                   className="p-1 hover:bg-gray-100 rounded"

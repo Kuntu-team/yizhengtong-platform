@@ -33,6 +33,12 @@ interface DetailPageProps {
     id: string;
   };
 }
+function stripMarkdownCodeBlock(str: string): string {
+  if (/^```markdown|^```/.test(str) && /```$/.test(str)) {
+    return str.replace(/^```markdown\s*|^```\s*|```$/g, "").trim();
+  }
+  return str;
+}
 function generateRandomString(length: number): string {
   const characters =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+{}[]<>?~";
@@ -190,6 +196,9 @@ export default function DetailPage({
     styleA: "推荐话术生成中...",
     styleB: "推荐话术生成中...",
   });
+  const [aiContentNews, setaiContentNews] = useState("新闻内容生成中...");
+  const [aiContentScript1, setaiContentScript1] = useState("推荐话术生成中...");
+  const [aiContentScript2, setaiContentScript2] = useState("推荐话术生成中...");
 
   // 获取新闻数据
   const { id } = React.use(params);
@@ -201,44 +210,146 @@ export default function DetailPage({
     console.log("Private data for news_id:", privateData);
 
     setNewsData(privateData);
-
-    const token = "app-M2jwPu1Lkq5F4dpd49SWUoWu";
-    const params = {
+    // 分开数据的接口
+    const token = "app-W46f5FP2BLrma7K7EcPv9Y9k";
+    const paramsNews = {
       inputs: {
         news_id: id,
+        type: "1",
       },
-      query: "start",
+      query: "生成新闻解读",
       response_mode: "blocking",
       conversation_id: "",
-      user: "abc-123",
+      user: "zyp",
+      files: [],
+    };
+    const paramsScript = {
+      inputs: {
+        news_id: id,
+        type: "2",
+      },
+      query: "生成话术",
+      response_mode: "blocking",
+      conversation_id: "",
+      user: "zyp",
       files: [],
     };
 
     try {
-      const res2 = await axios.post(
-        "https://dify.ktt.team/v1/chat-messages",
-        params,
-        {
+      const [res, res1, res2] = await Promise.all([
+        axios.post("https://dify.ktt.team/v1/chat-messages", paramsNews, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
-            Accept: "application/json",
           },
-        }
-      );
-      console.log(res2.data.answer);
-
-      const { newsSection, styleASection, styleBSection } = extractSections(
-        res2.data.answer
-      );
-      setAiContent({
-        news: newsSection,
-        styleA: styleASection,
-        styleB: styleBSection,
-      });
+        }),
+        axios.post("https://dify.ktt.team/v1/chat-messages", paramsScript, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }),
+        axios.post("https://dify.ktt.team/v1/chat-messages", paramsScript, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }),
+      ]);
+      setaiContentNews(res.data.answer);
+      setaiContentScript1(stripMarkdownCodeBlock(res1.data.answer));
+      setaiContentScript2(stripMarkdownCodeBlock(res2.data.answer));
     } catch (error) {
-      // console.error("请求失败:", error);
+      console.log("请求失败:", error);
     }
+    // 合并数据的接口
+    // const token = "app-sx9Om1926GQsuACSpKc22Alj";
+    // const params = {
+    //   inputs: {
+    //     policy_id: "9f8866a0-c8ab-475f-a00f-076cda45c2cf",
+    //     type: "1",
+    //   },
+    //   query: "请输出政策解读",
+    //   response_mode: "streaming",
+    //   conversation_id: "",
+    //   user: "zyp",
+    //   files: [],
+    // };
+
+    // try {
+    //   const res2 = await axios.post(
+    //     "https://dify.ktt.team/v1/chat-messages",
+    //     params,
+    //     {
+    //       headers: {
+    //         Authorization: `Bearer ${token}`,
+    //         "Content-Type": "application/json",
+    //       },
+    //     }
+    //   );
+    //   console.log(res2.data);
+
+    //   const { newsSection, styleASection, styleBSection } = extractSections(
+    //     res2.data.answer
+    //   );
+    //   setAiContent({
+    //     news: newsSection,
+    //     styleA: styleASection,
+    //     styleB: styleBSection,
+    //   });
+    // } catch (error) {
+    //   // console.error("请求失败:", error);
+    // }
+    // 流式接口测试
+    // let policyAnalysisStr = "";
+    // fetch("https://dify.ktt.team/v1/chat-messages", {
+    //   method: "POST", // 或 'GET'，根据接口要求
+    //   headers: {
+    //     "Content-Type": "application/json",
+    //     Authorization: "Bearer app-sx9Om1926GQsuACSpKc22Alj", // 如有需要
+    //   },
+    //   body: JSON.stringify({
+    //     inputs: {
+    //       policy_id: "9f8866a0-c8ab-475f-a00f-076cda45c2cf",
+    //       type: "1",
+    //     },
+    //     query: "请输出政策解读",
+    //     response_mode: "streaming",
+    //     conversation_id: "",
+    //     user: "zyp",
+    //     files: [],
+    //   }),
+    // }).then((response) => {
+    //   if (!response.body) throw new Error("No response body");
+    //   const reader = response.body.getReader();
+    //   const decoder = new TextDecoder("utf-8");
+    //   let buffer = "";
+    //   (async function read() {
+    //     while (true) {
+    //       const { done, value } = await reader.read();
+    //       if (done) break;
+    //       buffer += decoder.decode(value, { stream: true });
+    //       const lines = buffer.split("\n");
+    //       buffer = lines.pop() || "";
+    //       for (const line of lines) {
+    //         if (line.startsWith("data: ")) {
+    //           const data = line.replace("data: ", "").trim();
+    //           if (data === "[DONE]") continue;
+    //           try {
+    //             const json = JSON.parse(data);
+    //             console.log(json);
+    //             if (json.answer) {
+    //               policyAnalysisStr += json.answer;
+    //               setPolicyAnalysis(policyAnalysisStr);
+    //             }
+    //           } catch (error) {
+    //             console.log("解析错误:", error);
+    //           }
+    //         }
+    //       }
+    //     }
+    //   })();
+    // });
   };
 
   useEffect(() => {
@@ -246,47 +357,6 @@ export default function DetailPage({
     // const randomString = generateRandomString(15);
     // console.log(randomString);
   }, []);
-
-  const scripts = [
-    {
-      id: "script1",
-      title: "推荐话术1：同级对比",
-      icon: "💬",
-      content: `张主任您好，我了解到您正在推进数字产业园项目，这个500亿的投资规模在全省都是领先的。
-
-我们注意到南昌、赣州等地也在布局数字经济，但九江的区位优势更明显：
-• 长江经济带核心节点
-• 对接长三角的桥头堡
-• 水陆空交通枢纽完备
-
-我们在类似项目上有丰富经验，比如帮助某地级市完成了200亿数字产业园的融资方案，现在园区入驻率已达85%。
-
-能否安排时间详细交流一下九江项目的具体规划？`,
-    },
-    {
-      id: "script2",
-      title: "推荐话术2：资金机会",
-      icon: "💰",
-      content: `张主任，数字产业园这类项目正好赶上了政策红利期：
-
-国家层面：
-• 数字经济"十四五"规划重点支持
-• 新基建专项债券优先支持
-• 产业引导基金配套投入
-
-省级层面：
-• 江西省数字经济三年行动计划
-• 省级产业发展基金可申请
-• 土地指标优先保障
-
-我们可以帮您：
-1. 设计多元化融资方案（专项债+产业基金+社会资本）
-2. 对接头部企业入驻意向
-3. 申请各类政策支持资金
-
-这个窗口期很关键，建议我们尽快推进。`,
-    },
-  ];
 
   // 根据领导岗位和新闻内容智能生成携带材料
   const generateMaterials = (newsData: any) => {
@@ -595,7 +665,7 @@ export default function DetailPage({
                         <div
                           dangerouslySetInnerHTML={{
                             __html: marked.parse(
-                              getFirstThreeLines(aiContent.news)
+                              getFirstThreeLines(aiContentNews)
                             ),
                           }}
                         />
@@ -614,7 +684,7 @@ export default function DetailPage({
                       <div className="text-sm leading-relaxed whitespace-pre-line text-gray-700">
                         <div
                           dangerouslySetInnerHTML={{
-                            __html: marked.parse(aiContent.news),
+                            __html: marked.parse(aiContentNews),
                           }}
                         />
                         <div className="flex justify-end mt-3">
@@ -671,7 +741,7 @@ export default function DetailPage({
                           ),
                         }}
                       >
-                        {aiContent.styleA}
+                        {aiContentScript1}
                       </ReactMarkdown>
                     </div>
                     <div className="flex justify-end">
@@ -679,7 +749,7 @@ export default function DetailPage({
                         variant="outline"
                         size="sm"
                         className="bg-white text-gray-700 border-gray-300"
-                        onClick={() => handleCopy(aiContent.styleA, "script1")}
+                        onClick={() => handleCopy(aiContentScript1, "script1")}
                       >
                         {copiedScript === "script1" ? (
                           <>
@@ -713,7 +783,7 @@ export default function DetailPage({
                           ),
                         }}
                       >
-                        {aiContent.styleB}
+                        {aiContentScript2}
                       </ReactMarkdown>
                     </div>
                     <div className="flex justify-end">
@@ -721,7 +791,7 @@ export default function DetailPage({
                         variant="outline"
                         size="sm"
                         className="bg-white text-gray-700 border-gray-300"
-                        onClick={() => handleCopy(aiContent.styleB, "script2")}
+                        onClick={() => handleCopy(aiContentScript2, "script2")}
                       >
                         {copiedScript === "script2" ? (
                           <>
