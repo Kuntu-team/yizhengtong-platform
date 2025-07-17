@@ -30,6 +30,7 @@ interface ProjectData {
   fundingScale: number
   rank: number
   isUserRegion?: boolean
+  score?: number // 新增：用于智能排序的得分
 }
 
 interface InsightData {
@@ -153,20 +154,7 @@ function MainContent() {
   ]
 
   // 智能选择对比区县，兼容直辖市和普通省份
-  const getComparisonRegions = (selectedCounty: Region, selectedCity: Region, selectedProvince: Region): string[] => {
-    // 直辖市：同市下其它区县
-    if (DIRECT_MUNICIPALITY_CODES.includes(selectedProvince.region_code)) {
-      const sameCityCounties = regions.filter(r => r.region_level === '3' && r.parent_code === selectedCity.region_code && r.region_code !== selectedCounty.region_code)
-        .map(c => c.region_name).slice(0, 5);
-      return sameCityCounties;
-    }
-    // 普通省份：同城市下其它区县 + 省内其它城市区县
-    const sameCityCounties = regions.filter(r => r.region_level === '3' && r.parent_code === selectedCity.region_code && r.region_code !== selectedCounty.region_code)
-      .map(c => c.region_name).slice(0, 3);
-    const otherCityCounties = regions.filter(r => r.region_level === '3' && r.parent_code !== selectedCity.region_code && r.parent_code && regions.find(rr => rr.region_code === r.parent_code && rr.parent_code === selectedProvince.region_code))
-      .map(c => c.region_name).slice(0, 5 - sameCityCounties.length);
-    return [...sameCityCounties, ...otherCityCounties].slice(0, 5);
-  }
+  // 已废弃，无需保留
 
   // 真实数据获取和适配，兼容 region_special_bond_stats 字段
   const fetchRealData = async (
@@ -175,20 +163,20 @@ function MainContent() {
     selectedProvince: Region,
     timeRange: string
   ): Promise<ProjectData[]> => {
-    // 获取当前区县和对比区县的 region_code
-    const comparisonRegions = getComparisonRegions(selectedCounty, selectedCity, selectedProvince)
-    const allRegionNames = [selectedCounty.region_name, ...comparisonRegions]
-    const allRegionCodes = [selectedCounty.region_code, ...comparisonRegions.map(name => {
-      const county = regions.find(cnty => cnty.region_name === name && cnty.region_level === '3');
-      return county?.region_code || '';
-    })]
+    // 1. 获取同市所有区县的 region_code
+    const allSameCityCounties = regions.filter(r => 
+      r.region_level === '3' && 
+      r.parent_code === selectedCity.region_code
+    );
+    
+    const allRegionCodes = allSameCityCounties.map(county => county.region_code);
 
     // timeRange -> year_dim
     let year_dim = '1'
     if (timeRange === '3years') year_dim = '3'
     if (timeRange === '5years') year_dim = '5'
 
-    // 并发请求所有区县数据
+    // 2. 并发请求同市所有区县数据
     const results = await Promise.all(
       allRegionCodes.map(async (region_code) => {
         if (!region_code) return null;
@@ -197,44 +185,91 @@ function MainContent() {
         return data && data[0] ? { ...data[0], isUserRegion: region_code === selectedCounty.region_code } : null
       })
     )
-    // 适配 ProjectData 结构
-    const data: ProjectData[] = results.filter(Boolean).map((item: any) => ({
+    
+    // 3 适配 ProjectData 结构
+    let allData: ProjectData[] = results.filter(Boolean).map((item: any) => ({
       region: item.region_name,
       projectCount: Number(item.project_amount),
       fundingScale: Number(item.issued_amount),
       rank: 1,
       isUserRegion: item.isUserRegion,
     }))
-    // 排序和排名
-    data.sort((a, b) => b.projectCount - a.projectCount)
-    data.forEach((item, idx) => (item.rank = idx + 1))
-    return data
+
+    //4. 控制台打印：显示同市所有区县数据（按项目数量从高到低排序）
+    const sortedAllData = [...allData].sort((a, b) => b.projectCount - a.projectCount);
+    console.log(`=== ${selectedCity.region_name} 所有区县数据（按项目数量排序）===`);
+    console.log(`统计周期: ${timeRange === "1year" ? "近1年" : timeRange === "3years" ? "近3年" : "近5年"}`);
+    console.table(sortedAllData.map((item, index) => ({
+      排名: index + 1,
+      区县: item.region,
+      项目数量: item.projectCount + '个',
+      发行规模: item.fundingScale + '亿元',
+      是否选中: item.isUserRegion ? '✅' : '❌'
+    })));
+    console.log(`总计区县数量: ${allData.length}个`);
+    console.log('=====================================');
+
+    // 4. 只展示项目数量或发行规模比当前区县高的区县（不包含等于），加上自己，最多6个，按项目数量从高到低排序
+    const sorted = [...allData].sort((a, b) => b.projectCount - a.projectCount);
+    const topFive = sorted.slice(0, 5);
+    const userRegion = allData.find(d => d.isUserRegion);
+    if (userRegion) {
+      let result = topFive;
+      const inTopFive = topFive.some(d => d.region === userRegion.region);
+      if (!inTopFive) {
+        result = [...topFive, userRegion];
+      }
+      // 只保留项目数量或发行规模比当前区县高的区县（不包含等于），加上自己
+      const filtered = result.filter(item =>
+        item.region === userRegion.region ||
+        item.projectCount > userRegion.projectCount ||
+        item.fundingScale > userRegion.fundingScale
+      );
+      // 去重并排序，最多6个
+      const uniqueResult = Array.from(new Map(filtered.map(item => [item.region, item])).values());
+      uniqueResult.sort((a, b) => b.projectCount - a.projectCount);
+      uniqueResult.forEach((item, idx) => (item.rank = idx + 1));
+      return uniqueResult.slice(0, 6);
+    }
+    // 如果没有找到用户区县，按项目数量排序
+    allData.sort((a, b) => b.projectCount - a.projectCount)
+    allData.forEach((item, idx) => (item.rank = idx + 1))
+    return allData
   }
 
   // 生成洞察数据逻辑不变
   const generateInsights = (data: ProjectData[], selectedRegion: string): InsightData[] => {
-    const userRegion = data.find((d) => d.isUserRegion)
-    if (!userRegion) return []
-    const topRegion = data[0]
-    const insights: InsightData[] = []
+    // 1. 按项目数量降序排序，找到自己真实排名
+    const sorted = [...data].sort((a, b) => b.projectCount - a.projectCount);
+    const userRegion = data.find(d => d.isUserRegion);
+    if (!userRegion) return [];
+    const userRank = sorted.findIndex(d => d.region === userRegion.region) + 1;
+    const topRegion = sorted[0];
+
+    const insights: InsightData[] = [];
     insights.push({
-      icon: <Crown className="h-5 w-5" />, text: `${selectedRegion}在对比中排名第${userRegion.rank}位`, type: "rank",
-    })
-    if (userRegion.rank > 1) {
-      const gap = topRegion.projectCount - userRegion.projectCount
+      icon: <Crown className="h-5 w-5" />, text: `${selectedRegion}在对比中排名第${userRank}位`, type: "rank",
+    });
+
+    if (userRank > 1) {
+      const gap = topRegion.projectCount - userRegion.projectCount;
       insights.push({
         icon: <TrendingUp className="h-5 w-5" />, text: `项目数量落后${topRegion.region} ${gap}个项目`, type: "comparison",
-      })
+      });
     } else {
       insights.push({
         icon: <TrendingUp className="h-5 w-5" />, text: `项目数量领先，表现优异`, type: "comparison",
-      })
+      });
     }
-    const scaleRatio = Math.round((userRegion.fundingScale / topRegion.fundingScale) * 100)
+
+    const scaleRatio = topRegion.fundingScale > 0
+      ? Math.round((userRegion.fundingScale / topRegion.fundingScale) * 100)
+      : 0;
     insights.push({
       icon: <DollarSign className="h-5 w-5" />, text: `发行规模达到领先地区的${scaleRatio}%`, type: "scale",
-    })
-    return insights
+    });
+
+    return insights;
   }
 
   // 使用Canvas和Chart.js实现的柱状图组件

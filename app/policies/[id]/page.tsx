@@ -563,7 +563,7 @@ ${policy?.keyPoints
                     transition={{ duration: 0.2 }}
                     className="overflow-hidden"
                   >
-                    <div className="mt-4 bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
+                    <div className="mt-4 bg-white rounded-lg p-4 max-h-96 overflow-y-auto">
                       <div className="prose prose-sm max-w-none">
                         <div className="text-sm leading-relaxed text-gray-700 whitespace-pre-line">
                           {policy.fullContent.split("\n").slice(5).join("\n")}
@@ -574,21 +574,23 @@ ${policy?.keyPoints
                 )}
               </AnimatePresence>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() =>
-                  setExpanded({ ...expanded, content: !expanded.content })
-                }
-                className="mt-3 text-blue-600 hover:text-blue-700"
-              >
-                {expanded.content ? "收起" : "展开全文"}
-                <ChevronDown
-                  className={`ml-1 h-3 w-3 transition-transform ${
-                    expanded.content ? "rotate-180" : ""
-                  }`}
-                />
-              </Button>
+              <div className="flex justify-end mt-3">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    setExpanded({ ...expanded, content: !expanded.content })
+                  }
+                  className="text-blue-600 hover:text-blue-700"
+                >
+                  {expanded.content ? "收起" : "展开全文"}
+                  <ChevronDown
+                    className={`ml-1 h-3 w-3 transition-transform ${
+                      expanded.content ? "rotate-180" : ""
+                    }`}
+                  />
+                </Button>
+              </div>
             </TabsContent>
 
             <TabsContent value="analysis" className="mt-4">
@@ -627,7 +629,7 @@ ${policy?.keyPoints
         {/* 推荐项目及话术模块 */}
         <section
           id="matching-projects"
-          className="bg-[#f8f9fa] rounded-lg p-4 mb-4"
+          className="bg-white rounded-lg p-4 mb-4"
         >
           {projectsLoading ? (
             <div className="text-gray-400 text-center py-8 text-lg">
@@ -657,7 +659,7 @@ ${policy?.keyPoints
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="bg-[#f1f3f4] rounded-xl p-6 min-h-[80px] flex flex-col items-center shadow"
+                    className="bg-white rounded-xl p-6 min-h-[80px] flex flex-col items-center shadow"
                   >
                     {/* 推荐话术 */}
                     <div className="w-full">

@@ -422,21 +422,59 @@ function parseDate(str: string) {
 // 计算当前任职年数（基于workExperiences）
 function getCurrentTenureFromWorkExperiences(workExperiences: Array<{ startdate: string; enddate: string }>): number | null {
   if (!workExperiences || workExperiences.length === 0) return null;
-  // 找到enddate为“至今”的那条
-  const current = workExperiences.find((exp) => exp.enddate === "至今");
-  if (!current || !current.startdate) return null;
-  // 支持“2018年09月”或“2018-09”或“2018.09”格式
-  const match = current.startdate.match(/(\d{4})[年.-](\d{1,2})?/);
+  
+  console.log("计算任职年限，workExperiences:", workExperiences);
+  
+  // 首先尝试找到enddate为"至今"的那条
+  let current = workExperiences.find((exp) => exp.enddate === "至今");
+  
+  // 如果没找到至今的记录，取第一条记录（假设按时间倒序排列）
+  if (!current && workExperiences.length > 0) {
+    current = workExperiences[0];
+    console.log("未找到'至今'记录，使用第一条记录:", current);
+  }
+  
+  if (!current || !current.startdate) {
+    console.log("未找到有效的当前职位记录");
+    return null;
+  }
+  
+  console.log("当前职位记录:", current);
+  
+  // 支持多种日期格式："2251月、201809、2180920251今"
+  let startDateStr = current.startdate;
+  
+  // 如果startdate包含时间段（如"2025年01月-至今"），提取开始日期
+  if (startDateStr.includes('-') || startDateStr.includes('—') || startDateStr.includes('至')) {
+    const parts = startDateStr.split(/[-—至]/);
+    if (parts.length > 0) {
+      startDateStr = parts[0].trim();
+    }
+  }
+  
+  console.log("提取的开始日期:", startDateStr);
+  
+  // 匹配年份和月份 - 支持"225月"格式
+  const match = startDateStr.match(/(\d{4})年(\d{1,2})月/);
   if (match) {
     const startYear = parseInt(match[1], 10);
+    const startMonth = parseInt(match[2], 10);
     const now = new Date();
-    let years = now.getFullYear() - startYear;
-    if (match[2]) {
-      const startMonth = parseInt(match[2], 10);
-      if (now.getMonth() + 1 < startMonth) years--;
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1; // getMonth() 返回0    
+    let years = currentYear - startYear;
+    
+    // 考虑月份因素
+    if (currentMonth < startMonth) {
+      years--;
     }
-    return years >= 0 ? years : null;
+    
+    console.log(`计算任职年限: ${startYear}年${startMonth}月 到 ${currentYear}年${currentMonth}月 = ${years}年`);
+    
+    return years >= 0 ? years : 0; // 如果计算结果为负数，返回0
   }
+  
+  console.log("无法解析开始日期格式:", startDateStr);
   return null;
 }
 
@@ -1075,7 +1113,12 @@ export default function PersonDetailPage() {
                   )}
                   <span>{person.age > 0 ? `${person.age}岁` : "年龄未知"}</span>
                   <span>·</span>
-                  <span>{getCurrentTenureFromWorkExperiences(workExperiences) ? `${getCurrentTenureFromWorkExperiences(workExperiences)}年任职` : "任职年限未知"}</span>
+                  <span>{(() => {
+                    const tenure = getCurrentTenureFromWorkExperiences(workExperiences);
+                    if (tenure === null) return "任职年限未知";
+                    if (tenure === 0) return "不满一年";
+                    return `${tenure}年任职`;
+                  })()}</span>
                   
                   {/* 联系方式 */}
                   {person.contact && (
