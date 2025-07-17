@@ -23,6 +23,7 @@ import { Filter, ChevronDown, Loader2, X, ChevronLeft } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import axios from "axios";
 import { getTimeAgo } from "@/lib/utils";
+import { Suspense } from "react";
 
 interface LeadItem {
   created_time: string; // 创建时间，ISO 格式字符串
@@ -77,6 +78,14 @@ interface Person {
 // ];
 
 export default function LeadsPage() {
+  return (
+    <Suspense fallback={<div>加载中...</div>}>
+      <MainContent />
+    </Suspense>
+  );
+}
+
+function MainContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   // 所有Hook顶层声明
