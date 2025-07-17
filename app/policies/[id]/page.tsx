@@ -7,9 +7,10 @@ import { ChevronLeft, ChevronDown, CheckCircle, Users, X, Copy } from "lucide-re
 import { AnimatePresence, motion } from "framer-motion";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import React from "react";
-import ReactMarkdown from "react-markdown";
+import React, { ReactNode } from "react";
+
 import QRCode from "qrcode";
+
 
 interface Project {
   id: string;
@@ -29,6 +30,55 @@ interface PolicyDetail {
   keyPoints: string[];
   projects: Project[];
   fullContent: string;
+}
+
+function CustomStrong({ children, ...props }: { children?: React.ReactNode | React.ReactNode[] }) {
+  const text = Array.isArray(children) ? children[0] : children;
+  if (typeof text === "string") {
+    // 不去除《》
+    const match = text.match(/^([，。！？,.!?、；:：“”‘’\(\)\[\]\{\}\s]*)(.*?)([，。！？,.!?、；:：“”‘’\(\)\[\]\{\}\s]*)$/);
+    if (match) {
+      const [, leading, core, trailing] = match;
+      return (
+        <>
+          {leading}
+          <strong style={{ color: "#2966d2", fontWeight: "bold" }} {...props}>
+            {core}
+          </strong>
+          {trailing}
+        </>
+      );
+    }
+  }
+  return (
+    <strong style={{ color: "#2966d2", fontWeight: "bold" }} {...props}>
+      {children}
+    </strong>
+  );
+}
+
+// 推荐话术渲染前处理，只高亮成对的 **内容**
+function renderScriptWithCustomHighlight(script: string) {
+  if (!script) return null;
+  // 只替换成对的 **内容**，不处理嵌套和不成对
+  return (
+    <span
+      dangerouslySetInnerHTML={{
+        __html: script.replace(/\*\*([^*]+)\*\*/g, '<strong style="color:#2966d2;font-weight:bold">$1</strong>')
+      }}
+    />
+  );
+}
+
+// 政策解读渲染前处理，支持高亮和换行
+function renderAnalysisWithHighlight(text: string) {
+  if (!text) return [];
+  // 先高亮成对的 **内容**
+  const html = text.replace(/\*\*([^*]+)\*\*/g, '<strong style="color:#2966d2;font-weight:bold">$1</strong>');
+  // 再按换行分割
+  return html.split('\n').map((line, idx) => (
+    <span key={idx} dangerouslySetInnerHTML={{ __html: line }} />
+  ));
 }
 
 export default function PolicyDetailPage() {
@@ -118,106 +168,202 @@ export default function PolicyDetailPage() {
       });
   }, [id]);
 
+  // 推荐话术生成
   useEffect(() => {
     if (!policy?.id) return;
     setPolicyAnalysis("");
     setAnalysisError(null);
     setAnalysisLoading(true);
     setProjectsLoading(true);
+
+    const generateScripts = async () => {
+      try {
+        // 推荐话术1
+        const response1 = await fetch("https://dify.ktt.team/v1/chat-messages", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer app-sx9Om1926GQsuACSpKc22Alj",
+          },
+          body: JSON.stringify({
+            inputs: {
+              policy_id: policy.id,
+              type: "2"
+            },
+            query: "生成推荐话术1",
+            response_mode: "blocking",
+            conversation_id: "",
+            user: "wby",
+            files: [],
+          }),
+        });
+        // 推荐话术2
+        const response2 = await fetch("https://dify.ktt.team/v1/chat-messages", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer app-sx9Om1926GQsuACSpKc22Alj",
+          },
+          body: JSON.stringify({
+            inputs: {
+              policy_id: policy.id,
+              type: "2"
+            },
+            query: "生成推荐话术2",
+            response_mode: "blocking",
+            conversation_id: "",
+            user: "wby",
+            files: [],
+          }),
+        });
+        const data1 = await response1.json();
+        const data2 = await response2.json();
+        
+        // 打印返回数据到控制台
+        console.log("推荐话术1返回数据:", data1);
+        console.log("推荐话术2返回数据:", data2);
+        console.log("推荐话术1 answer字段:", data1?.answer);
+        console.log("推荐话术2 answer字段:", data2?.answer);
+        
+        let projects = [];
+        // 处理推荐话术1
+        if (data1 && data1.answer) {
+          projects.push({
+            id: "styleA",
+            name: "推荐话术1",
+            suitable: "",
+            requirements: "",
+            script: data1.answer, // 不做任何处理，直接展示原始 answer
+          });
+        }
+        // 处理推荐话术2
+        if (data2 && data2.answer) {
+          projects.push({
+            id: "styleB",
+            name: "推荐话术2",
+            suitable: "",
+            requirements: "",
+            script: data2.answer, // 不做任何处理，直接展示原始 answer
+          });
+        }
+        setPolicy((prev) => (prev ? { ...prev, projects } : prev));
+        // setPolicyAnalysis("政策解读内容已生成，请查看推荐话术。"); // 不再覆盖政策解读内容
+        
+        // 添加调试日志
+        console.log("处理后的 projects 数组:", projects);
+        console.log("projects 数组长度:", projects.length);
+      } catch (err) {
+        console.error("生成推荐话术失败:", err);
+        setAnalysisError("推荐话术生成失败，请稍后重试。");
+        setPolicy((prev) => (prev ? { ...prev, projects: [] } : prev));
+      } finally {
+        setAnalysisLoading(false);
+        setProjectsLoading(false);
+      }
+    };
+    generateScripts();
+  }, [policy?.id]);
+
+  // 政策解读内容生成
+  useEffect(() => {
+    if (!policy?.id) return;
+    setAnalysisLoading(true);
+    setAnalysisError(null);
+
     fetch("https://dify.ktt.team/v1/chat-messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: "Bearer app-yq8RC08xQU5OUnMMu5rO5itd",
+        Authorization: "Bearer app-sx9Om1926GQsuACSpKc22Alj",
       },
       body: JSON.stringify({
-        inputs: { policy_id: policy.id },
-        query: "start",
+        inputs: {
+          policy_id: policy.id,
+          type: "1"
+        },
+        query: "生成政策解读",
         response_mode: "blocking",
         conversation_id: "",
         user: "wby",
         files: [],
       }),
     })
-      .then((res) => res.json())
-      .then((data) => {
+      .then(res => res.json())
+      .then(data => {
         if (data && data.answer) {
-          console.log("政策解读 answer 字段:", data.answer);
-          // 提取“### 新闻解读”与“### 话术生成”之间内容
-          const match = data.answer.match(/### 新闻解读([\s\S]*?)### 话术生成/);
-          if (match && match[1]) {
-            setPolicyAnalysis(match[1].trim());
-          } else {
-            setPolicyAnalysis("未获取到政策解读内容。");
-          }
-
-          // 优化风格A/风格B/风格一/风格二提取逻辑
-          const styleAMatch = data.answer.match(
-            /### ?(风格A|风格一)[：:]?[\s\S]*?(?:(?:话术[\n\r]+)|(?:\n\n)|(?:\r\n\r\n))([\s\S]*?)(?=### ?(风格B|风格二)|$)/
-          );
-          // 优化风格B正则，容错乱码或多余字符
-          const styleBMatch = data.answer.match(
-            /###\s*[^\w\u4e00-\u9fa5]{0,3}?(风格B|风格二)[：:]?[\s\S]*?(?:(?:话术[\n\r]+)|(?:\n\n)|(?:\r\n\r\n))([\s\S]*)/
-          );
-          let projects = [];
-          if (styleAMatch && styleAMatch[2]) {
-            projects.push({
-              id: "styleA",
-              name: "推荐话术1",
-              suitable: "",
-              requirements: "",
-              script: styleAMatch[2].trim(),
-            });
-          }
-          if (styleBMatch && styleBMatch[2]) {
-            projects.push({
-              id: "styleB",
-              name: "推荐话术2",
-              suitable: "",
-              requirements: "",
-              script: styleBMatch[2].trim(),
-            });
-          }
-          setPolicy((prev) => (prev ? { ...prev, projects } : prev));
+          // 去除所有 <xxx> 标签
+          let analysis = data.answer.replace(/<[^>]+>/g, '').trim();
+          setPolicyAnalysis(analysis);
         } else {
           setPolicyAnalysis("未获取到政策解读内容。");
-          setPolicy((prev) => (prev ? { ...prev, projects: [] } : prev));
         }
       })
-      .catch((err) => {
-        setAnalysisError("政策解读获取失败，请稍后重试。");
-        setPolicy((prev) => (prev ? { ...prev, projects: [] } : prev));
-      })
-      .finally(() => {
-        setAnalysisLoading(false);
-        setProjectsLoading(false);
-      });
+      .catch(() => setAnalysisError("政策解读获取失败，请稍后重试。"))
+      .finally(() => setAnalysisLoading(false));
   }, [policy?.id]);
 
-  // 初始化分享文案
+  // 只在弹窗未打开时，policy变化才设置默认朋友圈文案，避免覆盖接口返回内容
   useEffect(() => {
-    const defaultShareText = `【${policy?.title}】
+    if (!shareModalOpen) {
+      const defaultShareText = `【${policy?.title}】\n#政策解读 #${policy?.source}`;
+      setShareText(defaultShareText);
+    }
+  }, [policy, shareModalOpen]);
 
-${policy?.keyPoints
-  .slice(0, 3)
-  .map((point) => `• ${point}`)
-  .join("\n")}
-
-#政策解读 #${policy?.source}`;
-    setShareText(defaultShareText);
-  }, [policy]);
+  // 分享弹窗打开时自动请求朋友圈文案
+  useEffect(() => {
+    if (shareModalOpen && policy?.id) {
+      setShareText('朋友圈文案生成中...');
+      fetch('https://dify.ktt.team/v1/chat-messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer app-sx9Om1926GQsuACSpKc22Alj',
+        },
+        body: JSON.stringify({
+          inputs: { policy_id: policy.id, type: '3' },
+          query: '生成朋友圈文案',
+          response_mode: 'blocking',
+          conversation_id: '',
+          user: 'wby',
+          files: [],
+        }),
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.answer) {
+            // 去除 <key_points> 和 </key_points> 标签，并去除首尾空行
+            let clean = data.answer.replace(/<key_points>/g, '').replace(/<\/key_points>/g, '');
+            clean = clean.replace(/^[\s\n]+|[\s\n]+$/g, '');
+            setShareText(clean);
+          }
+        });
+    }
+  }, [shareModalOpen, policy?.id]);
 
   // 复制话术
   const handleCopyScript = async (script: string, projectId: string) => {
     try {
+      // 去除 markdown 语法，仅保留纯文本
+      let plainText = script
+        .replace(/\*\*(.*?)\*\*/g, '$1') // 粗体
+        .replace(/\*(.*?)\*/g, '$1') // 斜体
+        .replace(/`([^`]+)`/g, '$1') // 行内代码
+        .replace(/\[(.*?)\]\((.*?)\)/g, '$1') // 链接
+        .replace(/^#+\s?(.*)/gm, '$1') // 标题
+        .replace(/\!\[(.*?)\]\((.*?)\)/g, '') // 图片
+        .replace(/<[^>]+>/g, '') // HTML标签
+        .replace(/\r?\n/g, '\n') // 保留换行
+        .replace(/^[\s\t]+|[\s\t]+$/gm, '') // 行首尾空格
+        ;
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(script);
+        await navigator.clipboard.writeText(plainText);
         setCopiedScript(projectId);
         setTimeout(() => setCopiedScript(null), 2000);
       } else {
         // 兼容旧浏览器
         const textarea = document.createElement("textarea");
-        textarea.value = script;
+        textarea.value = plainText;
         textarea.style.position = "fixed";
         textarea.style.opacity = "0";
         document.body.appendChild(textarea);
@@ -369,10 +515,10 @@ ${policy?.keyPoints
                   </span>
                 </div>
                 <Textarea
-                  value={shareText.replace(/\n{2,}/g, "\n").trim()}
+                  value={shareText}
                   onChange={(e) => setShareText(e.target.value)}
                   placeholder="编辑分享文案..."
-                  className="min-h-[120px] resize-none text-sm border border-gray-300 focus:border-gray-400 focus:ring-0"
+                  className="min-h-[120px] resize-none text-sm border border-gray-300 focus:border-gray-400 focus:ring-0 whitespace-pre-line"
                   maxLength={200}
                 />
               </div>
@@ -563,7 +709,7 @@ ${policy?.keyPoints
                     transition={{ duration: 0.2 }}
                     className="overflow-hidden"
                   >
-                    <div className="mt-4 bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
+                    <div className="mt-4 bg-white rounded-lg p-4 max-h-96 overflow-y-auto">
                       <div className="prose prose-sm max-w-none">
                         <div className="text-sm leading-relaxed text-gray-700 whitespace-pre-line">
                           {policy.fullContent.split("\n").slice(5).join("\n")}
@@ -574,21 +720,23 @@ ${policy?.keyPoints
                 )}
               </AnimatePresence>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() =>
-                  setExpanded({ ...expanded, content: !expanded.content })
-                }
-                className="mt-3 text-blue-600 hover:text-blue-700"
-              >
-                {expanded.content ? "收起" : "展开全文"}
-                <ChevronDown
-                  className={`ml-1 h-3 w-3 transition-transform ${
-                    expanded.content ? "rotate-180" : ""
-                  }`}
-                />
-              </Button>
+              <div className="flex justify-end mt-3">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    setExpanded({ ...expanded, content: !expanded.content })
+                  }
+                  className="text-blue-600 hover:text-blue-700"
+                >
+                  {expanded.content ? "收起" : "展开全文"}
+                  <ChevronDown
+                    className={`ml-1 h-3 w-3 transition-transform ${
+                      expanded.content ? "rotate-180" : ""
+                    }`}
+                  />
+                </Button>
+              </div>
             </TabsContent>
 
             <TabsContent value="analysis" className="mt-4">
@@ -601,22 +749,7 @@ ${policy?.keyPoints
                 )}
                 {!analysisLoading && !analysisError && policyAnalysis && (
                   <div className="prose prose-sm max-w-none">
-                    <ReactMarkdown
-                      components={{
-                        strong: ({ node, ...props }) => (
-                          <strong
-                            style={{
-                              color: "#2563eb",
-                              fontWeight: "bold",
-                              fontSize: "1.125rem",
-                            }}
-                            {...props}
-                          />
-                        ),
-                      }}
-                    >
-                      {policyAnalysis}
-                    </ReactMarkdown>
+                    {renderAnalysisWithHighlight(policyAnalysis).map((el, idx) => <React.Fragment key={idx}>{el}<br/></React.Fragment>)}
                   </div>
                 )}
               </div>
@@ -627,7 +760,7 @@ ${policy?.keyPoints
         {/* 推荐项目及话术模块 */}
         <section
           id="matching-projects"
-          className="bg-[#f8f9fa] rounded-lg p-4 mb-4"
+          className="bg-white rounded-lg p-4 mb-4"
         >
           {projectsLoading ? (
             <div className="text-gray-400 text-center py-8 text-lg">
@@ -657,26 +790,11 @@ ${policy?.keyPoints
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="bg-[#f1f3f4] rounded-xl p-6 min-h-[80px] flex flex-col items-center shadow"
+                    className="bg-white rounded-xl p-6 min-h-[80px] flex flex-col items-center shadow"
                   >
                     {/* 推荐话术 */}
                     <div className="w-full">
-                      <ReactMarkdown
-                        components={{
-                          strong: ({ node, ...props }) => (
-                            <strong
-                              style={{
-                                color: "#2563eb",
-                                fontWeight: "bold",
-                                fontSize: "1.125rem",
-                              }}
-                              {...props}
-                            />
-                          ),
-                        }}
-                      >
-                        {project.script}
-                      </ReactMarkdown>
+                      {renderScriptWithCustomHighlight(project.script)}
                     </div>
                     {/* 复制按钮移到框外 */}
                     <div className="flex justify-end mt-3 w-full">
@@ -686,17 +804,18 @@ ${policy?.keyPoints
                         onClick={() =>
                           handleCopyScript(project.script, project.id)
                         }
-                        className="px-4 py-2"
+                        className="rounded-lg border border-gray-200 bg-white text-gray-800 flex items-center gap-1 px-4 py-2 transition hover:bg-[#e8f0fe] hover:text-[#2966d2] focus:outline-none focus:ring-2 focus:ring-[#2966d2]"
+                        style={{ boxShadow: 'none' }}
                       >
                         {copiedScript === project.id ? (
                           <>
-                            <CheckCircle className="h-3 w-3 mr-1 text-green-600" />
+                            <CheckCircle className="h-4 w-4 mr-1 text-green-600" />
                             <span className="text-green-600">已复制</span>
                           </>
                         ) : (
                           <>
-                            <Copy className="h-3 w-3 mr-1" />
-                            复制
+                            <Copy className="h-4 w-4 mr-1 transition-colors group-hover:text-[#2966d2]" />
+                            <span className="transition-colors group-hover:text-[#2966d2]">复制</span>
                           </>
                         )}
                       </Button>
