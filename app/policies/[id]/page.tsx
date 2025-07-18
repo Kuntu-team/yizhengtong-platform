@@ -748,7 +748,7 @@ export default function PolicyDetailPage() {
                   <div className="text-red-500 text-sm">{analysisError}</div>
                 )}
                 {!analysisLoading && !analysisError && policyAnalysis && (
-                  <div className="prose prose-sm max-w-none">
+                  <div className="prose prose-sm max-w-none" style={{ color: '#222' }}>
                     {renderAnalysisWithHighlight(policyAnalysis).map((el, idx) => <React.Fragment key={idx}>{el}<br/></React.Fragment>)}
                   </div>
                 )}
