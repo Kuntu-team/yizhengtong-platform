@@ -481,16 +481,16 @@ export default function PoliciesPage() {
             return
           }
           // 并发获取详情
-          const policyIds: string[] = Array.isArray(data.data) ? data.data : [];
-          const detailResults = await Promise.all(
-            policyIds.map((policyId) =>
-              fetch(`/api/policies/${policyId}`).then((res) => res.json())
+          const policyList = Array.isArray(data.data) ? (data.data as any[]) : [];
+          const detailResults: any[] = await Promise.all(
+            policyList.map((policy: any) =>
+              fetch(`/api/policies/${policy.policy_id}`).then((res) => res.json())
             )
-          )
-          const mapped = detailResults
+          );
+          const mapped: Policy[] = detailResults
             .filter((d) => d.success && d.data)
             .map((d) => {
-              const item = d.data
+              const item = d.data;
               // 兼容 Policy 类型
               let status: 'pending' | 'completed' = 'completed';
               if (item.status === 'pending' || item.status === 'completed') {
@@ -507,10 +507,10 @@ export default function PoliciesPage() {
                 unread: false, // 可根据需要调整
                 category: item.category_name || "other",
                 salesPitch: item.policy_content ? item.policy_content.slice(0, 60) + "..." : "-",
-              } as Policy
-            })
-          // 按发布时间倒序排序
-          mapped.sort((a, b) => b.publishDate.getTime() - a.publishDate.getTime());
+              } as Policy;
+            });
+          // 按 rn 升序排序，保证与后端一致
+          mapped.sort((a, b) => (a.rn ?? 0) - (b.rn ?? 0));
           setPolicies(mapped as Policy[])
         } else {
           setPolicies([])

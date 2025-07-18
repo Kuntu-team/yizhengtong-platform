@@ -18,33 +18,51 @@ export async function GET(request: NextRequest) {
     const regionCodes = regionInfos.map(r => r.region_code).filter(Boolean);
     const regionCodeSubstrs = regionCodes.map(code => code?.substring(2)); // substr from 3rd char (0-based)
 
-    // 2. 查询 region_level in ('1','2') 的政策
-    const policies12 = await prisma.policies_info.findMany({
-      where: {
-        region_level: { in: ['1', '2'] },
-      },
-      select: { policy_id: true, region_code: true },
+    // 2. 查询 region_level = '0' 的政策
+    const policies0 = await prisma.policies_info.findMany({
+      where: { region_level: '0' },
+      select: { policy_id: true, region_level: true, released_date: true },
     });
-    // 只保留 region_code substr(3) 匹配的
+
+    // 3. 查询 region_level in ('1','2') 的政策
+    const policies12 = await prisma.policies_info.findMany({
+      where: { region_level: { in: ['1', '2'] } },
+      select: { policy_id: true, region_level: true, released_date: true, region_code: true },
+    });
     const matchedPolicies12 = policies12.filter(p => {
       const codeSubstr = p.region_code?.substring(2);
       return codeSubstr && regionCodeSubstrs.includes(codeSubstr);
     });
 
-    // 3. 查询 region_level = '0' 的政策
-    const policies0 = await prisma.policies_info.findMany({
-      where: { region_level: '0' },
-      select: { policy_id: true },
+    // 4. 合并
+    const allPolicies = [
+      ...policies0,
+      ...matchedPolicies12,
+    ];
+
+    // 5. 排序（region_level: 2 > 1 > 0, released_date desc）
+    const levelOrder = (level: string | null | undefined) => {
+      if (level === '2') return 1;
+      if (level === '1') return 2;
+      if (level === '0') return 3;
+      return 4;
+    };
+    allPolicies.sort((a, b) => {
+      const levelDiff = levelOrder(a.region_level) - levelOrder(b.region_level);
+      if (levelDiff !== 0) return levelDiff;
+      // released_date 可能为 null，做类型保护
+      const dateA = a.released_date ? new Date(a.released_date) : new Date(0);
+      const dateB = b.released_date ? new Date(b.released_date) : new Date(0);
+      return dateB.getTime() - dateA.getTime();
     });
 
-    // 4. 合并 policy_id 并去重
-    const allPolicyIds = [
-      ...matchedPolicies12.map(p => p.policy_id),
-      ...policies0.map(p => p.policy_id),
-    ];
-    const uniquePolicyIds = Array.from(new Set(allPolicyIds));
+    // 6. row_number
+    const result = allPolicies.map((item, idx) => ({
+      ...item,
+      rn: idx + 1,
+    }));
 
-    return NextResponse.json({ success: true, data: uniquePolicyIds });
+    return NextResponse.json({ success: true, data: result });
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
   }
