@@ -27,6 +27,7 @@ import axios from "axios";
 import { getTimeAgo } from "@/lib/utils";
 import { marked } from "marked";
 import ReactMarkdown from "react-markdown";
+import { message } from "antd";
 
 interface DetailPageProps {
   params: {
@@ -569,14 +570,26 @@ export default function DetailPage({
 
     toast.success("开始批量生成下载，请稍候...");
   };
-
   const handleCopy = async (text: string, scriptId: string) => {
+    console.log("text：", text, "scriptId：", scriptId);
     try {
       await navigator.clipboard.writeText(text);
       setCopiedScript(scriptId);
       setTimeout(() => setCopiedScript(null), 2000);
     } catch (err) {
-      // console.error("复制失败:", err)
+      try {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+        setCopiedScript(scriptId);
+        setTimeout(() => setCopiedScript(null), 2000);
+      } catch (err2) {
+        message.error("复制失败,请手动复制");
+        console.log("复制失败:", err, err2);
+      }
     }
   };
 
