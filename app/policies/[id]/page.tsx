@@ -460,7 +460,7 @@ export default function PolicyDetailPage() {
           <h1 className="ml-4 text-base font-medium truncate flex-1" style={{ color: '#222' }}>
             {policy.title}
           </h1>
-          <Button
+          {/* <Button
             variant="ghost"
             size="sm"
             onClick={() => {
@@ -469,7 +469,7 @@ export default function PolicyDetailPage() {
             }}
           >
             <Users className="h-4 w-4" />
-          </Button>
+          </Button> */}
         </div>
       </header>
 
