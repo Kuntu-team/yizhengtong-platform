@@ -60,9 +60,9 @@ function CustomStrong({ children, ...props }: { children?: React.ReactNode | Rea
 // 推荐话术渲染前处理，只高亮成对的 **内容**
 function renderScriptWithCustomHighlight(script: string) {
   if (!script) return null;
-  // 只替换成对的 **内容**，不处理嵌套和不成对
   return (
     <span
+      style={{ color: "#222" }} // 默认黑色
       dangerouslySetInnerHTML={{
         __html: script.replace(/\*\*([^*]+)\*\*/g, '<strong style="color:#2966d2;font-weight:bold">$1</strong>')
       }}
@@ -457,10 +457,10 @@ export default function PolicyDetailPage() {
           <Button variant="ghost" size="sm" onClick={() => router.back()}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <h1 className="ml-4 text-base font-medium truncate flex-1">
+          <h1 className="ml-4 text-base font-medium truncate flex-1" style={{ color: '#222' }}>
             {policy.title}
           </h1>
-          <Button
+          {/* <Button
             variant="ghost"
             size="sm"
             onClick={() => {
@@ -469,7 +469,7 @@ export default function PolicyDetailPage() {
             }}
           >
             <Users className="h-4 w-4" />
-          </Button>
+          </Button> */}
         </div>
       </header>
 
@@ -748,7 +748,7 @@ export default function PolicyDetailPage() {
                   <div className="text-red-500 text-sm">{analysisError}</div>
                 )}
                 {!analysisLoading && !analysisError && policyAnalysis && (
-                  <div className="prose prose-sm max-w-none">
+                  <div className="prose prose-sm max-w-none" style={{ color: '#222' }}>
                     {renderAnalysisWithHighlight(policyAnalysis).map((el, idx) => <React.Fragment key={idx}>{el}<br/></React.Fragment>)}
                   </div>
                 )}

@@ -1077,7 +1077,7 @@ export default function PersonDetailPage() {
 
           <div className="space-y-3">
             {/* 头像和基本信息 */}
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-3 sm:flex-row sm:items-start sm:text-left flex-col items-center text-center">
               <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
                 <img
                   src={person.person_photo_url || "/placeholder-user.jpg"}
@@ -1116,7 +1116,7 @@ export default function PersonDetailPage() {
                   <span>{(() => {
                     const tenure = getCurrentTenureFromWorkExperiences(workExperiences);
                     if (tenure === null) return "任职年限未知";
-                    if (tenure === 0) return "不满一年";
+                    if (tenure === 0) return "任职不满一年";
                     return `${tenure}年任职`;
                   })()}</span>
                   
