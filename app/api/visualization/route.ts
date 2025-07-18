@@ -34,7 +34,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ success: true, data: safeStats });
   } catch (error) {
     // 增强日志输出
-    console.error('API /api/visualization error:', error);
+    console.log('API /api/visualization error:', error);
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
   }
 } 

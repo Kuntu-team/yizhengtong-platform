@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("创建关注记录失败:", error);
+    console.log("创建关注记录失败:", error);
     return NextResponse.json({ error: "创建关注记录失败" }, { status: 500 });
   }
 }
@@ -85,7 +85,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("取消关注失败:", error);
+    console.log("取消关注失败:", error);
     return NextResponse.json({ error: "取消关注失败" }, { status: 500 });
   }
 }
@@ -141,12 +141,12 @@ export async function GET(request: NextRequest) {
       followedPersonIds,
     });
   } catch (error) {
-    console.error("Error fetching followed persons - Type:", typeof error);
-    console.error(
+    console.log("Error fetching followed persons - Type:", typeof error);
+    console.log(
       "Error fetching followed persons - Message:",
       error instanceof Error ? error.message : String(error)
     );
-    console.error(
+    console.log(
       "Error fetching followed persons - Stack:",
       error instanceof Error ? error.stack : undefined
     );

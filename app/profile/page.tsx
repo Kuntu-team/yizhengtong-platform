@@ -68,7 +68,7 @@ export default function ProfilePage() {
         setUser(userData);
         setWechatId(userData.wechatId || "");
       } catch (error) {
-        console.error("Error parsing user data:", error);
+        console.log("Error parsing user data:", error);
         setDefaultUser();
       }
     } else {

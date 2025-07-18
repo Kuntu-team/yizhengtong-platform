@@ -299,7 +299,7 @@ export default function DetailPage({
     //     styleB: styleBSection,
     //   });
     // } catch (error) {
-    //   // console.error("请求失败:", error);
+    //   // console.log("请求失败:", error);
     // }
     // 流式接口测试
     // let policyAnalysisStr = "";

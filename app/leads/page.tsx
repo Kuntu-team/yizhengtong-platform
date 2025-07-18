@@ -123,7 +123,7 @@ function MainContent() {
         setSelectedRegions(regions || []);
         setSelectedPeople(people || []);
       } catch (error) {
-        // console.error("Failed to parse saved filters:", error)
+        // console.log("Failed to parse saved filters:", error)
       }
     }
     fetchData();

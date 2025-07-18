@@ -67,7 +67,7 @@ export async function GET(request: Request) {
     console.log('Query result count:', results.length, 'for businessPersonId:', businessPersonId);
     return NextResponse.json(results);
   } catch (error) {
-    console.error('Database query error:', error);
+    console.log('Database query error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch key persons data' },
       { status: 500 }

@@ -219,7 +219,7 @@ function ScriptGenerationModal({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error("复制失败:", err);
+      console.log("复制失败:", err);
     }
   };
 
@@ -596,7 +596,7 @@ export default function PersonDetailPage() {
         setDistrictCn(apiData.district_cn || "");
         setLoading(false);
       } catch (error) {
-        console.error("Error fetching person data:", error);
+        console.log("Error fetching person data:", error);
         setPerson(null);
         setGraduateSchool("");
         setLoading(false);

@@ -51,7 +51,7 @@ export default function Login() {
         setError(errorData.message || "Invalid Credentials");
       }
     } catch (error: any) {
-      // console.error("Login failed:", error)
+      // console.log("Login failed:", error)
       setError("用户名或密码错误，请重试。");
     }
   };

@@ -140,7 +140,7 @@ export function NotificationDropdown() {
       });
     } catch (e) {
       // 可选：失败时提示
-      console.error("标记已读失败", e);
+      console.log("标记已读失败", e);
     }
     router.push(`/leads/detail/${notification.news_id}`);
   };
@@ -169,7 +169,7 @@ export function NotificationDropdown() {
         news_ids: unreadIds,
       });
     } catch (e) {
-      console.error("批量标记已读失败", e);
+      console.log("批量标记已读失败", e);
     }
   };
 

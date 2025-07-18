@@ -448,7 +448,7 @@ export default function DetailPage({ params }: DetailPageProps) {
       setCopiedScript(scriptId)
       setTimeout(() => setCopiedScript(null), 2000)
     } catch (err) {
-      console.error("复制失败:", err)
+      console.log("复制失败:", err)
     }
   }
 

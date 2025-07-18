@@ -253,7 +253,7 @@ export default function PolicyDetailPage() {
         console.log("处理后的 projects 数组:", projects);
         console.log("projects 数组长度:", projects.length);
       } catch (err) {
-        console.error("生成推荐话术失败:", err);
+        console.log("生成推荐话术失败:", err);
         setAnalysisError("推荐话术生成失败，请稍后重试。");
         setPolicy((prev) => (prev ? { ...prev, projects: [] } : prev));
       } finally {
@@ -375,7 +375,7 @@ export default function PolicyDetailPage() {
         setTimeout(() => setCopiedScript(null), 2000);
       }
     } catch (err) {
-      console.error("复制失败:", err);
+      console.log("复制失败:", err);
     }
   };
 
@@ -399,7 +399,7 @@ export default function PolicyDetailPage() {
       setShareModalOpen(false);
       setResultModalOpen(true);
     } catch (error) {
-      console.error("❌ 分享失败:", error);
+      console.log("❌ 分享失败:", error);
 
       // 设置失败结果并显示结果弹窗
       setShareResult({

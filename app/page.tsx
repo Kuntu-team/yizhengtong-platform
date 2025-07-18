@@ -78,7 +78,7 @@ export default function HomePage() {
           const parsedUserYk = JSON.parse(userYkData);
           setUserYk(parsedUserYk);
         } catch (error) {
-          console.error("解析user_yk失败:", error);
+          console.log("解析user_yk失败:", error);
           setUserYk({ business_person_name: "用户" });
         }
       } else {

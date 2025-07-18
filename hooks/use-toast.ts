@@ -183,7 +183,7 @@ try {
     }
   }
 } catch (error) {
-  console.error('Failed to parse toast state from localStorage:', error);
+  console.log('Failed to parse toast state from localStorage:', error);
   memoryState = { toasts: [] };
 }
 

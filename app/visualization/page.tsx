@@ -443,7 +443,7 @@ function MainContent() {
           chartRef.current = chartInstance;
         })
         .catch((error) => {
-          console.error("Failed to load Chart.js or plugin:", error);
+          console.log("Failed to load Chart.js or plugin:", error);
         });
 
       return () => {
@@ -511,7 +511,7 @@ function MainContent() {
       setHasGenerated(true)
       setTimeout(() => { setIsFullscreen(true) }, 500)
     } catch (error) {
-      console.error("生成图表时出错:", error)
+      console.log("生成图表时出错:", error)
     } finally {
       setIsLoading(false)
     }

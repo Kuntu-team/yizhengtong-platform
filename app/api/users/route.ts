@@ -19,7 +19,7 @@ export async function GET() {
 
     return NextResponse.json(users);
   } catch (error) {
-    console.error("获取用户列表错误:", error);
+    console.log("获取用户列表错误:", error);
     return NextResponse.json({ message: "服务器内部错误" }, { status: 500 });
   } finally {
     await prisma.$disconnect();
@@ -74,7 +74,7 @@ export async function GET() {
 //       { status: 201 }
 //     );
 //   } catch (error) {
-//     console.error("创建用户错误:", error);
+//     console.log("创建用户错误:", error);
 //     return NextResponse.json({ message: "服务器内部错误" }, { status: 500 });
 //   } finally {
 //     await prisma.$disconnect();

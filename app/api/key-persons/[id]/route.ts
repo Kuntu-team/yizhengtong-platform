@@ -31,7 +31,7 @@ export async function GET(
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error('Error fetching person data:', error);
+    console.log('Error fetching person data:', error);
     return NextResponse.json(
       { error: 'Failed to fetch person data' },
       { status: 500 }

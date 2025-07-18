@@ -66,11 +66,11 @@ async function getBusinessPersons(): Promise<BusinessPerson[]> {
     });
     return data as BusinessPerson[];
   } catch (error) {
-    console.error('获取数据失败:', error);
+    console.log('获取数据失败:', error);
     // 添加详细错误信息输出
     if (error instanceof Error) {
-      console.error('错误信息:', error.message);
-      console.error('错误堆栈:', error.stack);
+      console.log('错误信息:', error.message);
+      console.log('错误堆栈:', error.stack);
     }
     return [];
   }
