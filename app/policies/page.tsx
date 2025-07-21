@@ -578,7 +578,7 @@ export default function PoliciesPage() {
       </motion.header>
 
       <div className="min-h-screen bg-white">
-        <div className="max-w-6xl mx-auto px-6">
+        <div className="max-w-6xl mx-auto px-6 pt-4 sm:pt-6">
         {/* 筛选结果提示 */}
         {activeFilterCount > 0 && (
           <motion.div
