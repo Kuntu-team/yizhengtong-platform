@@ -26,6 +26,11 @@ interface Policy {
   salesPitch: string // 添加话术字段
 }
 
+// 扩展 Policy 类型，支持 rn 字段
+interface PolicyWithRn extends Policy {
+  rn: number;
+}
+
 const mockPolicies: Policy[] = [
   {
     id: "policy3",
@@ -431,10 +436,15 @@ function InterestsManagementSheet({ open, onClose }: { open: boolean; onClose: (
 
 export default function PoliciesPage() {
   const router = useRouter()
+  const [allPolicyIds, setAllPolicyIds] = useState<any[]>([])
   const [policies, setPolicies] = useState<Policy[]>([])
+  const [page, setPage] = useState(1)
+  const pageSize = 30
+  const [hasMore, setHasMore] = useState(true)
+  const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [showFilter, setShowFilter] = useState(false)
   const [showInterestsManagement, setShowInterestsManagement] = useState(false)
-  const [loading, setLoading] = useState(true)
 
   const [filters, setFilters] = useState({
     timeRange: "all",
@@ -442,9 +452,9 @@ export default function PoliciesPage() {
     interests: [],
   })
 
+  // 获取 businessPersonId
   useEffect(() => {
     setLoading(true)
-    // 获取 businessPersonId
     let businessPersonId = ''
     if (typeof window !== 'undefined') {
       const userYk = localStorage.getItem('user_yk')
@@ -466,68 +476,102 @@ export default function PoliciesPage() {
     }
     if (!businessPersonId) {
       setPolicies([])
+      setAllPolicyIds([])
       setLoading(false)
+      setHasMore(false)
       return
     }
-    // 先获取 policy_id 列表
+    // 获取 policy_id 列表
     fetch(`/api/policies?businessPersonId=${businessPersonId}`)
       .then((res) => res.json())
       .then(async (data) => {
         if (data.success && Array.isArray(data.data)) {
-          // data.data 是 policy_id 数组
-          // 需要批量获取政策详情
-          if (data.data.length === 0) {
-            setPolicies([])
-            return
-          }
-          // 并发获取详情
-          const policyList = Array.isArray(data.data) ? (data.data as any[]) : [];
-          const detailResults: any[] = await Promise.all(
-            policyList.map((policy: any) =>
-              fetch(`/api/policies/${policy.policy_id}`).then((res) => res.json())
-            )
-          );
-          const mapped: Policy[] = detailResults
-            .filter((d) => d.success && d.data)
-            .map((d) => {
-              const item = d.data;
-              // 兼容 Policy 类型
-              let status: 'pending' | 'completed' = 'completed';
-              if (item.status === 'pending' || item.status === 'completed') {
-                status = item.status;
-              }
-              return {
-                id: item.policy_id,
-                title: item.policy_title || "-",
-                source: item.issued_authority || "-",
-                publishDate: item.released_date ? new Date(item.released_date) : new Date(),
-                timeAgo: "", // 可根据需要计算
-                status,
-                matchedProjects: 0, // 可根据需要调整
-                unread: false, // 可根据需要调整
-                category: item.category_name || "other",
-                salesPitch: item.policy_content ? item.policy_content.slice(0, 60) + "..." : "-",
-              } as Policy;
-            });
-          // 按 rn 升序排序，保证与后端一致
-          mapped.sort((a, b) => (a.rn ?? 0) - (b.rn ?? 0));
-          setPolicies(mapped as Policy[])
+          setAllPolicyIds(data.data)
+          // 只加载第一页
+          await loadPolicies(data.data, 1, true)
         } else {
           setPolicies([])
+          setAllPolicyIds([])
+          setHasMore(false)
         }
       })
       .finally(() => setLoading(false))
   }, [])
 
+  // 加载 policies 分页
+  const loadPolicies = async (ids: any[], pageToLoad: number, replace = false) => {
+    if (!ids || ids.length === 0) return
+    setLoadingMore(true)
+    const start = (pageToLoad - 1) * pageSize
+    const end = start + pageSize
+    const currentIds = ids.slice(start, end)
+    // 传递 rn 字段到详情
+    const detailResults: any[] = await Promise.all(
+      currentIds.map((policy: any) =>
+        fetch(`/api/policies/${policy.policy_id}`)
+          .then((res) => res.json())
+          .then(d => ({ ...d, rn: policy.rn }))
+      )
+    )
+    // 合并 rn 字段
+    const mapped: PolicyWithRn[] = detailResults
+      .filter((d) => d.success && d.data)
+      .map((d) => {
+        const item = d.data
+        let status: 'pending' | 'completed' = 'completed'
+        if (item.status === 'pending' || item.status === 'completed') {
+          status = item.status
+        }
+        return {
+          id: item.policy_id,
+          title: item.policy_title || "-",
+          source: item.issued_authority || "-",
+          publishDate: item.released_date ? new Date(item.released_date) : new Date(),
+          timeAgo: "",
+          status,
+          matchedProjects: 0,
+          unread: false,
+          category: item.category_name || "other",
+          salesPitch: item.policy_content ? item.policy_content.slice(0, 60) + "..." : "-",
+          rn: d.rn // 保留 rn 字段
+        }
+      })
+    // 按 rn 升序排序并去重
+    setPolicies(prev => {
+      const all = replace ? mapped : [...prev, ...mapped]
+      // 用 Map 去重，确保 policy.id 唯一
+      const unique = Array.from(new Map(all.map(item => [item.id, item])).values())
+      return unique.sort((a, b) => (a.rn ?? 0) - (b.rn ?? 0))
+    })
+    setHasMore(end < ids.length)
+    setPage(pageToLoad + 1)
+    setLoadingMore(false)
+  }
+
+  // 无限滚动监听
+  useEffect(() => {
+    const handleScroll = () => {
+      if (
+        window.innerHeight + document.documentElement.scrollTop + 400 >=
+        document.documentElement.offsetHeight
+      ) {
+        if (hasMore && !loading && !loadingMore) {
+          setLoadingMore(true); // 立即设置，提升loading提示响应
+          loadPolicies(allPolicyIds, page)
+        }
+      }
+    }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [hasMore, loading, loadingMore, allPolicyIds, page])
+
   const filteredPolicies = useMemo(() => {
     let filtered = [...policies]
-
     if (filters.timeRange !== "all") {
       const now = new Date()
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
       const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
       const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000)
-
       filtered = filtered.filter((policy) => {
         switch (filters.timeRange) {
           case "today":
@@ -541,11 +585,9 @@ export default function PoliciesPage() {
         }
       })
     }
-
     if (filters.interests.length > 0) {
       filtered = filtered.filter((policy) => filters.interests.includes(policy.category))
     }
-
     return filtered
   }, [policies, filters])
 
@@ -576,7 +618,6 @@ export default function PoliciesPage() {
           <h1 className="ml-4 text-lg sm:text-xl font-light text-slate-800 tracking-wide">新政新知</h1>
         </div>
       </motion.header>
-
       <div className="min-h-screen bg-white">
         <div className="max-w-6xl mx-auto px-6 pt-4 sm:pt-6">
         {/* 筛选结果提示 */}
@@ -601,12 +642,11 @@ export default function PoliciesPage() {
             </div>
           </motion.div>
         )}
-
         {/* 政策Feed流列表 */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <div className="space-y-2 sm:space-y-3">
             <AnimatePresence>
-              {loading
+              {loading && policies.length === 0
                 ? Array.from({ length: 5 }, (_, idx) => idx).map((idx) => (
                     <div key={idx} className="bg-white border border-gray-200 shadow-sm rounded-lg p-3 sm:p-4">
                       <Skeleton className="h-5 sm:h-6 w-2/3 mb-3 sm:mb-4" />
@@ -626,10 +666,35 @@ export default function PoliciesPage() {
                       <PolicyCard policy={policy} />
                     </motion.div>
                   ))}
+              {/* 加载更多loading指示器/底部提示区 */}
+              <div style={{ minHeight: 48 }}>
+                {loadingMore && hasMore ? (
+                  <>
+                    <div className="flex justify-center py-4">
+                      <span className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-slate-400 mr-2"></span>
+                      <span className="text-slate-400 text-sm">加载更多中...</span>
+                    </div>
+                    {Array.from({ length: 3 }).map((_, idx) => (
+                      <div key={idx} className="bg-white border border-gray-200 shadow-sm rounded-lg p-3 sm:p-4 my-2">
+                        <Skeleton className="h-5 sm:h-6 w-2/3 mb-3 sm:mb-4" />
+                        <Skeleton className="h-3 sm:h-4 w-1/3 mb-2" />
+                        <Skeleton className="h-3 sm:h-4 w-1/4 mb-2" />
+                        <Skeleton className="h-3 sm:h-4 w-full mb-2" />
+                        <Skeleton className="h-3 sm:h-4 w-5/6" />
+                      </div>
+                    ))}
+                  </>
+                ) : !hasMore && policies.length > 0 ? (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-4 text-slate-400 text-sm">
+                    没有更多了
+                  </motion.div>
+                ) : (
+                  <div className="py-4" />
+                )}
+              </div>
             </AnimatePresence>
           </div>
         </motion.div>
-
         {/* 空状态 */}
         {!loading && filteredPolicies.length === 0 && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12 sm:py-16 glass-card">
@@ -653,7 +718,6 @@ export default function PoliciesPage() {
         )}
         </div>
       </div>
-
       {/* 筛选弹窗 */}
       <FilterSheet
         open={showFilter}
@@ -662,7 +726,6 @@ export default function PoliciesPage() {
         filters={filters}
         onFiltersChange={setFilters}
       />
-
       {/* 关注领域管理弹窗 */}
       <InterestsManagementSheet open={showInterestsManagement} onClose={() => setShowInterestsManagement(false)} />
     </AppLayout>
