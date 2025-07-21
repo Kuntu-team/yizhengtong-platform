@@ -33,7 +33,7 @@ interface Policy {
 
 // 扩展 Policy 类型，支持 rn 字段
 interface PolicyWithRn extends Policy {
-  rn: number;
+  rn?: number;
 }
 
 const mockPolicies: Policy[] = [
@@ -635,11 +635,15 @@ export default function PoliciesPage() {
     // 按 rn 升序排序并去重
     setPolicies((prev) => {
       const all = replace ? mapped : [...prev, ...mapped];
-      // 用 Map 去重，确保 policy.id 唯一
-      const unique = Array.from(
-        new Map(all.map((item) => [item.id, item])).values()
+      const uniqueMap = new Map<string, PolicyWithRn>();
+      all.forEach((item) => {
+        if (!uniqueMap.has(item.id)) {
+          uniqueMap.set(item.id, item);
+        }
+      });
+      return Array.from(uniqueMap.values()).sort(
+        (a, b) => (a.rn ?? 0) - (b.rn ?? 0)
       );
-      return unique.sort((a, b) => (a.rn ?? 0) - (b.rn ?? 0));
     });
     setHasMore(end < ids.length);
     setPage(pageToLoad + 1);
