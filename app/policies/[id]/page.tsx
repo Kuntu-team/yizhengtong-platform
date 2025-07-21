@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -102,6 +102,109 @@ function renderAnalysisWithHighlight(text: string) {
     ));
 }
 
+// 新增流式 answer hook
+function useStreamingAnswer({ id, query, type }: { id: string, query: string, type: string }) {
+  const [answer, setAnswer] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!id) return;
+    setAnswer("");
+    setError(null);
+    setLoading(true);
+    let cancelled = false;
+    async function fetchStream() {
+      try {
+        const res = await fetch(`/api/policies/${id}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query,
+            inputs: { policy_id: id, type },
+            response_mode: "streaming",
+            conversation_id: "",
+            user: "wby",
+            files: [],
+          }),
+        });
+        if (!res.body) throw new Error("No response body");
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let buffer = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done || cancelled) break;
+          buffer += decoder.decode(value, { stream: true });
+          let lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const data = line.replace("data: ", "").trim();
+              if (!data || data === "[DONE]") continue;
+              try {
+                const json = JSON.parse(data);
+                if (json.answer) {
+                  setAnswer(prev => prev + json.answer);
+                }
+              } catch (e) {
+                // ignore
+              }
+            }
+          }
+        }
+      } catch (err: any) {
+        setError(err.message || "流式请求失败");
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchStream();
+    return () => { cancelled = true; };
+  }, [id, query, type]);
+  return { answer, loading, error };
+}
+
+// 新增 typewriter 打字机动画 hook
+function useTypewriterEffect(fullText: string, speed = 20) {
+  const [displayed, setDisplayed] = useState("");
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const prevFullTextRef = useRef("");
+
+  useEffect(() => {
+    // 只有 fullText 变短（如切换 policy）时才重置
+    if (fullText.length < prevFullTextRef.current.length) {
+      setDisplayed("");
+    }
+    prevFullTextRef.current = fullText;
+  }, [fullText]);
+
+  useEffect(() => {
+    if (!fullText) {
+      setDisplayed("");
+      return;
+    }
+    // 只补充新内容，不重头打字
+    if (displayed.length < fullText.length) {
+      if (timerRef.current) clearInterval(timerRef.current);
+      let i = displayed.length;
+      timerRef.current = setInterval(() => {
+        setDisplayed(prev => {
+          const next = fullText.slice(0, i + 1);
+          i++;
+          if (i >= fullText.length && timerRef.current) clearInterval(timerRef.current);
+          return next;
+        });
+      }, speed);
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+    // eslint-disable-next-line
+  }, [fullText, speed]);
+  return displayed;
+}
+
 export default function PolicyDetailPage() {
   const params = useParams();
   const id = params.id as string;
@@ -126,11 +229,6 @@ export default function PolicyDetailPage() {
     success: boolean;
     message: string;
   } | null>(null);
-
-  const [policyAnalysis, setPolicyAnalysis] = useState<string>("");
-  const [analysisLoading, setAnalysisLoading] = useState(false);
-  const [analysisError, setAnalysisError] = useState<string | null>(null);
-  const [projectsLoading, setProjectsLoading] = useState(false);
 
   // 滚动到指定模块
   const scrollToSection = (sectionId: string) => {
@@ -168,6 +266,7 @@ export default function PolicyDetailPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // 恢复 policy 基本信息的 GET 请求
   useEffect(() => {
     fetch(`/api/policies/${id}`)
       .then((res) => res.json())
@@ -180,154 +279,25 @@ export default function PolicyDetailPage() {
             source: item.issued_authority || "-",
             sourceUrl: item.policy_url || undefined,
             publishDate: item.released_date || "-",
-            status: "completed", // 可根据需要调整
-            keyPoints: [], // 可根据需要解析
-            projects: [], // 可根据需要解析
+            status: "completed",
+            keyPoints: [],
+            projects: [],
             fullContent: item.policy_content || "-",
           });
         }
       });
   }, [id]);
 
-  // 推荐话术生成
-  useEffect(() => {
-    if (!policy?.id) return;
-    setPolicyAnalysis("");
-    setAnalysisError(null);
-    setAnalysisLoading(true);
-    setProjectsLoading(true);
+  // 推荐话术流式
+  const { answer: script1, loading: script1Loading, error: script1Error } = useStreamingAnswer({ id: policy?.id || '', query: "生成推荐话术1", type: "2" });
+  const { answer: script2, loading: script2Loading, error: script2Error } = useStreamingAnswer({ id: policy?.id || '', query: "生成推荐话术2", type: "2" });
+  // 政策解读流式
+  const { answer: analysisAnswer, loading: analysisLoading, error: analysisError } = useStreamingAnswer({ id: policy?.id || '', query: "生成政策解读", type: "1" });
 
-    const generateScripts = async () => {
-      try {
-        // 推荐话术1
-        const response1 = await fetch(
-          "https://dify.ktt.team/v1/chat-messages",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: "Bearer app-sx9Om1926GQsuACSpKc22Alj",
-            },
-            body: JSON.stringify({
-              inputs: {
-                policy_id: policy.id,
-                type: "2",
-              },
-              query: "生成推荐话术1",
-              response_mode: "blocking",
-              conversation_id: "",
-              user: "wby",
-              files: [],
-            }),
-          }
-        );
-        // 推荐话术2
-        const response2 = await fetch(
-          "https://dify.ktt.team/v1/chat-messages",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: "Bearer app-sx9Om1926GQsuACSpKc22Alj",
-            },
-            body: JSON.stringify({
-              inputs: {
-                policy_id: policy.id,
-                type: "2",
-              },
-              query: "生成推荐话术2",
-              response_mode: "blocking",
-              conversation_id: "",
-              user: "wby",
-              files: [],
-            }),
-          }
-        );
-        const data1 = await response1.json();
-        const data2 = await response2.json();
-
-        // 打印返回数据到控制台
-        console.log("推荐话术1返回数据:", data1);
-        console.log("推荐话术2返回数据:", data2);
-        console.log("推荐话术1 answer字段:", data1?.answer);
-        console.log("推荐话术2 answer字段:", data2?.answer);
-
-        let projects = [];
-        // 处理推荐话术1
-        if (data1 && data1.answer) {
-          projects.push({
-            id: "styleA",
-            name: "推荐话术1",
-            suitable: "",
-            requirements: "",
-            script: data1.answer, // 不做任何处理，直接展示原始 answer
-          });
-        }
-        // 处理推荐话术2
-        if (data2 && data2.answer) {
-          projects.push({
-            id: "styleB",
-            name: "推荐话术2",
-            suitable: "",
-            requirements: "",
-            script: data2.answer, // 不做任何处理，直接展示原始 answer
-          });
-        }
-        setPolicy((prev) => (prev ? { ...prev, projects } : prev));
-        // setPolicyAnalysis("政策解读内容已生成，请查看推荐话术。"); // 不再覆盖政策解读内容
-
-        // 添加调试日志
-        console.log("处理后的 projects 数组:", projects);
-        console.log("projects 数组长度:", projects.length);
-      } catch (err) {
-        console.log("生成推荐话术失败:", err);
-        setAnalysisError("推荐话术生成失败，请稍后重试。");
-        setPolicy((prev) => (prev ? { ...prev, projects: [] } : prev));
-      } finally {
-        setAnalysisLoading(false);
-        setProjectsLoading(false);
-      }
-    };
-    generateScripts();
-  }, [policy?.id]);
-
-  // 政策解读内容生成
-  useEffect(() => {
-    if (!policy?.id) return;
-    setAnalysisLoading(true);
-    setAnalysisError(null);
-
-    fetch("https://dify.ktt.team/v1/chat-messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer app-sx9Om1926GQsuACSpKc22Alj",
-      },
-      body: JSON.stringify({
-        inputs: {
-          policy_id: policy.id,
-          type: "1",
-        },
-        query: "生成政策解读",
-        response_mode: "blocking",
-        conversation_id: "",
-        user: "wby",
-        files: [],
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && data.answer) {
-          // 去除所有 <xxx> 标签
-          let analysis = data.answer.replace(/<[^>]+>/g, "").trim();
-          setPolicyAnalysis(analysis);
-        } else {
-          setPolicyAnalysis("未获取到政策解读内容。");
-        }
-      })
-      .catch(() => setAnalysisError("政策解读获取失败，请稍后重试。"))
-      .finally(() => setAnalysisLoading(false));
-  }, [policy?.id]);
+  // 推荐话术和政策解读 typewriter 动画变量
+  const typewriterScript1 = useTypewriterEffect(script1, 20);
+  const typewriterScript2 = useTypewriterEffect(script2, 20);
+  const typewriterAnalysis = useTypewriterEffect(analysisAnswer, 20);
 
   // 只在弹窗未打开时，policy变化才设置默认朋友圈文案，避免覆盖接口返回内容
   useEffect(() => {
@@ -728,7 +698,7 @@ export default function PolicyDetailPage() {
               {/* 政策内容 */}
               <div className="text-sm leading-relaxed text-gray-700">
                 {policy.fullContent.split("\n").slice(0, 5).join("\n")}
-                {policy.fullContent.split("\n").length > 5 && "..."}
+                {!expanded.content && policy.fullContent.split("\n").length > 5 && "..."}
               </div>
 
               <AnimatePresence>
@@ -773,26 +743,15 @@ export default function PolicyDetailPage() {
 
             <TabsContent value="analysis" className="mt-4">
               <div className="space-y-3">
-                {analysisLoading && (
+                {!typewriterAnalysis ? (
                   <div className="text-gray-500 text-sm">政策解读生成中...</div>
+                ) : (
+                  <div className="prose prose-sm max-w-none" style={{ color: '#222' }}>
+                    {renderAnalysisWithHighlight(typewriterAnalysis).map((el, idx) => <React.Fragment key={idx}>{el}<br/></React.Fragment>)}
+                  </div>
                 )}
                 {analysisError && (
                   <div className="text-red-500 text-sm">{analysisError}</div>
-                )}
-                {!analysisLoading && !analysisError && policyAnalysis && (
-                  <div
-                    className="prose prose-sm max-w-none"
-                    style={{ color: "#222" }}
-                  >
-                    {renderAnalysisWithHighlight(policyAnalysis).map(
-                      (el, idx) => (
-                        <React.Fragment key={idx}>
-                          {el}
-                          <br />
-                        </React.Fragment>
-                      )
-                    )}
-                  </div>
                 )}
               </div>
             </TabsContent>
@@ -800,56 +759,39 @@ export default function PolicyDetailPage() {
         </section>
 
         {/* 推荐项目及话术模块 */}
-        <section
-          id="matching-projects"
-          className="bg-white rounded-lg p-4 mb-4"
-        >
-          {projectsLoading ? (
-            <div className="text-gray-400 text-center py-8 text-lg">
-              推荐话术生成中...
-            </div>
-          ) : policy.projects.length > 0 ? (
-            <Tabs defaultValue={policy.projects[0].id} className="w-full">
-              <TabsList className="w-full flex flex-row gap-4 bg-transparent p-2 mb-6">
-                {policy.projects.map((project, index) => (
-                  <TabsTrigger
-                    key={project.id}
-                    value={project.id}
-                    className="flex-1 text-2xl md:text-4xl font-bold py-4 rounded-xl bg-white shadow-sm transition min-w-0 data-[state=active]:bg-[#e8f0fe] data-[state=active]:text-[#2966d2] data-[state=active]:shadow-none"
-                  >
-                    推荐话术{index + 1}
+        {policy?.id && (
+          <section
+            id="matching-projects"
+            className="bg-white rounded-lg p-4 mb-4"
+          >
+            {(!typewriterScript1 && !typewriterScript2) ? (
+              <div className="text-gray-400 text-center py-8 text-lg">
+                推荐话术生成中...
+              </div>
+            ) : (
+              <Tabs defaultValue="styleA" className="w-full">
+                <TabsList className="w-full flex flex-row gap-4 bg-transparent p-2 mb-6 mt-4">
+                  <TabsTrigger value="styleA" className="flex-1 text-2xl md:text-4xl font-bold py-4 rounded-xl bg-white shadow-sm transition min-w-0 data-[state=active]:bg-[#e8f0fe] data-[state=active]:text-[#2966d2] data-[state=active]:shadow-none">
+                    推荐话术1
                   </TabsTrigger>
-                ))}
-              </TabsList>
-
-              {policy.projects.map((project, index) => (
-                <TabsContent
-                  key={project.id}
-                  value={project.id}
-                  className="mt-0"
-                >
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="bg-white rounded-xl p-6 min-h-[80px] flex flex-col items-center shadow"
-                  >
-                    {/* 推荐话术 */}
+                  <TabsTrigger value="styleB" className="flex-1 text-2xl md:text-4xl font-bold py-4 rounded-xl bg-white shadow-sm transition min-w-0 data-[state=active]:bg-[#e8f0fe] data-[state=active]:text-[#2966d2] data-[state=active]:shadow-none">
+                    推荐话术2
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="styleA" className="mt-0">
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-white rounded-xl p-6 min-h-[80px] flex flex-col items-center shadow">
                     <div className="w-full">
-                      {renderScriptWithCustomHighlight(project.script)}
+                      {renderScriptWithCustomHighlight(typewriterScript1)}
                     </div>
-                    {/* 复制按钮移到框外 */}
                     <div className="flex justify-end mt-3 w-full">
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() =>
-                          handleCopyScript(project.script, project.id)
-                        }
+                        onClick={() => handleCopyScript(typewriterScript1, 'script1')}
                         className="rounded-lg border border-gray-200 bg-white text-gray-800 flex items-center gap-1 px-4 py-2 transition hover:bg-[#e8f0fe] hover:text-[#2966d2] focus:outline-none focus:ring-2 focus:ring-[#2966d2]"
                         style={{ boxShadow: "none" }}
                       >
-                        {copiedScript === project.id ? (
+                        {copiedScript === 'script1' ? (
                           <>
                             <CheckCircle className="h-4 w-4 mr-1 text-green-600" />
                             <span className="text-green-600">已复制</span>
@@ -864,7 +806,7 @@ export default function PolicyDetailPage() {
                         )}
                       </Button>
                     </div>
-                    {copiedScript === project.id && (
+                    {copiedScript === 'script1' && (
                       <motion.p
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -875,14 +817,47 @@ export default function PolicyDetailPage() {
                     )}
                   </motion.div>
                 </TabsContent>
-              ))}
-            </Tabs>
-          ) : (
-            <div className="text-gray-400 text-center py-8 text-lg">
-              暂无推荐话术
-            </div>
-          )}
-        </section>
+                <TabsContent value="styleB" className="mt-0">
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-white rounded-xl p-6 min-h-[80px] flex flex-col items-center shadow">
+                    <div className="w-full">
+                      {renderScriptWithCustomHighlight(typewriterScript2)}
+                    </div>
+                    <div className="flex justify-end mt-3 w-full">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleCopyScript(typewriterScript2, 'script2')}
+                        className="rounded-lg border border-gray-200 bg-white text-gray-800 flex items-center gap-1 px-4 py-2 transition hover:bg-[#e8f0fe] hover:text-[#2966d2] focus:outline-none focus:ring-2 focus:ring-[#2966d2]"
+                        style={{ boxShadow: 'none' }}
+                      >
+                        {copiedScript === 'script2' ? (
+                          <>
+                            <CheckCircle className="h-4 w-4 mr-1 text-green-600" />
+                            <span className="text-green-600">已复制</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-4 w-4 mr-1 transition-colors group-hover:text-[#2966d2]" />
+                            <span className="transition-colors group-hover:text-[#2966d2]">复制</span>
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    {copiedScript === 'script2' && (
+                      <motion.p
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-xs text-green-600 mt-2"
+                      >
+                        已复制到剪贴板
+                      </motion.p>
+                    )}
+                  </motion.div>
+                </TabsContent>
+              </Tabs>
+            )}
+          </section>
+        )}
       </main>
     </div>
   );

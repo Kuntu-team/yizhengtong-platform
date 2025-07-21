@@ -607,7 +607,7 @@ function MainContent() {
         setIsFullscreen(true);
       }, 500);
     } catch (error) {
-      console.log("生成图表时出错:", error);
+      console.log("生成图表时出错:", error)
     } finally {
       setIsLoading(false);
     }
