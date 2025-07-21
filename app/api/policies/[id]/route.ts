@@ -35,11 +35,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const isStreaming = response_mode === 'streaming';
 
   // 代理到 dify
+  const difyToken = process.env.DIFY_TOKEN_POLICIES;
+  if (!difyToken) {
+    return NextResponse.json({ success: false, error: 'DIFY token not set in environment variables' }, { status: 500 });
+  }
   const difyRes = await fetch('http://47.94.55.173:8088/v1/chat-messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer app-sx9Om1926GQsuACSpKc22Alj',
+      'Authorization': `Bearer ${difyToken}`,
     },
     body: difyBody,
   });
