@@ -34,6 +34,7 @@ interface LeadItem {
   news_district_cn: string; // 新闻所在区中文名称
   news_district_code: string; // 新闻所在区编码
   news_id: string; // 新闻唯一标识
+  news_region_code: string; // 新闻所在地区编码
   news_province_cn: string; // 新闻所在省份中文名称
   news_province_code: string; // 新闻所在省份编码
   news_source: string; // 新闻来源
@@ -101,6 +102,8 @@ function MainContent() {
   const [regions, setRegions] = useState<Region[]>([]);
   const [people, setPeople] = useState<Person[]>([]);
   const [ready, setReady] = useState(false);
+  const [duringTenureData, setDuringTenureData] = useState<any[]>([]);
+  const [outsideTermData, setOutsideTermData] = useState<any[]>([]);
 
   useEffect(() => {
     const followedPersonIdsParam = searchParams.get("followedPersonIds");
@@ -123,7 +126,7 @@ function MainContent() {
         setSelectedRegions(regions || []);
         setSelectedPeople(people || []);
       } catch (error) {
-        // console.error("Failed to parse saved filters:", error)
+        // console.log("Failed to parse saved filters:", error)
       }
     }
     fetchData();
@@ -144,39 +147,55 @@ function MainContent() {
   useEffect(() => {
     console.log("Active Tab Changed:", activeTab);
     if (activeTab != "internal") {
-      setFilteredItems([]);
+      setFilteredItems(outsideTermData);
     } else {
-      fetchData();
+      setFilteredItems(duringTenureData);
     }
   }, [activeTab]);
 
-  // 修改filteredData逻辑：如果有person_id参数，只展示该人员线索，否则展示全部
   const filteredData = useMemo(() => {
-    let data = filteredItems;
-    // 新增逻辑：如果有followedPersonIds，只展示匹配的
+    // 根据当前 tab 选择数据源
+    let data = activeTab === "internal" ? duringTenureData : outsideTermData;
+
+    // 关键人物筛选
     if (followedPersonIds && followedPersonIds.length > 0) {
       data = data.filter((item) => followedPersonIds.includes(item.person_id));
     } else if (personIdParam) {
-      // 原有逻辑：如果有person_id参数
       data = data.filter((item) => item.person_id === personIdParam);
     }
+
+    // 地区和人物筛选
     if (selectedRegions.length === 0 && selectedPeople.length === 0) {
       return data;
     }
     return data.filter((item) => {
       const matchesRegion =
         selectedRegions.length === 0 ||
-        selectedRegions.includes(item.news_province_code);
+        (activeTab === "internal"
+          ? selectedRegions.includes(item.news_province_code)
+          : selectedRegions.includes(item.news_region_code));
       const matchesPerson =
         selectedPeople.length === 0 || selectedPeople.includes(item.person_id);
       return matchesRegion && matchesPerson;
     });
-  }, [selectedRegions, selectedPeople, filteredItems, personIdParam, followedPersonIds]);
+  }, [
+    selectedRegions,
+    selectedPeople,
+    duringTenureData,
+    outsideTermData,
+    personIdParam,
+    followedPersonIds,
+    activeTab,
+  ]);
   const fetchData = async () => {
     try {
-      const response = await axios.get("api/sales-lead");
-      console.log(response.data);
+      const [response, response1] = await Promise.all([
+        axios.get("api/sales-lead"),
+        axios.get("api/term"),
+      ]);
+      setDuringTenureData(response.data);
       setFilteredItems(response.data);
+      setOutsideTermData(response1.data);
     } catch (error) {
       console.log("请求失败:", error);
     }
@@ -185,7 +204,6 @@ function MainContent() {
     try {
       const response = await axios.get("api/sales-lead/region");
       console.log(response.data);
-      // setFilteredItems(response.data);
       if (response.data.region_info.length > 0) {
         setRegions(
           response.data.region_info.map((item: any) => ({
@@ -223,7 +241,11 @@ function MainContent() {
   // }, [activeTab, selectedRegions, selectedPeople]);
 
   const handleItemClick = (item: LeadItem) => {
-    router.push(`/leads/detail/${item.news_id}`);
+    if (item.person_name) {
+      router.push(`/leads/detail/${item.news_id}`);
+    } else {
+      // router.push(`/leads/detail/${item.news_id}`);
+    }
   };
 
   const loadMore = () => {
@@ -563,7 +585,9 @@ function MainContent() {
                   <div className="space-y-2">
                     <div>
                       <h3 className="text-lg font-medium text-slate-800 leading-relaxed tracking-wide">
-                        {item.person_name + "：" + item.news_title}
+                        {item.person_name
+                          ? item.person_name + "：" + item.news_title
+                          : item.news_title}
                       </h3>
                     </div>
                     {/* <div className="flex items-center justify-between">
@@ -581,18 +605,20 @@ function MainContent() {
                     </div> */}
                     <div className="flex flex-wrap items-center justify-between gap-2 sm:flex-nowrap">
                       <div className="flex items-center gap-3 text-sm text-slate-500 w-full sm:w-auto sm:justify-end">
-                        <span>{item.news_source}</span>
+                        <span>{item.news_source ?? "暂无"}</span>
                         <span>•</span>
                         <span>{getTimeAgo(item.news_time)}</span>
                       </div>
-                      <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <span className="text-sm font-medium text-slate-700 whitespace-nowrap">
-                          商务抓手：
-                        </span>
-                        <span className="text-base text-blue-600 font-medium max-w-[200px] sm:max-w-none">
-                          {item.tags_name ?? "暂无"}
-                        </span>
-                      </div>
+                      {item.tags_name && (
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                          <span className="text-sm font-medium text-slate-700 whitespace-nowrap">
+                            商务抓手：
+                          </span>
+                          <span className="text-base text-blue-600 font-medium max-w-[200px] sm:max-w-none">
+                            {item.tags_name ?? "暂无"}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </motion.div>

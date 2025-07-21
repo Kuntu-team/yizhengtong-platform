@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const region_code = searchParams.get('region_code');
-  const year_dim = searchParams.get('year_dim');
+  const region_code = searchParams.get("region_code");
+  const year_dim = searchParams.get("year_dim");
 
   // 构建查询条件
   const where: any = {};
@@ -21,20 +21,29 @@ export async function GET(req: Request) {
         project_amount: true,
         issued_amount: true,
       },
-      orderBy: [{ region_code: 'asc' }],
+      orderBy: [{ region_code: "asc" }],
     });
 
     // BigInt 转字符串，Decimal 也转字符串
-    const safeStats = stats.map(item => ({
+    const safeStats = stats.map((item) => ({
       ...item,
-      project_amount: item.project_amount !== null && item.project_amount !== undefined ? item.project_amount.toString() : null,
-      issued_amount: item.issued_amount !== null && item.issued_amount !== undefined ? item.issued_amount.toString() : null,
+      project_amount:
+        item.project_amount !== null && item.project_amount !== undefined
+          ? item.project_amount.toString()
+          : null,
+      issued_amount:
+        item.issued_amount !== null && item.issued_amount !== undefined
+          ? item.issued_amount.toString()
+          : null,
     }));
 
     return NextResponse.json({ success: true, data: safeStats });
   } catch (error) {
     // 增强日志输出
-    console.error('API /api/visualization error:', error);
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+    console.log("API /api/visualization error:", error);
+    return NextResponse.json(
+      { success: false, error: String(error) },
+      { status: 500 }
+    );
   }
-} 
+}

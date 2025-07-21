@@ -212,57 +212,57 @@ export default function DetailPage({
 
     setNewsData(privateData);
     // 分开数据的接口
-    const token = "app-W46f5FP2BLrma7K7EcPv9Y9k";
-    const paramsNews = {
-      inputs: {
-        news_id: id,
-        type: "1",
-      },
-      query: "生成新闻解读",
-      response_mode: "blocking",
-      conversation_id: "",
-      user: "zyp",
-      files: [],
-    };
-    const paramsScript = {
-      inputs: {
-        news_id: id,
-        type: "2",
-      },
-      query: "生成话术",
-      response_mode: "blocking",
-      conversation_id: "",
-      user: "zyp",
-      files: [],
-    };
+    // const token = "app-W46f5FP2BLrma7K7EcPv9Y9k";
+    // const paramsNews = {
+    //   inputs: {
+    //     news_id: id,
+    //     type: "1",
+    //   },
+    //   query: "生成新闻解读",
+    //   response_mode: "blocking",
+    //   conversation_id: "",
+    //   user: "zyp",
+    //   files: [],
+    // };
+    // const paramsScript = {
+    //   inputs: {
+    //     news_id: id,
+    //     type: "2",
+    //   },
+    //   query: "生成话术",
+    //   response_mode: "blocking",
+    //   conversation_id: "",
+    //   user: "zyp",
+    //   files: [],
+    // };
 
-    try {
-      const [res, res1, res2] = await Promise.all([
-        axios.post("https://dify.ktt.team/v1/chat-messages", paramsNews, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }),
-        axios.post("https://dify.ktt.team/v1/chat-messages", paramsScript, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }),
-        axios.post("https://dify.ktt.team/v1/chat-messages", paramsScript, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }),
-      ]);
-      setaiContentNews(res.data.answer);
-      setaiContentScript1(stripMarkdownCodeBlock(res1.data.answer));
-      setaiContentScript2(stripMarkdownCodeBlock(res2.data.answer));
-    } catch (error) {
-      console.log("请求失败:", error);
-    }
+    // try {
+    //   const [res, res1, res2] = await Promise.all([
+    //     axios.post("https://dify.ktt.team/v1/chat-messages", paramsNews, {
+    //       headers: {
+    //         Authorization: `Bearer ${token}`,
+    //         "Content-Type": "application/json",
+    //       },
+    //     }),
+    //     axios.post("https://dify.ktt.team/v1/chat-messages", paramsScript, {
+    //       headers: {
+    //         Authorization: `Bearer ${token}`,
+    //         "Content-Type": "application/json",
+    //       },
+    //     }),
+    //     axios.post("https://dify.ktt.team/v1/chat-messages", paramsScript, {
+    //       headers: {
+    //         Authorization: `Bearer ${token}`,
+    //         "Content-Type": "application/json",
+    //       },
+    //     }),
+    //   ]);
+    //   setaiContentNews(res.data.answer);
+    //   setaiContentScript1(stripMarkdownCodeBlock(res1.data.answer));
+    //   setaiContentScript2(stripMarkdownCodeBlock(res2.data.answer));
+    // } catch (error) {
+    //   console.log("请求失败:", error);
+    // }
     // 合并数据的接口
     // const token = "app-sx9Om1926GQsuACSpKc22Alj";
     // const params = {
@@ -299,27 +299,40 @@ export default function DetailPage({
     //     styleB: styleBSection,
     //   });
     // } catch (error) {
-    //   // console.error("请求失败:", error);
+    //   // console.log("请求失败:", error);
     // }
     // 流式接口测试
-    // let policyAnalysisStr = "";
+    const token = "app-W46f5FP2BLrma7K7EcPv9Y9k";
+    const paramsNews = {
+      inputs: {
+        news_id: id,
+        type: "1",
+      },
+      query: "生成新闻解读",
+      response_mode: "streaming",
+      conversation_id: "",
+      user: "zyp",
+      files: [],
+    };
+    const paramsScript = {
+      inputs: {
+        news_id: id,
+        type: "2",
+      },
+      query: "生成话术",
+      response_mode: "streaming",
+      conversation_id: "",
+      user: "zyp",
+      files: [],
+    };
+    // let script1Str = "";
     // fetch("https://dify.ktt.team/v1/chat-messages", {
-    //   method: "POST", // 或 'GET'，根据接口要求
+    //   method: "POST",
     //   headers: {
     //     "Content-Type": "application/json",
-    //     Authorization: "Bearer app-sx9Om1926GQsuACSpKc22Alj", // 如有需要
+    //     Authorization: `Bearer ${token}`,
     //   },
-    //   body: JSON.stringify({
-    //     inputs: {
-    //       policy_id: "9f8866a0-c8ab-475f-a00f-076cda45c2cf",
-    //       type: "1",
-    //     },
-    //     query: "请输出政策解读",
-    //     response_mode: "streaming",
-    //     conversation_id: "",
-    //     user: "zyp",
-    //     files: [],
-    //   }),
+    //   body: JSON.stringify(paramsScript),
     // }).then((response) => {
     //   if (!response.body) throw new Error("No response body");
     //   const reader = response.body.getReader();
@@ -340,8 +353,8 @@ export default function DetailPage({
     //             const json = JSON.parse(data);
     //             console.log(json);
     //             if (json.answer) {
-    //               policyAnalysisStr += json.answer;
-    //               setPolicyAnalysis(policyAnalysisStr);
+    //               script1Str += json.answer;
+    //               setaiContentScript1(stripMarkdownCodeBlock(script1Str));
     //             }
     //           } catch (error) {
     //             console.log("解析错误:", error);
@@ -351,6 +364,55 @@ export default function DetailPage({
     //     }
     //   })();
     // });
+    const fetchStream = async (params: any, setContent: any) => {
+      // const response = await fetch("https://dify.ktt.team/v1/chat-messages", {
+      const response = await fetch("/api/chat-messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          // Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(params),
+      });
+      if (!response.body) throw new Error("No response body");
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let buffer = "";
+      let result = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const data = line.replace("data: ", "").trim();
+            if (data === "[DONE]") continue;
+            try {
+              const json = JSON.parse(data);
+              console.log(json, "json");
+
+              if (json.answer) {
+                result += json.answer;
+                setContent(stripMarkdownCodeBlock(result));
+              }
+            } catch (error) {
+              console.log("解析错误:", error);
+            }
+          }
+        }
+      }
+    };
+
+    // 并发请求
+    Promise.all([
+      fetchStream(paramsNews, setaiContentNews),
+      fetchStream(paramsScript, setaiContentScript1),
+      fetchStream(paramsScript, setaiContentScript2),
+    ]).catch((error) => {
+      console.log("请求失败:", error);
+    });
   };
 
   useEffect(() => {
@@ -674,7 +736,7 @@ export default function DetailPage({
                   <div className="prose prose-sm max-w-none">
                     {!isNewsExpanded ? (
                       // 收起状态：显示前3行，在...后面加展开按钮
-                      <div className="text-sm leading-relaxed whitespace-pre-line text-gray-700 flex justify-between">
+                      <div className="text-sm leading-relaxed whitespace-pre-line text-gray-700">
                         <div
                           dangerouslySetInnerHTML={{
                             __html: marked.parse(
@@ -682,15 +744,17 @@ export default function DetailPage({
                             ),
                           }}
                         />
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={toggleNewsExpanded}
-                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 inline-flex items-center"
-                        >
-                          <ChevronDown className="h-4 w-4 mr-1" />
-                          展开
-                        </Button>
+                        <div className="flex justify-end mt-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={toggleNewsExpanded}
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 inline-flex items-center"
+                          >
+                            <ChevronDown className="h-4 w-4 mr-1" />
+                            展开
+                          </Button>
+                        </div>
                       </div>
                     ) : (
                       // 展开状态：显示完整内容，在最后加收起按钮

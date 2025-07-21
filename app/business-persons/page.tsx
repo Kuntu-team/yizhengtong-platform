@@ -1,10 +1,17 @@
-import React from 'react';
-import prisma from '@/lib/prisma';
-import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import React from "react";
+import prisma from "@/lib/prisma";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 // 定义人员数据类型（包含联查字段）
 interface BusinessPerson {
@@ -35,7 +42,7 @@ async function getBusinessPersons(): Promise<BusinessPerson[]> {
   try {
     // 1. 查询 key_person_base_info
     const baseList = await prisma.key_person_base_info.findMany({
-      orderBy: { person_name: 'asc' },
+      orderBy: { person_name: "asc" },
     });
     // 2. 查询 key_person_private_info
     const privateList = await prisma.key_person_private_info.findMany();
@@ -66,11 +73,11 @@ async function getBusinessPersons(): Promise<BusinessPerson[]> {
     });
     return data as BusinessPerson[];
   } catch (error) {
-    console.error('获取数据失败:', error);
+    console.log("获取数据失败:", error);
     // 添加详细错误信息输出
     if (error instanceof Error) {
-      console.error('错误信息:', error.message);
-      console.error('错误堆栈:', error.stack);
+      console.log("错误信息:", error.message);
+      console.log("错误堆栈:", error.stack);
     }
     return [];
   }
@@ -78,35 +85,37 @@ async function getBusinessPersons(): Promise<BusinessPerson[]> {
 
 // 格式化日期显示
 const formatDate = (date?: Date | string | null): string => {
-  if (!date) return '-';
-  
+  if (!date) return "-";
+
   // 处理可能的字符串日期
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
-  
+  const dateObj = typeof date === "string" ? new Date(date) : date;
+
   // 检查是否为有效日期
-  if (isNaN(dateObj.getTime())) return '-';
-  
+  if (isNaN(dateObj.getTime())) return "-";
+
   // 检查是否为默认最大值日期
-  if (typeof date === 'string' && date >= '9999-12-31') return '-';
-  
-  return dateObj.toLocaleDateString('zh-CN');
+  if (typeof date === "string" && date >= "9999-12-31") return "-";
+
+  return dateObj.toLocaleDateString("zh-CN");
 };
 
 // 状态显示组件
 const StatusBadge = ({ status }: { status?: string | null }) => {
-  const isActive = status === '1';
+  const isActive = status === "1";
   return (
-    <span className={`px-2 py-1 rounded-full text-xs ${
-      isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-    }`}>
-      {isActive ? '在职' : '离职'}
+    <span
+      className={`px-2 py-1 rounded-full text-xs ${
+        isActive ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
+      }`}
+    >
+      {isActive ? "在职" : "离职"}
     </span>
   );
 };
 
 export default async function BusinessPersonsPage() {
   const businessPersons = await getBusinessPersons();
-  console.log(businessPersons,'businessPersons')
+  console.log(businessPersons, "businessPersons");
   return (
     <div className="container mx-auto py-6 overflow-x-auto">
       <Card>
@@ -151,21 +160,39 @@ export default async function BusinessPersonsPage() {
                   </TableRow>
                 ) : (
                   businessPersons.map((person) => (
-                    <TableRow key={`${person.business_person_id}-${person.private_phone || Math.random().toString(36).substr(2, 9)}`} className="hover:bg-gray-50">
-                      <TableCell className="font-medium">{person.business_person_name}</TableCell>
-                      <TableCell>{person.business_person_type || '-'}</TableCell>
-                      <TableCell>{person.staff_id || '-'}</TableCell>
-                      <TableCell>{person.gender === '1' ? '男' : person.gender === '2' ? '女' : '-'}</TableCell>
-                      <TableCell>{person.department || '-'}</TableCell>
-                      <TableCell>{person.position || '-'}</TableCell>
-                      <TableCell>{person.phone_number || '-'}</TableCell>
-                      <TableCell>{person.email || '-'}</TableCell>
+                    <TableRow
+                      key={`${person.business_person_id}-${
+                        person.private_phone ||
+                        Math.random().toString(36).substr(2, 9)
+                      }`}
+                      className="hover:bg-gray-50"
+                    >
+                      <TableCell className="font-medium">
+                        {person.business_person_name}
+                      </TableCell>
+                      <TableCell>
+                        {person.business_person_type || "-"}
+                      </TableCell>
+                      <TableCell>{person.staff_id || "-"}</TableCell>
+                      <TableCell>
+                        {person.gender === "1"
+                          ? "男"
+                          : person.gender === "2"
+                          ? "女"
+                          : "-"}
+                      </TableCell>
+                      <TableCell>{person.department || "-"}</TableCell>
+                      <TableCell>{person.position || "-"}</TableCell>
+                      <TableCell>{person.phone_number || "-"}</TableCell>
+                      <TableCell>{person.email || "-"}</TableCell>
                       <TableCell>{formatDate(person.hire_date)}</TableCell>
                       <TableCell>{formatDate(person.leave_date)}</TableCell>
-                      <TableCell>{person.manager_name || '-'}</TableCell>
-                      <TableCell>{person.private_phone || '-'}</TableCell>
-                      <TableCell>{person.wechat_number || '-'}</TableCell>
-                      <TableCell><StatusBadge status={person.position_status} /></TableCell>
+                      <TableCell>{person.manager_name || "-"}</TableCell>
+                      <TableCell>{person.private_phone || "-"}</TableCell>
+                      <TableCell>{person.wechat_number || "-"}</TableCell>
+                      <TableCell>
+                        <StatusBadge status={person.position_status} />
+                      </TableCell>
                     </TableRow>
                   ))
                 )}

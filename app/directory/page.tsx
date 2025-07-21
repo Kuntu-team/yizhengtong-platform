@@ -328,7 +328,7 @@ export default function DirectoryPage() {
         console.log("Fetched department positions from API:", data);
         setDepartmentPositions(data);
       } catch (error) {
-        console.error("Error fetching department positions:", error);
+        console.log("Error fetching department positions:", error);
         toast({
           title: "数据加载失败",
           description: "无法获取部门岗位数据",
@@ -425,7 +425,7 @@ export default function DirectoryPage() {
             description: "无法获取人物数据",
             variant: "destructive",
           });
-          console.error(error);
+          console.log(error);
         }
       } finally {
         if (isMounted) setIsLoading(false);
@@ -540,7 +540,7 @@ export default function DirectoryPage() {
           setFollowedPeople((prev) => [...prev, personId]);
         }
       } catch (error) {
-        console.error("关注操作失败:", error);
+        console.log("关注操作失败:", error);
         toast({
           title: "操作失败",
           description:

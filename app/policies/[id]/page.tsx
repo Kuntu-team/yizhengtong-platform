@@ -3,14 +3,20 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronDown, CheckCircle, Users, X, Copy } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronDown,
+  CheckCircle,
+  Users,
+  X,
+  Copy,
+} from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import React, { ReactNode } from "react";
 
 import QRCode from "qrcode";
-
 
 interface Project {
   id: string;
@@ -32,11 +38,18 @@ interface PolicyDetail {
   fullContent: string;
 }
 
-function CustomStrong({ children, ...props }: { children?: React.ReactNode | React.ReactNode[] }) {
+function CustomStrong({
+  children,
+  ...props
+}: {
+  children?: React.ReactNode | React.ReactNode[];
+}) {
   const text = Array.isArray(children) ? children[0] : children;
   if (typeof text === "string") {
     // 不去除《》
-    const match = text.match(/^([，。！？,.!?、；:：“”‘’\(\)\[\]\{\}\s]*)(.*?)([，。！？,.!?、；:：“”‘’\(\)\[\]\{\}\s]*)$/);
+    const match = text.match(
+      /^([，。！？,.!?、；:：“”‘’\(\)\[\]\{\}\s]*)(.*?)([，。！？,.!?、；:：“”‘’\(\)\[\]\{\}\s]*)$/
+    );
     if (match) {
       const [, leading, core, trailing] = match;
       return (
@@ -64,7 +77,10 @@ function renderScriptWithCustomHighlight(script: string) {
     <span
       style={{ color: "#222" }} // 默认黑色
       dangerouslySetInnerHTML={{
-        __html: script.replace(/\*\*([^*]+)\*\*/g, '<strong style="color:#2966d2;font-weight:bold">$1</strong>')
+        __html: script.replace(
+          /\*\*([^*]+)\*\*/g,
+          '<strong style="color:#2966d2;font-weight:bold">$1</strong>'
+        ),
       }}
     />
   );
@@ -74,11 +90,16 @@ function renderScriptWithCustomHighlight(script: string) {
 function renderAnalysisWithHighlight(text: string) {
   if (!text) return [];
   // 先高亮成对的 **内容**
-  const html = text.replace(/\*\*([^*]+)\*\*/g, '<strong style="color:#2966d2;font-weight:bold">$1</strong>');
+  const html = text.replace(
+    /\*\*([^*]+)\*\*/g,
+    '<strong style="color:#2966d2;font-weight:bold">$1</strong>'
+  );
   // 再按换行分割
-  return html.split('\n').map((line, idx) => (
-    <span key={idx} dangerouslySetInnerHTML={{ __html: line }} />
-  ));
+  return html
+    .split("\n")
+    .map((line, idx) => (
+      <span key={idx} dangerouslySetInnerHTML={{ __html: line }} />
+    ));
 }
 
 export default function PolicyDetailPage() {
@@ -179,52 +200,58 @@ export default function PolicyDetailPage() {
     const generateScripts = async () => {
       try {
         // 推荐话术1
-        const response1 = await fetch("https://dify.ktt.team/v1/chat-messages", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: "Bearer app-sx9Om1926GQsuACSpKc22Alj",
-          },
-          body: JSON.stringify({
-            inputs: {
-              policy_id: policy.id,
-              type: "2"
+        const response1 = await fetch(
+          "https://dify.ktt.team/v1/chat-messages",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Bearer app-sx9Om1926GQsuACSpKc22Alj",
             },
-            query: "生成推荐话术1",
-            response_mode: "blocking",
-            conversation_id: "",
-            user: "wby",
-            files: [],
-          }),
-        });
+            body: JSON.stringify({
+              inputs: {
+                policy_id: policy.id,
+                type: "2",
+              },
+              query: "生成推荐话术1",
+              response_mode: "blocking",
+              conversation_id: "",
+              user: "wby",
+              files: [],
+            }),
+          }
+        );
         // 推荐话术2
-        const response2 = await fetch("https://dify.ktt.team/v1/chat-messages", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: "Bearer app-sx9Om1926GQsuACSpKc22Alj",
-          },
-          body: JSON.stringify({
-            inputs: {
-              policy_id: policy.id,
-              type: "2"
+        const response2 = await fetch(
+          "https://dify.ktt.team/v1/chat-messages",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Bearer app-sx9Om1926GQsuACSpKc22Alj",
             },
-            query: "生成推荐话术2",
-            response_mode: "blocking",
-            conversation_id: "",
-            user: "wby",
-            files: [],
-          }),
-        });
+            body: JSON.stringify({
+              inputs: {
+                policy_id: policy.id,
+                type: "2",
+              },
+              query: "生成推荐话术2",
+              response_mode: "blocking",
+              conversation_id: "",
+              user: "wby",
+              files: [],
+            }),
+          }
+        );
         const data1 = await response1.json();
         const data2 = await response2.json();
-        
+
         // 打印返回数据到控制台
         console.log("推荐话术1返回数据:", data1);
         console.log("推荐话术2返回数据:", data2);
         console.log("推荐话术1 answer字段:", data1?.answer);
         console.log("推荐话术2 answer字段:", data2?.answer);
-        
+
         let projects = [];
         // 处理推荐话术1
         if (data1 && data1.answer) {
@@ -248,12 +275,12 @@ export default function PolicyDetailPage() {
         }
         setPolicy((prev) => (prev ? { ...prev, projects } : prev));
         // setPolicyAnalysis("政策解读内容已生成，请查看推荐话术。"); // 不再覆盖政策解读内容
-        
+
         // 添加调试日志
         console.log("处理后的 projects 数组:", projects);
         console.log("projects 数组长度:", projects.length);
       } catch (err) {
-        console.error("生成推荐话术失败:", err);
+        console.log("生成推荐话术失败:", err);
         setAnalysisError("推荐话术生成失败，请稍后重试。");
         setPolicy((prev) => (prev ? { ...prev, projects: [] } : prev));
       } finally {
@@ -279,7 +306,7 @@ export default function PolicyDetailPage() {
       body: JSON.stringify({
         inputs: {
           policy_id: policy.id,
-          type: "1"
+          type: "1",
         },
         query: "生成政策解读",
         response_mode: "blocking",
@@ -288,11 +315,11 @@ export default function PolicyDetailPage() {
         files: [],
       }),
     })
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         if (data && data.answer) {
           // 去除所有 <xxx> 标签
-          let analysis = data.answer.replace(/<[^>]+>/g, '').trim();
+          let analysis = data.answer.replace(/<[^>]+>/g, "").trim();
           setPolicyAnalysis(analysis);
         } else {
           setPolicyAnalysis("未获取到政策解读内容。");
@@ -313,28 +340,30 @@ export default function PolicyDetailPage() {
   // 分享弹窗打开时自动请求朋友圈文案
   useEffect(() => {
     if (shareModalOpen && policy?.id) {
-      setShareText('朋友圈文案生成中...');
-      fetch('https://dify.ktt.team/v1/chat-messages', {
-        method: 'POST',
+      setShareText("朋友圈文案生成中...");
+      fetch("https://dify.ktt.team/v1/chat-messages", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer app-sx9Om1926GQsuACSpKc22Alj',
+          "Content-Type": "application/json",
+          Authorization: "Bearer app-sx9Om1926GQsuACSpKc22Alj",
         },
         body: JSON.stringify({
-          inputs: { policy_id: policy.id, type: '3' },
-          query: '生成朋友圈文案',
-          response_mode: 'blocking',
-          conversation_id: '',
-          user: 'wby',
+          inputs: { policy_id: policy.id, type: "3" },
+          query: "生成朋友圈文案",
+          response_mode: "blocking",
+          conversation_id: "",
+          user: "wby",
           files: [],
         }),
       })
-        .then(res => res.json())
-        .then(data => {
+        .then((res) => res.json())
+        .then((data) => {
           if (data && data.answer) {
             // 去除 <key_points> 和 </key_points> 标签，并去除首尾空行
-            let clean = data.answer.replace(/<key_points>/g, '').replace(/<\/key_points>/g, '');
-            clean = clean.replace(/^[\s\n]+|[\s\n]+$/g, '');
+            let clean = data.answer
+              .replace(/<key_points>/g, "")
+              .replace(/<\/key_points>/g, "");
+            clean = clean.replace(/^[\s\n]+|[\s\n]+$/g, "");
             setShareText(clean);
           }
         });
@@ -346,16 +375,15 @@ export default function PolicyDetailPage() {
     try {
       // 去除 markdown 语法，仅保留纯文本
       let plainText = script
-        .replace(/\*\*(.*?)\*\*/g, '$1') // 粗体
-        .replace(/\*(.*?)\*/g, '$1') // 斜体
-        .replace(/`([^`]+)`/g, '$1') // 行内代码
-        .replace(/\[(.*?)\]\((.*?)\)/g, '$1') // 链接
-        .replace(/^#+\s?(.*)/gm, '$1') // 标题
-        .replace(/\!\[(.*?)\]\((.*?)\)/g, '') // 图片
-        .replace(/<[^>]+>/g, '') // HTML标签
-        .replace(/\r?\n/g, '\n') // 保留换行
-        .replace(/^[\s\t]+|[\s\t]+$/gm, '') // 行首尾空格
-        ;
+        .replace(/\*\*(.*?)\*\*/g, "$1") // 粗体
+        .replace(/\*(.*?)\*/g, "$1") // 斜体
+        .replace(/`([^`]+)`/g, "$1") // 行内代码
+        .replace(/\[(.*?)\]\((.*?)\)/g, "$1") // 链接
+        .replace(/^#+\s?(.*)/gm, "$1") // 标题
+        .replace(/\!\[(.*?)\]\((.*?)\)/g, "") // 图片
+        .replace(/<[^>]+>/g, "") // HTML标签
+        .replace(/\r?\n/g, "\n") // 保留换行
+        .replace(/^[\s\t]+|[\s\t]+$/gm, ""); // 行首尾空格
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(plainText);
         setCopiedScript(projectId);
@@ -375,7 +403,7 @@ export default function PolicyDetailPage() {
         setTimeout(() => setCopiedScript(null), 2000);
       }
     } catch (err) {
-      console.error("复制失败:", err);
+      console.log("复制失败:", err);
     }
   };
 
@@ -399,7 +427,7 @@ export default function PolicyDetailPage() {
       setShareModalOpen(false);
       setResultModalOpen(true);
     } catch (error) {
-      console.error("❌ 分享失败:", error);
+      console.log("❌ 分享失败:", error);
 
       // 设置失败结果并显示结果弹窗
       setShareResult({
@@ -443,7 +471,7 @@ export default function PolicyDetailPage() {
   }, [showQR]);
 
   const searchParams = useSearchParams();
-  const isFromWxShare = searchParams?.get('from') === 'wxshare';
+  const isFromWxShare = searchParams?.get("from") === "wxshare";
 
   if (!policy) {
     return <div className="text-center py-16">加载中...</div>;
@@ -457,7 +485,10 @@ export default function PolicyDetailPage() {
           <Button variant="ghost" size="sm" onClick={() => router.back()}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <h1 className="ml-4 text-base font-medium truncate flex-1" style={{ color: '#222' }}>
+          <h1
+            className="ml-4 text-base font-medium truncate flex-1"
+            style={{ color: "#222" }}
+          >
             {policy.title}
           </h1>
           {/* <Button
@@ -701,23 +732,24 @@ export default function PolicyDetailPage() {
               </div>
 
               <AnimatePresence>
-                {expanded.content && policy.fullContent.split("\n").length > 5 && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="mt-4 bg-white rounded-lg p-4 max-h-96 overflow-y-auto">
-                      <div className="prose prose-sm max-w-none">
-                        <div className="text-sm leading-relaxed text-gray-700 whitespace-pre-line">
-                          {policy.fullContent.split("\n").slice(5).join("\n")}
+                {expanded.content &&
+                  policy.fullContent.split("\n").length > 5 && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="mt-4 bg-white rounded-lg p-4 max-h-96 overflow-y-auto">
+                        <div className="prose prose-sm max-w-none">
+                          <div className="text-sm leading-relaxed text-gray-700 whitespace-pre-line">
+                            {policy.fullContent.split("\n").slice(5).join("\n")}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </motion.div>
-                )}
+                    </motion.div>
+                  )}
               </AnimatePresence>
 
               <div className="flex justify-end mt-3">
@@ -748,8 +780,18 @@ export default function PolicyDetailPage() {
                   <div className="text-red-500 text-sm">{analysisError}</div>
                 )}
                 {!analysisLoading && !analysisError && policyAnalysis && (
-                  <div className="prose prose-sm max-w-none" style={{ color: '#222' }}>
-                    {renderAnalysisWithHighlight(policyAnalysis).map((el, idx) => <React.Fragment key={idx}>{el}<br/></React.Fragment>)}
+                  <div
+                    className="prose prose-sm max-w-none"
+                    style={{ color: "#222" }}
+                  >
+                    {renderAnalysisWithHighlight(policyAnalysis).map(
+                      (el, idx) => (
+                        <React.Fragment key={idx}>
+                          {el}
+                          <br />
+                        </React.Fragment>
+                      )
+                    )}
                   </div>
                 )}
               </div>
@@ -805,7 +847,7 @@ export default function PolicyDetailPage() {
                           handleCopyScript(project.script, project.id)
                         }
                         className="rounded-lg border border-gray-200 bg-white text-gray-800 flex items-center gap-1 px-4 py-2 transition hover:bg-[#e8f0fe] hover:text-[#2966d2] focus:outline-none focus:ring-2 focus:ring-[#2966d2]"
-                        style={{ boxShadow: 'none' }}
+                        style={{ boxShadow: "none" }}
                       >
                         {copiedScript === project.id ? (
                           <>
@@ -815,7 +857,9 @@ export default function PolicyDetailPage() {
                         ) : (
                           <>
                             <Copy className="h-4 w-4 mr-1 transition-colors group-hover:text-[#2966d2]" />
-                            <span className="transition-colors group-hover:text-[#2966d2]">复制</span>
+                            <span className="transition-colors group-hover:text-[#2966d2]">
+                              复制
+                            </span>
                           </>
                         )}
                       </Button>

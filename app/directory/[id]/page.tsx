@@ -219,7 +219,7 @@ function ScriptGenerationModal({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error("复制失败:", err);
+      console.log("复制失败:", err);
     }
   };
 
@@ -420,40 +420,46 @@ function parseDate(str: string) {
 }
 
 // 计算当前任职年数（基于workExperiences）
-function getCurrentTenureFromWorkExperiences(workExperiences: Array<{ startdate: string; enddate: string }>): number | null {
+function getCurrentTenureFromWorkExperiences(
+  workExperiences: Array<{ startdate: string; enddate: string }>
+): number | null {
   if (!workExperiences || workExperiences.length === 0) return null;
-  
+
   console.log("计算任职年限，workExperiences:", workExperiences);
-  
+
   // 首先尝试找到enddate为"至今"的那条
   let current = workExperiences.find((exp) => exp.enddate === "至今");
-  
+
   // 如果没找到至今的记录，取第一条记录（假设按时间倒序排列）
   if (!current && workExperiences.length > 0) {
     current = workExperiences[0];
     console.log("未找到'至今'记录，使用第一条记录:", current);
   }
-  
+
   if (!current || !current.startdate) {
     console.log("未找到有效的当前职位记录");
     return null;
   }
-  
+
   console.log("当前职位记录:", current);
-  
+
   // 支持多种日期格式："2251月、201809、2180920251今"
   let startDateStr = current.startdate;
-  
+
   // 如果startdate包含时间段（如"2025年01月-至今"），提取开始日期
-  if (startDateStr.includes('-') || startDateStr.includes('—') || startDateStr.includes('至')) {
+  if (
+    startDateStr.includes("-") ||
+    startDateStr.includes("—") ||
+    startDateStr.includes("至")
+  ) {
     const parts = startDateStr.split(/[-—至]/);
     if (parts.length > 0) {
       startDateStr = parts[0].trim();
     }
   }
-  
+
   console.log("提取的开始日期:", startDateStr);
-  
+
   // 匹配年份和月份 - 支持"225月"格式
   const match = startDateStr.match(/(\d{4})年(\d{1,2})月/);
   if (match) {
@@ -461,19 +467,21 @@ function getCurrentTenureFromWorkExperiences(workExperiences: Array<{ startdate:
     const startMonth = parseInt(match[2], 10);
     const now = new Date();
     const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth() + 1; // getMonth() 返回0    
+    const currentMonth = now.getMonth() + 1; // getMonth() 返回0
     let years = currentYear - startYear;
-    
+
     // 考虑月份因素
     if (currentMonth < startMonth) {
       years--;
     }
-    
-    console.log(`计算任职年限: ${startYear}年${startMonth}月 到 ${currentYear}年${currentMonth}月 = ${years}年`);
-    
+
+    console.log(
+      `计算任职年限: ${startYear}年${startMonth}月 到 ${currentYear}年${currentMonth}月 = ${years}年`
+    );
+
     return years >= 0 ? years : 0; // 如果计算结果为负数，返回0
   }
-  
+
   console.log("无法解析开始日期格式:", startDateStr);
   return null;
 }
@@ -596,7 +604,7 @@ export default function PersonDetailPage() {
         setDistrictCn(apiData.district_cn || "");
         setLoading(false);
       } catch (error) {
-        console.error("Error fetching person data:", error);
+        console.log("Error fetching person data:", error);
         setPerson(null);
         setGraduateSchool("");
         setLoading(false);
@@ -970,13 +978,25 @@ export default function PersonDetailPage() {
       {/* 顶部导航 */}
       <header className="bg-white border-b sticky top-0 z-50">
         <div className="max-w-full mx-auto px-2 sm:px-3 h-12 flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={() => router.back()} className="text-xs sm:text-sm px-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.back()}
+            className="text-xs sm:text-sm px-2"
+          >
             <ChevronLeft className="h-4 w-4 mr-1" />
             返回
           </Button>
-          <Button variant="ghost" size="sm" onClick={handleToggleFollow} className="text-xs sm:text-sm px-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleToggleFollow}
+            className="text-xs sm:text-sm px-2"
+          >
             <Star
-              className={`h-4 w-4 mr-1 ${isFollowed ? "fill-yellow-400 text-yellow-400" : ""}`}
+              className={`h-4 w-4 mr-1 ${
+                isFollowed ? "fill-yellow-400 text-yellow-400" : ""
+              }`}
             />
             {isFollowed ? "已关注" : "关注"}
           </Button>
@@ -1088,22 +1108,33 @@ export default function PersonDetailPage() {
               <div className="flex-1 min-w-0">
                 {/* 姓名和职位信息 */}
                 <div className="flex flex-wrap items-center gap-1 mb-1">
-                  <h1 className="text-base font-bold text-gray-900" title={person.name}>
+                  <h1
+                    className="text-base font-bold text-gray-900"
+                    title={person.name}
+                  >
                     {person.name || "未知姓名"}
                   </h1>
                   <span className="text-sm font-medium text-gray-700">·</span>
-                  <span className="text-sm font-medium text-gray-700" title={person.currentPosition?.department}>
+                  <span
+                    className="text-sm font-medium text-gray-700"
+                    title={person.currentPosition?.department}
+                  >
                     {person.currentPosition?.department || "未知部门"}
                   </span>
                   <span className="text-sm font-medium text-gray-700">·</span>
-                  <span className="text-sm font-medium text-gray-700" title={person.currentPosition?.title}>
+                  <span
+                    className="text-sm font-medium text-gray-700"
+                    title={person.currentPosition?.title}
+                  >
                     {person.currentPosition?.title || "未知职位"}
                   </span>
                 </div>
-                
+
                 {/* 详细信息 */}
                 <div className="flex flex-wrap items-center gap-1 text-sm text-gray-700">
-                  <span title={person.hometown}>{person.hometown || "未知地区"}</span>
+                  <span title={person.hometown}>
+                    {person.hometown || "未知地区"}
+                  </span>
                   <span>·</span>
                   {districtCn && (
                     <>
@@ -1113,13 +1144,16 @@ export default function PersonDetailPage() {
                   )}
                   <span>{person.age > 0 ? `${person.age}岁` : "年龄未知"}</span>
                   <span>·</span>
-                  <span>{(() => {
-                    const tenure = getCurrentTenureFromWorkExperiences(workExperiences);
-                    if (tenure === null) return "任职年限未知";
-                    if (tenure === 0) return "任职不满一年";
-                    return `${tenure}年任职`;
-                  })()}</span>
-                  
+                  <span>
+                    {(() => {
+                      const tenure =
+                        getCurrentTenureFromWorkExperiences(workExperiences);
+                      if (tenure === null) return "任职年限未知";
+                      if (tenure === 0) return "任职不满一年";
+                      return `${tenure}年任职`;
+                    })()}
+                  </span>
+
                   {/* 联系方式 */}
                   {person.contact && (
                     <>
@@ -1174,7 +1208,7 @@ export default function PersonDetailPage() {
                               borderRadius: 4,
                               padding: "2px 8px",
                               fontWeight: 600,
-                              display: 'inline-block',
+                              display: "inline-block",
                             }}
                           >
                             {exp.startdate} - {exp.enddate}
@@ -1188,7 +1222,7 @@ export default function PersonDetailPage() {
                                 borderRadius: 4,
                                 padding: "2px 8px",
                                 fontWeight: 600,
-                                display: 'inline-block',
+                                display: "inline-block",
                               }}
                             >
                               当前
@@ -1239,7 +1273,9 @@ export default function PersonDetailPage() {
                           className="flex items-center gap-2"
                         >
                           <span className="text-green-500 mt-1">●</span>
-                          <span className="text-sm text-gray-700 line-clamp-2 sm:line-clamp-none">{desc}</span>
+                          <span className="text-sm text-gray-700 line-clamp-2 sm:line-clamp-none">
+                            {desc}
+                          </span>
                         </motion.div>
                       ))
                   ) : (

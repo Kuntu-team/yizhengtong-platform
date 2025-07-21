@@ -1,9 +1,15 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   ChevronLeft,
   Copy,
@@ -15,13 +21,13 @@ import {
   Eye,
   ChevronUp,
   ChevronDown,
-} from "lucide-react"
-import MaterialPreview from "@/components/material-preview"
+} from "lucide-react";
+import MaterialPreview from "@/components/material-preview";
 
 interface DetailPageProps {
   params: {
-    id: string
-  }
+    id: string;
+  };
 }
 
 // 模拟新闻全文数据
@@ -110,7 +116,7 @@ const mockNewsData = {
     area: "南昌市",
     reportTypes: ["环境影响评估", "投资分析报告"],
   },
-}
+};
 
 const generateMaterials = (area: string, reportType: string) => {
   const baseMaterials = [
@@ -143,7 +149,7 @@ const generateMaterials = (area: string, reportType: string) => {
 ## 政策要点
 包括财税支持、土地政策和人才政策等。`,
     },
-  ]
+  ];
 
   // 根据报告类型添加特定材料
   if (reportType === "工程可研报告") {
@@ -162,7 +168,7 @@ const generateMaterials = (area: string, reportType: string) => {
           description: "详细设计图",
         },
       ],
-    })
+    });
   } else if (reportType === "社会稳定风险评估") {
     baseMaterials.push({
       id: `specific-mat-2-${area}-${reportType}`,
@@ -176,7 +182,7 @@ const generateMaterials = (area: string, reportType: string) => {
 
 ## 评估结果
 本报告为关于${area} 社会稳定风险的评估报告。`,
-    })
+    });
   } else if (reportType === "水土保持报告") {
     baseMaterials.push({
       id: `specific-mat-3-${area}-${reportType}`,
@@ -190,7 +196,7 @@ const generateMaterials = (area: string, reportType: string) => {
 
 ## 方案内容
 本报告为关于${area} 水土保持的方案。`,
-    })
+    });
   } else if (reportType === "环境影响评估") {
     baseMaterials.push({
       id: `specific-mat-4-${area}-${reportType}`,
@@ -204,7 +210,7 @@ const generateMaterials = (area: string, reportType: string) => {
 
 ## 评估结果
 本报告为关于${area} 环境影响的评估报告。`,
-    })
+    });
   } else if (reportType === "投资分析报告") {
     baseMaterials.push({
       id: `specific-mat-5-${area}-${reportType}`,
@@ -229,19 +235,19 @@ const generateMaterials = (area: string, reportType: string) => {
           paybackPeriod: "3.8年",
         },
       },
-    })
+    });
   }
 
-  return baseMaterials
-}
+  return baseMaterials;
+};
 
 export default function DetailPage({ params }: DetailPageProps) {
-  const router = useRouter()
-  const [copiedScript, setCopiedScript] = useState<string | null>(null)
-  const [previewOpen, setPreviewOpen] = useState(false)
-  const [previewContent, setPreviewContent] = useState<any>(null)
-  const [isContentExpanded, setIsContentExpanded] = useState(true)
-  const [generatedMaterials, setGeneratedMaterials] = useState<any[]>([])
+  const router = useRouter();
+  const [copiedScript, setCopiedScript] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewContent, setPreviewContent] = useState<any>(null);
+  const [isContentExpanded, setIsContentExpanded] = useState(true);
+  const [generatedMaterials, setGeneratedMaterials] = useState<any[]>([]);
 
   // 获取新闻数据
   const newsData = mockNewsData[params.id as keyof typeof mockNewsData] || {
@@ -254,7 +260,7 @@ export default function DetailPage({ params }: DetailPageProps) {
       person: "联系人",
       position: "职位",
     },
-  }
+  };
 
   const scripts = [
     {
@@ -295,7 +301,7 @@ export default function DetailPage({ params }: DetailPageProps) {
 
 这个窗口期很关键，建议我们尽快推进。`,
     },
-  ]
+  ];
 
   // 模拟材料数据
   const materials = [
@@ -395,12 +401,14 @@ export default function DetailPage({ params }: DetailPageProps) {
         {
           name: "园区总体规划图",
           url: "/placeholder.svg?height=400&width=600&text=园区总体规划图",
-          description: "九江数字产业园总体规划布局图，展示五个园区的空间分布和功能定位",
+          description:
+            "九江数字产业园总体规划布局图，展示五个园区的空间分布和功能定位",
         },
         {
           name: "核心区效果图",
           url: "/placeholder.svg?height=400&width=600&text=核心区效果图",
-          description: "数字产业园核心区建筑效果图，包括研发中心、孵化器等主要建筑",
+          description:
+            "数字产业园核心区建筑效果图，包括研发中心、孵化器等主要建筑",
         },
         {
           name: "智慧制造园效果图",
@@ -439,52 +447,57 @@ export default function DetailPage({ params }: DetailPageProps) {
         },
       },
     },
-  ]
+  ];
 
   // 复制推荐话术
   const handleCopy = async (text: string, scriptId: string) => {
     try {
-      await navigator.clipboard.writeText(text)
-      setCopiedScript(scriptId)
-      setTimeout(() => setCopiedScript(null), 2000)
+      await navigator.clipboard.writeText(text);
+      setCopiedScript(scriptId);
+      setTimeout(() => setCopiedScript(null), 2000);
     } catch (err) {
-      console.error("复制失败:", err)
+      console.log("复制失败:", err);
     }
-  }
+  };
 
   const handleDownload = (material: (typeof materials)[0]) => {
-    console.log("下载材料:", material.name)
-    const link = document.createElement("a")
-    link.href = material.url
-    link.download = material.name
-    link.click()
-  }
+    console.log("下载材料:", material.name);
+    const link = document.createElement("a");
+    link.href = material.url;
+    link.download = material.name;
+    link.click();
+  };
 
   const handlePreview = (material: (typeof materials)[0]) => {
-    setPreviewContent(material)
-    setPreviewOpen(true)
-  }
+    setPreviewContent(material);
+    setPreviewOpen(true);
+  };
 
   const closePreview = () => {
-    setPreviewOpen(false)
-    setPreviewContent(null)
-  }
+    setPreviewOpen(false);
+    setPreviewContent(null);
+  };
 
   const toggleContentExpanded = () => {
-    setIsContentExpanded(!isContentExpanded)
-  }
+    setIsContentExpanded(!isContentExpanded);
+  };
 
   const handleGenerateReport = (area: string, reportType: string) => {
-    const newMaterials = generateMaterials(area, reportType)
-    setGeneratedMaterials(newMaterials)
-  }
+    const newMaterials = generateMaterials(area, reportType);
+    setGeneratedMaterials(newMaterials);
+  };
 
   return (
     <div className="min-h-screen bg-white">
       {/* 固定顶部导航 - 与主页header完全一致的对齐 */}
       <header className="fixed top-0 w-full bg-white border-b z-50">
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center">
-          <Button variant="ghost" size="sm" onClick={() => router.back()} className="mr-2 -ml-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.back()}
+            className="mr-2 -ml-2"
+          >
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <h1 className="text-lg font-semibold text-gray-900">线索详情</h1>
@@ -506,7 +519,9 @@ export default function DetailPage({ params }: DetailPageProps) {
               <div className="space-y-4">
                 {/* 新闻标题 */}
                 <div>
-                  <h3 className="font-medium text-gray-900 text-lg mb-2">{newsData.title}</h3>
+                  <h3 className="font-medium text-gray-900 text-lg mb-2">
+                    {newsData.title}
+                  </h3>
                 </div>
 
                 {/* 新闻来源和发布时间 */}
@@ -525,7 +540,9 @@ export default function DetailPage({ params }: DetailPageProps) {
                 <div className="prose prose-sm max-w-none">
                   <div
                     className={`text-sm leading-relaxed whitespace-pre-line text-gray-700 transition-all duration-300 ${
-                      isContentExpanded ? "" : "max-h-32 overflow-hidden relative"
+                      isContentExpanded
+                        ? ""
+                        : "max-h-32 overflow-hidden relative"
                     }`}
                   >
                     {newsData.fullContent}
@@ -577,7 +594,9 @@ export default function DetailPage({ params }: DetailPageProps) {
                 </div>
                 <div>
                   <span className="text-gray-500">职位：</span>
-                  <span className="font-medium">{newsData.keyInfo.position}</span>
+                  <span className="font-medium">
+                    {newsData.keyInfo.position}
+                  </span>
                 </div>
               </div>
             </CardContent>
@@ -638,7 +657,9 @@ export default function DetailPage({ params }: DetailPageProps) {
                     <div className="flex items-center gap-3">
                       <div className="text-blue-600">{material.icon}</div>
                       <div>
-                        <div className="font-medium text-sm text-gray-900">{material.name}</div>
+                        <div className="font-medium text-sm text-gray-900">
+                          {material.name}
+                        </div>
                         <div className="text-xs text-gray-500">
                           {material.type} • {material.size}
                         </div>
@@ -674,7 +695,9 @@ export default function DetailPage({ params }: DetailPageProps) {
                     <div className="flex items-center gap-3">
                       <div className="text-blue-600">{material.icon}</div>
                       <div>
-                        <div className="font-medium text-sm text-gray-900">{material.name}</div>
+                        <div className="font-medium text-sm text-gray-900">
+                          {material.name}
+                        </div>
                         <div className="text-xs text-gray-500">
                           {material.type} • {material.size}
                         </div>
@@ -709,7 +732,7 @@ export default function DetailPage({ params }: DetailPageProps) {
                 variant="outline"
                 className="w-full bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
                 onClick={() => {
-                  materials.forEach((material) => handleDownload(material))
+                  materials.forEach((material) => handleDownload(material));
                 }}
               >
                 <Download className="h-4 w-4 mr-2" />
@@ -728,11 +751,15 @@ export default function DetailPage({ params }: DetailPageProps) {
             </CardHeader>
             <CardContent className="pt-0">
               <div className="space-y-4">
-                <p className="text-sm text-gray-600">基于此线索信息，智能生成专业报告文档</p>
+                <p className="text-sm text-gray-600">
+                  基于此线索信息，智能生成专业报告文档
+                </p>
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-700 mb-2 block">选择地区</label>
+                    <label className="text-sm font-medium text-gray-700 mb-2 block">
+                      选择地区
+                    </label>
                     <select
                       className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       defaultValue={newsData.area}
@@ -743,11 +770,13 @@ export default function DetailPage({ params }: DetailPageProps) {
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-gray-700 mb-2 block">报告类型</label>
+                    <label className="text-sm font-medium text-gray-700 mb-2 block">
+                      报告类型
+                    </label>
                     <select
                       className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       onChange={(e) => {
-                        handleGenerateReport(newsData.area, e.target.value)
+                        handleGenerateReport(newsData.area, e.target.value);
                       }}
                     >
                       <option value="">请选择报告类型</option>
@@ -761,7 +790,9 @@ export default function DetailPage({ params }: DetailPageProps) {
                 </div>
 
                 <div className="bg-blue-50 rounded-lg p-4">
-                  <h4 className="font-medium text-blue-900 mb-2">报告将包含以下内容：</h4>
+                  <h4 className="font-medium text-blue-900 mb-2">
+                    报告将包含以下内容：
+                  </h4>
                   <ul className="text-sm text-blue-700 space-y-1">
                     <li>• 项目概述与背景分析</li>
                     <li>• 政策依据与合规性分析</li>
@@ -777,7 +808,7 @@ export default function DetailPage({ params }: DetailPageProps) {
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                 onClick={() => {
                   // 这里可以添加报告生成逻辑
-                  console.log("开始生成报告...")
+                  console.log("开始生成报告...");
                 }}
               >
                 <FileText className="h-4 w-4 mr-2" />
@@ -788,9 +819,13 @@ export default function DetailPage({ params }: DetailPageProps) {
           </Card>
 
           {/* 预览弹窗 */}
-          <MaterialPreview open={previewOpen} onClose={closePreview} material={previewContent} />
+          <MaterialPreview
+            open={previewOpen}
+            onClose={closePreview}
+            material={previewContent}
+          />
         </div>
       </main>
     </div>
-  )
+  );
 }

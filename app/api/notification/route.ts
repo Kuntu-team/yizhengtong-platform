@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     });
     return Response.json({ success: true });
   } catch (error) {
-    console.error("Error fetching department positions:", error);
+    console.log("Error fetching department positions:", error);
     return NextResponse.json(
       { error: "Failed to fetch data" },
       { status: 500 }
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ data: records });
   } catch (error) {
-    console.error("Failed to fetch user_notification_read data:", error);
+    console.log("Failed to fetch user_notification_read data:", error);
     return NextResponse.json(
       { error: "Failed to fetch data" },
       { status: 500 }

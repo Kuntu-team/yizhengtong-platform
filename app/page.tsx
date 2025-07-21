@@ -78,7 +78,7 @@ export default function HomePage() {
           const parsedUserYk = JSON.parse(userYkData);
           setUserYk(parsedUserYk);
         } catch (error) {
-          console.error("解析user_yk失败:", error);
+          console.log("解析user_yk失败:", error);
           setUserYk({ business_person_name: "用户" });
         }
       } else {
@@ -99,7 +99,10 @@ export default function HomePage() {
         setNewsData(res.data || []);
         setTotal(res.total || 0);
         setFollowedPersonIds(res.followedPersonIds || []); // 新增
-        console.log('当前商务人员关注的followed_person_id:', res.followedPersonIds); // 新增
+        console.log(
+          "当前商务人员关注的followed_person_id:",
+          res.followedPersonIds
+        ); // 新增
       });
   }, [page]);
   const fetchData = async () => {
@@ -203,7 +206,11 @@ export default function HomePage() {
                     variant="outline"
                     className="text-[11px] sm:text-xs font-light cursor-pointer max-w-[72px] truncate px-2 sm:px-3 ml-auto"
                     onClick={() => {
-                      router.push(`/leads?followedPersonIds=${encodeURIComponent(JSON.stringify(followedPersonIds))}`);
+                      router.push(
+                        `/leads?followedPersonIds=${encodeURIComponent(
+                          JSON.stringify(followedPersonIds)
+                        )}`
+                      );
                     }}
                   >
                     {total} 条更新
@@ -233,7 +240,12 @@ export default function HomePage() {
                           <div className="flex items-center gap-3 text-xs text-gray-500">
                             <div className="flex items-center gap-1">
                               <User className="h-3 w-3" />
-                              <span className="font-light truncate max-w-[64px] inline-block align-bottom" title={news.leader}>{news.leader}</span>
+                              <span
+                                className="font-light truncate max-w-[64px] inline-block align-bottom"
+                                title={news.leader}
+                              >
+                                {news.leader}
+                              </span>
                             </div>
                             <div className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />

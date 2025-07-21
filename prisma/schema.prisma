@@ -236,7 +236,56 @@ model policies_info {
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model position_adjustment_notice {
+  notice_id           Int      @id
+  notice_title        String?
+  notice_content      String?
+  notice_url          String?  @db.VarChar(500)
+  notice_level        String?  @db.VarChar(10)
+  notice_code         String?  @db.VarChar(100)
+  region_code         String?  @db.VarChar(10)
+  region_cn           String?  @db.VarChar(100)
+  region_level        String?  @db.Char(1)
+  province_code       String?  @db.VarChar(20)
+  province_cn         String?  @db.VarChar(100)
+  city_code           String?  @db.VarChar(20)
+  city_cn             String?  @db.VarChar(100)
+  district_code       String?  @db.VarChar(10)
+  district_cn         String?  @db.VarChar(100)
+  category_id         String?  @db.VarChar(20)
+  category_name       String?  @db.VarChar(100)
+  theme_category_id   String?  @db.VarChar(20)
+  theme_category_name String?  @db.VarChar(100)
+  is_effective        String?  @default("1") @db.Char(1)
+  notice_doc_number   String?  @db.VarChar(100)
+  group_category      String?  @db.VarChar(100)
+  issued_authority    String?  @db.VarChar(500)
+  completed_date      String?
+  released_date       String?
+  data_status         String?  @default("1") @db.Char(1)
+  created_time        DateTime @default(now()) @db.Timestamp(6)
+  updated_time        DateTime @default(now()) @db.Timestamp(6)
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model region_special_bond_stats {
+  id             Int      @id @default(autoincrement())
+  region_code    String?  @db.VarChar(20)
+  region_name    String?  @db.VarChar(500)
+  region_level   String?  @db.Char(1)
+  parent_code    String?  @db.VarChar(20)
+  parent_cn      String?  @db.VarChar(500)
+  year_dim       String?  @db.Char(1)
+  project_amount BigInt?
+  issued_amount  Decimal? @db.Decimal(10, 2)
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model region_special_bond_stats_copy1 {
   id             Int      @id @default(autoincrement())
   region_code    String?  @db.VarChar(20)
   region_name    String?  @db.VarChar(500)
