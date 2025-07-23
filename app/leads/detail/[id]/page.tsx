@@ -197,9 +197,9 @@ export default function DetailPage({
     styleA: "推荐话术生成中...",
     styleB: "推荐话术生成中...",
   });
-  const [aiContentNews, setaiContentNews] = useState("新闻内容生成中...");
-  const [aiContentScript1, setaiContentScript1] = useState("推荐话术生成中...");
-  const [aiContentScript2, setaiContentScript2] = useState("推荐话术生成中...");
+  const [aiContentNews, setaiContentNews] = useState("");
+  const [aiContentScript1, setaiContentScript1] = useState("");
+  const [aiContentScript2, setaiContentScript2] = useState("");
 
   // 获取新闻数据
   const { id } = React.use(params);
@@ -748,7 +748,9 @@ export default function DetailPage({
                         <div
                           dangerouslySetInnerHTML={{
                             __html: marked.parse(
-                              getFirstThreeLines(aiContentNews)
+                              getFirstThreeLines(
+                                aiContentNews || "新闻内容生成中..."
+                              )
                             ),
                           }}
                         />
@@ -769,7 +771,9 @@ export default function DetailPage({
                       <div className="text-sm leading-relaxed whitespace-pre-line text-gray-700">
                         <div
                           dangerouslySetInnerHTML={{
-                            __html: marked.parse(aiContentNews),
+                            __html: marked.parse(
+                              aiContentNews || "新闻内容生成中..."
+                            ),
                           }}
                         />
                         <div className="flex justify-end mt-3">
@@ -829,7 +833,7 @@ export default function DetailPage({
                           ),
                         }}
                       >
-                        {aiContentScript1}
+                        {aiContentScript1 || "推荐话术生成中..."}
                       </ReactMarkdown>
                     </div>
                     <div className="flex justify-end">
