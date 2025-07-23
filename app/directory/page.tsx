@@ -233,29 +233,23 @@ function CompactPersonCard({
           </div>
 
           {/* 第二行：部门、职位、地区、年龄 */}
-          <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2 flex-wrap">
+          <div
+            className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2"
+            style={{ minHeight: 24 }}
+          >
             <span
-              className="text-sm font-medium text-gray-800 truncate max-w-[60px]"
-              title={person.department}
+              className="truncate max-w-[95%] text-sm font-medium text-gray-800 inline-block align-bottom"
+              title={`${person.department}${person.department && person.position ? ' · ' : ''}${person.position}${person.position && person.hometown ? ' · ' : ''}${person.hometown}`}
+              style={{ verticalAlign: 'bottom' }}
             >
               {person.department}
-            </span>
-            <span className="text-xs text-slate-400">·</span>
-            <span
-              className="text-sm font-medium text-gray-800 truncate max-w-[60px]"
-              title={person.position}
-            >
+              {person.department && person.position ? ' · ' : ''}
               {person.position}
-            </span>
-            {/* <span className="text-xs text-slate-400">·</span> */}
-            <span
-              className="text-xs text-gray-700 truncate max-w-[60px]"
-              title={person.hometown}
-            >
+              {person.position && person.hometown ? ' · ' : ''}
               {person.hometown}
             </span>
-            <span className="text-xs text-slate-400">·</span>
-            <span className="text-xs text-gray-600">
+            <span className="text-xs text-slate-400 flex-shrink-0">·</span>
+            <span className="text-xs text-gray-600 flex-shrink-0" title={person.age !== null ? `${person.age}岁` : "未知"}>
               {person.age !== null ? `${person.age}岁` : "未知"}
             </span>
           </div>
@@ -265,7 +259,7 @@ function CompactPersonCard({
             <div className="flex items-center gap-1">
               <Phone className="h-3 w-3 text-slate-400 flex-shrink-0" />
               <span
-                className="text-xs text-gray-900 font-medium truncate max-w-[80px]"
+                className="text-xs text-gray-900 font-medium break-all"
                 title={person.office_phone}
               >
                 {person.office_phone || "暂无办公电话"}

@@ -657,7 +657,7 @@ export default function PersonDetailPage() {
           // 字段兜底，防止后端字段变动
           const safeData = Array.isArray(data)
             ? data.map((item) => ({
-                position_info: item.position_info || "",
+                position_info: item.position_info || item.description || "",
                 startdate: item.startdate || "",
                 enddate: item.enddate || "",
               }))
@@ -934,20 +934,15 @@ export default function PersonDetailPage() {
     console.log("workExperiences", workExperiences);
   }, [workExperiences]);
 
-  // 只展示enddate为'至今'的履历
-  const filteredWorkExperiences = workExperiences.filter(
-    (exp) => exp.enddate === "至今"
-  );
-
-  // 展示所有履历，按enddate和startdate倒序排列，enddate为'至今'的排最前
-  const sortedWorkExperiences = [...workExperiences].sort((a, b) => {
-    const endA = parseDate(a.enddate);
-    const endB = parseDate(b.enddate);
-    if (endA !== endB) return endB - endA;
-    const startA = parseDate(a.startdate);
-    const startB = parseDate(b.startdate);
-    return endB !== endA ? endB - endA : startB - startA;
-  });
+  // 只保留最近两条工作履历，按enddate倒序
+  const sortedWorkExperiences = [...workExperiences]
+    .sort((a, b) => {
+      // 处理enddate为空或'至今'的情况，认为是当前
+      const endA = (!a.enddate || a.enddate === '至今') ? 99999999 : parseInt(a.enddate.replace(/[^\d]/g, ''));
+      const endB = (!b.enddate || b.enddate === '至今') ? 99999999 : parseInt(b.enddate.replace(/[^\d]/g, ''));
+      return endB - endA;
+    })
+    .slice(0, 2);
 
   if (loading) {
     return (
@@ -1193,18 +1188,18 @@ export default function PersonDetailPage() {
                               display: "inline-block",
                             }}
                           >
-                            {exp.startdate} - {exp.enddate}
+                            {exp.startdate} - {exp.enddate || '至今'}
                           </span>
-                          {exp.enddate === "至今" && (
+                          {(!exp.enddate || exp.enddate === '至今') && (
                             <span
-                              className="text-xs sm:text-sm font-semibold"
+                              className="text-xs sm:text-sm font-semibold ml-2"
                               style={{
-                                background: "#1677FF",
-                                color: "#fff",
+                                background: '#1677FF',
+                                color: '#fff',
                                 borderRadius: 4,
-                                padding: "2px 8px",
+                                padding: '2px 8px',
                                 fontWeight: 600,
-                                display: "inline-block",
+                                display: 'inline-block',
                               }}
                             >
                               当前

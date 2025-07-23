@@ -6,38 +6,46 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const businessPersonId = url.searchParams.get("businessPersonId");
     if (!businessPersonId) {
-      console.log("No businessPersonId provided, returning empty result");
       return NextResponse.json([]);
     }
-    console.log("Received businessPersonId:", businessPersonId);
 
-    // 1. 查找 business_manager_region_info
-    const managerRegion = await prisma.business_manager_region_info.findFirst({
+    // 1. 查找该商务负责的所有区域
+    const managerRegions = await prisma.business_manager_region_info.findMany({
       where: { business_person_id: businessPersonId },
     });
-    if (!managerRegion) {
+    if (!managerRegions || managerRegions.length === 0) {
       return NextResponse.json([]);
     }
 
-    // 2. 构造 region 查询条件
-    let regionField = "";
-    if (managerRegion.region_level === "1") regionField = "province_code";
-    if (managerRegion.region_level === "2") regionField = "city_code";
-    if (managerRegion.region_level === "3") regionField = "district_code";
-    if (!regionField) {
-      return NextResponse.json([]);
+    // 2. 按区域类型分组，构造查询条件
+    const regionConditions: { field: string; code: string }[] = [];
+    for (const region of managerRegions) {
+      if (region.region_level === "1") {
+        regionConditions.push({ field: "province_code", code: region.region_code || '' });
+      } else if (region.region_level === "2") {
+        regionConditions.push({ field: "city_code", code: region.region_code || '' });
+      } else if (region.region_level === "3") {
+        regionConditions.push({ field: "district_code", code: region.region_code || '' });
+      }
     }
 
-    // 3. 查找关键人
-    const keyPersons = await prisma.key_person_base_info.findMany({
-      where: {
-        [regionField]: managerRegion.region_code,
-      },
-    });
+    // 3. 合并所有区域的关键人
+    let allKeyPersons: any[] = [];
+    for (const cond of regionConditions) {
+      const keyPersons = await prisma.key_person_base_info.findMany({
+        where: { [cond.field]: cond.code },
+      });
+      allKeyPersons = allKeyPersons.concat(keyPersons);
+    }
 
-    // 4. 查 dim_dept_position_code 和 key_person_private_info 并组装结果
+    // 4. 去重（如果有同一个人出现在多个区域）
+    const uniqueKeyPersons = Array.from(
+      new Map(allKeyPersons.map((item) => [item.person_id, item])).values()
+    );
+
+    // 5. 查 dim_dept_position_code 和 key_person_private_info 并组装结果
     const results = await Promise.all(
-      keyPersons.map(async (k) => {
+      uniqueKeyPersons.map(async (k) => {
         let deptPosition = null;
         if (k.department_code && k.position_code) {
           deptPosition = await prisma.dim_dept_position_code.findFirst({
@@ -55,7 +63,7 @@ export async function GET(request: Request) {
           name: k.person_name,
           avatar: k.person_photo_url,
           department: deptPosition?.department || "",
-          position: deptPosition?.position || "",
+          position: k.position || "", // 直接用key_person_base_info表的position字段
           region: k.region_cn,
           birth_date: k.birth_date,
           office_phone: k.office_phone,
@@ -66,12 +74,6 @@ export async function GET(request: Request) {
       })
     );
 
-    console.log(
-      "Query result count:",
-      results.length,
-      "for businessPersonId:",
-      businessPersonId
-    );
     return NextResponse.json(results);
   } catch (error) {
     console.log("Database query error:", error);
