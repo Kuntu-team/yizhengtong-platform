@@ -1007,7 +1007,7 @@ export default function PersonDetailPage() {
       <main className="px-1 sm:px-3 py-2 sm:py-4 w-full">
         {/* 近期动态 */}
         <section className="bg-white border border-gray-200 shadow-sm rounded-lg p-2 sm:p-4 mb-2">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 sm:mb-4 gap-2 sm:gap-0">
+          <div className="flex items-center justify-between mb-2 sm:mb-4">
             <h2 className="flex items-center gap-2 text-base sm:text-lg font-semibold text-gray-900">
               <Calendar className="h-4 w-4" />
               近期动态
@@ -1015,7 +1015,7 @@ export default function PersonDetailPage() {
             <Button
               variant="link"
               size="sm"
-              className="text-blue-600 text-xs px-1 self-end"
+              className="text-blue-600 text-xs px-1"
               onClick={() => router.push(`/leads?person_id=${id}`)}
             >
               查看全部 <ChevronRight className="h-3 w-3 ml-1" />
@@ -1024,7 +1024,7 @@ export default function PersonDetailPage() {
           <div className="space-y-3">
             {newsList.length > 0 ? (
               newsList
-                .slice(0, expandedSections.activities ? undefined : 3)
+                .slice(0, 3)
                 .map((news, index) => (
                   <motion.div
                     key={news.id || index}
@@ -1066,26 +1066,7 @@ export default function PersonDetailPage() {
               </div>
             )}
           </div>
-          {newsList.length > 3 && (
-            <Button
-              variant="link"
-              size="sm"
-              className="mt-3 p-0 text-xs"
-              onClick={() =>
-                setExpandedSections({
-                  ...expandedSections,
-                  activities: !expandedSections.activities,
-                })
-              }
-            >
-              {expandedSections.activities ? "收起" : "展开更多"}
-              <ChevronDown
-                className={`h-3 w-3 ml-1 transition-transform ${
-                  expandedSections.activities ? "rotate-180" : ""
-                }`}
-              />
-            </Button>
-          )}
+          {/* 隐藏展开更多功能，默认只显示3条 */}
         </section>
 
         {/* 基本信息 */}
@@ -1163,12 +1144,13 @@ export default function PersonDetailPage() {
                           <span>电话: {person.contact.phone}</span>
                         </>
                       )}
-                      {person.contact?.wechat && (
+                      {/* 隐藏微信号显示 */}
+                      {/* {person.contact?.wechat && (
                         <>
                           <span>·</span>
                           <span>微信: {person.contact.wechat}</span>
                         </>
-                      )}
+                      )} */}
                     </>
                   )}
                 </div>

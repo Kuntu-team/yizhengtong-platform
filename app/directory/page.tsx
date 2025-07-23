@@ -271,7 +271,8 @@ function CompactPersonCard({
                 {person.office_phone || "暂无办公电话"}
               </span>
             </div>
-            <div className="flex items-center gap-1">
+            {/* 隐藏微信号显示 */}
+            {/* <div className="flex items-center gap-1">
               <svg
                 className="h-3 w-3 text-green-600 flex-shrink-0"
                 viewBox="0 0 24 24"
@@ -285,7 +286,7 @@ function CompactPersonCard({
               >
                 {person.contact?.wechat || "未提供"}
               </span>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>

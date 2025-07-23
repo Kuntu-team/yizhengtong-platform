@@ -762,26 +762,26 @@ export default function PoliciesPage() {
 
   return (
     <AppLayout hideNavigation={true}>
-      {/* Apple风格页面头部 */}
-      <motion.header
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white border-b border-gray-200 sticky top-0 z-50"
-      >
-        <div className="h-16 px-2 sm:px-6 flex items-center max-w-7xl mx-auto">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => router.push("/")}
-            className="p-1.5 sm:p-2 rounded-xl hover:bg-white/30 transition-all duration-200"
-          >
-            <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5 text-slate-600" />
-          </motion.button>
-          <h1 className="ml-4 text-lg sm:text-xl font-light text-slate-800 tracking-wide">
-            新政新知
-          </h1>
+      {/* 页面头部 */}
+      <header className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push("/")}
+              className="-ml-2"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl font-light text-slate-800 tracking-wide">
+                新政新知
+              </h1>
+            </div>
+          </div>
         </div>
-      </motion.header>
+      </header>
       <div className="min-h-screen bg-white">
         <div className="max-w-7xl mx-auto px-2 sm:px-6 pt-4 sm:pt-6">
           {/* 筛选结果提示 */}
