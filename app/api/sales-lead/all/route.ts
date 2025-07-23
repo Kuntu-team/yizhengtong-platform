@@ -1,28 +1,16 @@
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
+
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const pageSize = parseInt(searchParams.get("pageSize") || "20", 10);
-    const skip = (page - 1) * pageSize;
-    const take = pageSize;
+    const news = await prisma.key_person_news.findMany();
 
-    // 查询总数
-    const total = await prisma.key_person_news.count();
+    const [persons, private_info, tags] = await Promise.all([
+      prisma.key_person_base_info.findMany(),
+      prisma.key_person_private_info.findMany(),
+      prisma.key_person_news_tags.findMany(),
+    ]);
 
-    // 分页查询
-    const news = await prisma.key_person_news.findMany({
-      skip,
-      take,
-      orderBy: {
-        news_time: "desc",
-      },
-    });
-
-    const persons = await prisma.key_person_base_info.findMany();
-    const tags = await prisma.key_person_news_tags.findMany();
-    const private_info = await prisma.key_person_private_info.findMany();
     const result = news.map((item) => {
       const person = persons.find((p) => p.person_id === item.person_id);
       const person_private = private_info.find(
@@ -37,6 +25,7 @@ export async function GET(request: Request) {
       } else if (item.news_region_level === "3") {
         filter_code = item.news_district_code;
       }
+
       return {
         ...item,
         person_name: person?.person_name || null,
@@ -50,12 +39,7 @@ export async function GET(request: Request) {
       };
     });
 
-    return NextResponse.json({
-      data: result,
-      total,
-      page,
-      pageSize,
-    });
+    return NextResponse.json(result);
   } catch (error) {
     console.log("Error fetching sales leads:", error);
     return NextResponse.json(

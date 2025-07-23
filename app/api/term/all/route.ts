@@ -24,17 +24,6 @@ export async function GET(request: Request) {
       },
     });
     const regionCodes = regionInfos.map((r: any) => r.region_code);
-    // 解析 query 参数
-    const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const pageSize = parseInt(searchParams.get("pageSize") || "20", 10);
-
-    // 计算 skip 和 take
-    const skip = (page - 1) * pageSize;
-    const take = pageSize;
-
-    // 查询总数（可选，前端如需显示总条数）
-    const total = await prisma.position_adjustment_notice.count();
 
     // 2. 查询并过滤 news
     const newsRaw = await prisma.position_adjustment_notice.findMany({
@@ -46,8 +35,6 @@ export async function GET(request: Request) {
       orderBy: {
         released_date: "desc",
       },
-      skip,
-      take,
     });
     const news = newsRaw.map((item) => {
       const news_region_level = item.region_level;
@@ -80,14 +67,8 @@ export async function GET(request: Request) {
         filter_code: filter_code, // 新增字段
       };
     });
-    // .filter((item) => regionCodes.includes(item.news_region_code));
 
-    return NextResponse.json({
-      data: news,
-      total,
-      page,
-      pageSize,
-    });
+    return NextResponse.json(news);
   } catch (error) {
     console.log("Error fetching sales leads:", error);
     return NextResponse.json(

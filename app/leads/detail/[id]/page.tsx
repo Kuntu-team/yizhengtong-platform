@@ -205,11 +205,8 @@ export default function DetailPage({
   const { id } = React.use(params);
   console.log("Received news_id:", id);
   const fetchDetail = async () => {
-    const res = await axios.get("/api/sales-lead");
-    console.log(res.data);
+    const res = await axios.get("/api/sales-lead/all");
     const privateData = res.data.find((item: any) => item.news_id === id);
-    console.log("Private data for news_id:", privateData);
-
     setNewsData(privateData);
     // 分开数据的接口
     // const token = "app-W46f5FP2BLrma7K7EcPv9Y9k";
@@ -302,7 +299,6 @@ export default function DetailPage({
     //   // console.log("请求失败:", error);
     // }
     // 流式接口测试
-    const token = "app-W46f5FP2BLrma7K7EcPv9Y9k";
     const paramsNews = {
       inputs: {
         news_id: id,
@@ -391,11 +387,12 @@ export default function DetailPage({
             if (data === "[DONE]") continue;
             try {
               const json = JSON.parse(data);
-              console.log(json, "json");
-
               if (json.answer) {
-                result += json.answer;
-                setContent(stripMarkdownCodeBlock(result));
+                // result += json.answer;
+                // setContent(stripMarkdownCodeBlock(result));
+                setContent((prev: string) => {
+                  return prev + json.answer;
+                });
               }
             } catch (error) {
               console.log("解析错误:", error);
@@ -409,7 +406,7 @@ export default function DetailPage({
     Promise.all([
       fetchStream(paramsNews, setaiContentNews),
       fetchStream(paramsScript, setaiContentScript1),
-      fetchStream(paramsScript, setaiContentScript2),
+      // fetchStream(paramsScript, setaiContentScript2),
     ]).catch((error) => {
       console.log("请求失败:", error);
     });
@@ -675,7 +672,7 @@ export default function DetailPage({
       <div className="min-h-screen bg-white">
         {/* 固定顶部导航 */}
         <header className="fixed top-0 w-full bg-white border-b z-50">
-          <div className="max-w-6xl mx-auto px-4 h-14 flex items-center">
+          <div className="max-w-7xl mx-auto px-4 h-14 flex items-center">
             <Button
               variant="ghost"
               size="sm"
@@ -691,7 +688,7 @@ export default function DetailPage({
         {/* 主体布局 */}
         <div className="pt-14">
           {/* 右侧主体内容区 */}
-          <main className="max-w-4xl mx-auto px-6 py-4 space-y-6">
+          <main className="max-w-6xl mx-auto px-6 py-4 space-y-6">
             {/* 新闻信息 */}
             <section
               id="news"
@@ -712,15 +709,26 @@ export default function DetailPage({
                   <div className="flex items-center gap-4 text-sm text-gray-500 pb-3 border-b border-gray-100">
                     <div className="flex items-center gap-1">
                       <span>来源：</span>
-                      <span className="font-medium">
-                        {/* {newsData.news_source} */}
+                      {/* <span className="font-medium">
                         <a
                           href={newsData.news_url}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer transition-colors"
                         >
-                          {newsData.news_source}
+                          {newsData.news_source.length > 7
+                            ? `${newsData.news_source.slice(0, 7)}...`
+                            : newsData.news_source}
+                        </a>
+                      </span> */}
+                      <span className="font-medium max-w-[120px] truncate md:max-w-none">
+                        <a
+                          href={newsData?.news_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer transition-colors"
+                        >
+                          {newsData?.news_source ?? "未知来源"}
                         </a>
                       </span>
                     </div>
@@ -788,17 +796,20 @@ export default function DetailPage({
               className="border border-gray-200 rounded-lg p-4"
             >
               <Tabs value={activeScriptTab} onValueChange={setActiveScriptTab}>
-                <TabsList className="grid w-full grid-cols-2 mb-3">
-                  <TabsTrigger value="script1" className="text-4xl py-4">
-                    推荐话术1
+                <TabsList className="flex w-full border-b border-gray-200">
+                  <TabsTrigger
+                    value="script1"
+                    className="flex-1 text-center py-3 px-4"
+                  >
+                    推荐话术
                   </TabsTrigger>
-                  <TabsTrigger value="script2" className="text-4xl py-4">
+                  {/* <TabsTrigger value="script2" className="text-4xl py-4">
                     推荐话术2
-                  </TabsTrigger>
+                  </TabsTrigger> */}
                 </TabsList>
                 <TabsContent key={1} value={"script1"}>
                   <div className="bg-white mb-4">
-                    <div className="bg-gray-50 rounded-lg p-4 text-sm leading-relaxed whitespace-pre-line mb-3 text-black mt-11">
+                    <div className="bg-gray-50 rounded-lg p-4 text-sm leading-relaxed whitespace-pre-line mb-3 text-black">
                       {/* <div
                         dangerouslySetInnerHTML={{
                           __html: marked.parse(aiContent.styleA),
@@ -843,7 +854,7 @@ export default function DetailPage({
                     </div>
                   </div>
                 </TabsContent>
-                <TabsContent key={2} value={"script2"}>
+                {/* <TabsContent key={2} value={"script2"}>
                   <div className="bg-white mb-4">
                     <div className="bg-gray-50 rounded-lg p-4 text-sm leading-relaxed whitespace-pre-line mb-3 text-black mt-11">
                       <ReactMarkdown
@@ -884,7 +895,7 @@ export default function DetailPage({
                       </Button>
                     </div>
                   </div>
-                </TabsContent>
+                </TabsContent> */}
               </Tabs>
             </section>
 
@@ -897,7 +908,7 @@ export default function DetailPage({
                 {/* 联系人信息卡片 */}
                 <div className="bg-blue-50 rounded-lg p-4 mb-4">
                   <div className="space-y-2 text-base">
-                    <div className="flex items-center gap-8">
+                    <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-8">
                       <div>
                         <span className="text-gray-600">推荐联系人：</span>
                         <span className="font-medium text-gray-900">
@@ -911,7 +922,8 @@ export default function DetailPage({
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-8">
+
+                    <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-8">
                       <div>
                         <span className="text-gray-600">电话：</span>
                         <span className="font-medium text-gray-900">
@@ -1004,8 +1016,7 @@ export default function DetailPage({
                               className="bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:border-blue-700"
                               disabled
                             >
-                              <Download className="h-3 w-3 mr-1" />
-                              一键生成并下载
+                              <Download className="h-3 w-3" />
                             </Button>
                           )}
                         </div>

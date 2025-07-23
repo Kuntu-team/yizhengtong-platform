@@ -70,7 +70,7 @@ export function NotificationDropdown() {
   }, []);
   const fetchData = async () => {
     try {
-      const response = await axios.get("/api/sales-lead");
+      const response = await axios.get("/api/sales-lead/all");
       const oneMonthAgo = new Date();
       oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
 

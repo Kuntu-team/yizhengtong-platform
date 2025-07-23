@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -96,6 +96,8 @@ function MainContent() {
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
   const [selectedPeople, setSelectedPeople] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState("internal");
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [filteredItems, setFilteredItems] = useState<LeadItem[]>([]);
   const [regions, setRegions] = useState<Region[]>([]);
   const [people, setPeople] = useState<Person[]>([]);
@@ -127,7 +129,7 @@ function MainContent() {
         // console.log("Failed to parse saved filters:", error)
       }
     }
-    // fetchData();
+    fetchData();
     getSelectData();
   }, []);
 
@@ -142,14 +144,14 @@ function MainContent() {
     console.log(selectedRegions);
   }, [selectedRegions, selectedPeople]);
 
-  // useEffect(() => {
-  //   console.log("Active Tab Changed:", activeTab);
-  //   if (activeTab != "internal") {
-  //     setFilteredItems(outsideTermData);
-  //   } else {
-  //     setFilteredItems(duringTenureData);
-  //   }
-  // }, [activeTab]);
+  useEffect(() => {
+    console.log("Active Tab Changed:", activeTab);
+    if (activeTab != "internal") {
+      setFilteredItems(outsideTermData);
+    } else {
+      setFilteredItems(duringTenureData);
+    }
+  }, [activeTab]);
 
   const filteredData = useMemo(() => {
     // 根据当前 tab 选择数据源
@@ -185,108 +187,19 @@ function MainContent() {
     followedPersonIds,
     activeTab,
   ]);
-  // const fetchData = async (page: number = 1) => {
-  //   try {
-  //     const [response, response1] = await Promise.all([
-  //       axios.get("/api/sales-lead"),
-  //       axios.get("/api/term?page=1&pageSize=20"),
-  //     ]);
-  //     setDuringTenureData(response.data);
-  //     setFilteredItems(response.data);
-  //     setOutsideTermData(response1.data.data);
-  //   } catch (error) {
-  //     console.log("请求失败:", error);
-  //   }
-  // };
-  const [internalPage, setInternalPage] = useState(1);
-  const [externalPage, setExternalPage] = useState(1);
-  // const [internalData, setInternalData] = useState<LeadItem[]>([]);
-  // const [externalData, setExternalData] = useState<LeadItem[]>([]);
-  const [internalHasMore, setInternalHasMore] = useState(true);
-  const [externalHasMore, setExternalHasMore] = useState(true);
-  const [internalLoading, setInternalLoading] = useState(false);
-  const [externalLoading, setExternalLoading] = useState(false);
-  const fetchInternalData = async (page = 1) => {
-    setInternalLoading(true);
+  const fetchData = async () => {
     try {
-      const res = await axios.get(`/api/sales-lead?page=${page}&pageSize=20`);
-      const data = res.data.data || [];
-      // setInternalData((prev) => (page === 1 ? data : [...prev, ...data]));
-      // setFilteredItems((prev) => (page === 1 ? data : [...prev, ...data]));
-      setDuringTenureData((prev) => (page === 1 ? data : [...prev, ...data]));
-      setInternalHasMore(data.length === 20);
-    } finally {
-      setInternalLoading(false);
+      const [response, response1] = await Promise.all([
+        axios.get("/api/sales-lead/all"),
+        axios.get("/api/term?page=1&pageSize=20"),
+      ]);
+      setDuringTenureData(response.data);
+      setFilteredItems(response.data);
+      setOutsideTermData(response1.data.data);
+    } catch (error) {
+      console.log("请求失败:", error);
     }
   };
-
-  const fetchExternalData = async (page = 1) => {
-    console.log(page);
-
-    setExternalLoading(true);
-    try {
-      const res = await axios.get(`/api/term?page=${page}&pageSize=20`);
-      const data = res.data.data || [];
-      // setExternalData((prev) => (page === 1 ? data : [...prev, ...data]));
-      // setFilteredItems((prev) => (page === 1 ? data : [...prev, ...data]));
-      setOutsideTermData((prev) => (page === 1 ? data : [...prev, ...data]));
-      setExternalHasMore(data.length === 20);
-    } finally {
-      setExternalLoading(false);
-    }
-  };
-  useEffect(() => {
-    console.log("Active Tab Changed:", activeTab);
-
-    const handleScroll = () => {
-      if (activeTab === "internal" && internalHasMore && !internalLoading) {
-        if (
-          window.innerHeight + window.scrollY >=
-          document.body.offsetHeight - 100
-        ) {
-          setInternalPage((p) => p + 1);
-        }
-      }
-      if (activeTab === "external" && externalHasMore && !externalLoading) {
-        console.log("External Scroll Triggered", externalPage);
-
-        if (
-          window.innerHeight + window.scrollY >=
-          document.body.offsetHeight - 100
-        ) {
-          setExternalPage((p) => p + 1);
-        }
-      }
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [
-    activeTab,
-    internalHasMore,
-    externalHasMore,
-    internalLoading,
-    externalLoading,
-  ]);
-  useEffect(() => {
-    fetchInternalData(internalPage);
-  }, [internalPage]);
-
-  useEffect(() => {
-    fetchExternalData(externalPage);
-  }, [externalPage]);
-  // const listData = activeTab === "internal" ? internalData : externalData;
-  const loading = activeTab === "internal" ? internalLoading : externalLoading;
-  const hasMore = activeTab === "internal" ? internalHasMore : externalHasMore;
-  useEffect(() => {
-    if (activeTab === "internal" && duringTenureData.length === 0) {
-      setInternalPage(1);
-      fetchInternalData(1);
-    }
-    if (activeTab === "external" && outsideTermData.length === 0) {
-      setExternalPage(1);
-      fetchExternalData(1);
-    }
-  }, [activeTab]);
   const getSelectData = async () => {
     try {
       const response = await axios.get("api/sales-lead/region");
@@ -331,17 +244,17 @@ function MainContent() {
     if (item.person_name) {
       router.push(`/leads/detail/${item.news_id}`);
     } else {
-      router.push(`/leads/detail-external/${item.news_id}`);
+      // router.push(`/leads/detail/${item.news_id}`);
     }
   };
 
-  // const loadMore = () => {
-  //   setLoading(true);
-  //   setTimeout(() => {
-  //     setLoading(false);
-  //     setHasMore(false);
-  //   }, 1000);
-  // };
+  const loadMore = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      setHasMore(false);
+    }, 1000);
+  };
 
   const clearFilters = () => {
     setSelectedRegions([]);
@@ -370,25 +283,6 @@ function MainContent() {
     // SSR和客户端初次渲染时都渲染空内容，避免hydration mismatch
     return <div />;
   }
-  // 监听滚动到底部
-  // useEffect(() => {
-  //   const handleScroll = () => {
-  //     if (!listRef.current || loading || !hasMore) return;
-  //     const { scrollTop, scrollHeight, clientHeight } =
-  //       document.documentElement;
-  //     if (scrollTop + clientHeight >= scrollHeight - 100) {
-  //       setPage((prev) => prev + 1);
-  //     }
-  //   };
-  //   window.addEventListener("scroll", handleScroll);
-  //   return () => window.removeEventListener("scroll", handleScroll);
-  // }, [loading, hasMore]);
-
-  // 加载下一页
-  // useEffect(() => {
-  //   if (page === 1) return;
-  //   fetchData(page);
-  // }, [page]);
 
   return (
     <div className="min-h-screen bg-white">
@@ -398,15 +292,12 @@ function MainContent() {
         animate={{ opacity: 1, y: 0 }}
         className="bg-white border-b border-gray-200 fixed top-0 w-full z-50"
       >
-        <div className="h-16 px-6 flex items-center justify-between max-w-7xl mx-auto">
+        <div className="h-16 px-6 flex items-center justify-between max-w-6xl mx-auto">
           <div className="flex items-center gap-4">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => {
-                router.back();
-                localStorage.removeItem("salesLeadFilters");
-              }}
+              onClick={() => router.push("/")}
               className="p-2 rounded-xl hover:bg-white/30 transition-all duration-200"
             >
               <ChevronLeft className="h-5 w-5 text-slate-600" />
@@ -723,7 +614,7 @@ function MainContent() {
                           <span className="text-sm font-medium text-slate-700 whitespace-nowrap">
                             商务抓手：
                           </span>
-                          <span className="text-base text-blue-600 font-medium">
+                          <span className="text-base text-blue-600 font-medium max-w-[200px] sm:max-w-none">
                             {item.tags_name ?? "暂无"}
                           </span>
                         </div>
@@ -779,10 +670,6 @@ function MainContent() {
               </Button>
             </motion.div>
           )} */}
-          {loading && <div className="text-center pb-6">加载中...</div>}
-          {!hasMore && (
-            <div className="text-center pb-6 text-gray-400">没有更多了</div>
-          )}
         </div>
       </main>
     </div>

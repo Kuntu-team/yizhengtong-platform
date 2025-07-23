@@ -173,7 +173,7 @@ export default function ProfilePage() {
 
   return (
     <AppLayout>
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-6 py-8">
         {/* 页面标题 */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -188,7 +188,7 @@ export default function ProfilePage() {
           >
             <ChevronLeft className="h-5 w-5 text-slate-600" />
           </motion.button>
-          <h1 className="text-2xl font-light text-slate-800 tracking-wide">
+          <h1 className="text-xl font-light text-slate-800 tracking-wide">
             个人中心
           </h1>
         </motion.div>
@@ -269,7 +269,7 @@ export default function ProfilePage() {
         </motion.div>
 
         {/* 账号安全 */}
-        <motion.div
+        {/* <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
@@ -408,7 +408,7 @@ export default function ProfilePage() {
               </div>
             </CardContent>
           </Card>
-        </motion.div>
+        </motion.div> */}
       </div>
     </AppLayout>
   );

@@ -107,7 +107,7 @@ export default function HomePage() {
   }, [page]);
   const fetchData = async () => {
     try {
-      const response = await axios.get("/api/sales-lead");
+      const response = await axios.get("/api/sales-lead/all");
       console.log(response.data);
       setItemsCount(response.data.length);
     } catch (error) {
