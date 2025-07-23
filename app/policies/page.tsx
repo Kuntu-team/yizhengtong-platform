@@ -145,6 +145,64 @@ function formatDate(date: string | Date) {
   );
 }
 
+// 工具函数：提取HTML中的正文纯文本摘要
+function extractTextSummary(html: string, length = 60, policyTitle = '') {
+  if (!html) return '-';
+  // 提取<body>内内容
+  const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  let body = bodyMatch ? bodyMatch[1] : html;
+  // 去除所有<style>标签及内容
+  body = body.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+  // 去除所有HTML标签
+  let text = body.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+  // 去除HTML注释
+  text = text.replace(/<!--[\s\S]*?-->/g, '');
+  // 去除常见无用信息和脚本
+  const uselessPatterns = [
+    /长者模式/g, /繁体中文/g, /EN/g, /无障碍/g, /document\.write.*?;/gi,
+    /首页/g, /信息公开/g, /中央人民政府/g, /English/g, /\|/g, /站群/g,
+    /政务新媒体/g, /客户端/g, /微博/g, /微信/g, /手机版/g, /邮箱/g, /地图/g,
+    /网站导航/g, /联系我们/g, /收藏本站/g, /设为首页/g, /RSS订阅/g, /政务服务/g,
+    /政民互动/g, /专题专栏/g, /数据开放/g, /政策解读/g, /政策文件/g, /政策法规/g,
+    /政策服务/g, /政策咨询/g, /政策问答/g, /政策动态/g, /政策通告/g, /政策公告/g,
+    /政策通知/g, /政策发布/g, /政策解答/g, /政策查询/g, /政策申报/g, /政策评估/g,
+    /政策反馈/g, /政策建议/g, /政策意见/g,
+    /append\([^)]+\)/gi, /switch\s*\(.*?\)/gi, /window/gi, /function/gi, /var /gi, /let /gi, /const /gi, /\/\*.*?\*\//g, /\/\/.*?$/gm,
+    /用户空间/g, /政务/g, /关怀版/g, /网站支持IPv6/g, /本站/g, /导航/g, /-->.*/g, /<--/g
+  ];
+  uselessPatterns.forEach(pattern => {
+    text = text.replace(pattern, '');
+  });
+  text = text.replace(/\s+/g, ' ').trim();
+
+  // 优先从policy_title后面截取正文
+  let summary = '';
+  if (policyTitle) {
+    const idx = text.indexOf(policyTitle);
+    if (idx !== -1) {
+      const afterTitle = text.slice(idx + policyTitle.length);
+      const candidates = afterTitle.split(/。|；|;|\.|\n|\r/).map(s => s.trim()).filter(Boolean);
+      const valid = candidates.find(s => {
+        const chineseCount = (s.match(/[\u4e00-\u9fa5]/g) || []).length;
+        return chineseCount >= 15;
+      });
+      if (valid) summary = valid;
+    }
+  }
+  // 如果没找到，回退到原有逻辑
+  if (!summary) {
+    const candidates = text.split(/。|；|;|\.|\n|\r/).map(s => s.trim()).filter(Boolean);
+    const valid = candidates.find(s => {
+      const chineseCount = (s.match(/[\u4e00-\u9fa5]/g) || []).length;
+      return chineseCount >= 15;
+    });
+    summary = valid || '';
+  }
+  return summary
+    ? summary.slice(0, length) + (summary.length > length ? '...' : '')
+    : '-';
+}
+
 function PolicyCard({ policy }: { policy: Policy }) {
   const router = useRouter();
 
@@ -173,16 +231,16 @@ function PolicyCard({ policy }: { policy: Policy }) {
           </h3>
         </div>
 
-        {/* 来源和时间信息 */}
-        <div className="flex items-center justify-between text-xs text-slate-400">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <span className="truncate max-w-24 sm:max-w-none">
-              {policy.source}
+        {/* 分类标签（替换原发布时间/发布机构/分类等信息） */}
+        <div className="flex flex-wrap items-center gap-2 mt-1 mb-1">
+          {policy.category && (
+            <span
+              className="inline-block bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-full font-medium border border-blue-100"
+              style={{ letterSpacing: 1 }}
+            >
+              {policy.category}
             </span>
-            <span>•</span>
-            <span>{formatDate(policy.publishDate)}</span>
-          </div>
-          <span className="text-xs">{policy.timeAgo}</span>
+          )}
         </div>
 
         {/* 话术预览 */}
@@ -626,8 +684,8 @@ export default function PoliciesPage() {
           matchedProjects: 0,
           unread: false,
           category: item.category_name || "other",
-          salesPitch: item.policy_content
-            ? item.policy_content.slice(0, 60) + "..."
+          salesPitch: item.body_content
+            ? extractTextSummary(item.body_content, 60, item.policy_title)
             : "-",
           rn: d.rn, // 保留 rn 字段
         };
@@ -704,28 +762,28 @@ export default function PoliciesPage() {
 
   return (
     <AppLayout hideNavigation={true}>
-      {/* Apple风格页面头部 */}
-      <motion.header
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white border-b border-gray-200 sticky top-0 z-50"
-      >
-        <div className="h-16 px-6 flex items-center max-w-6xl mx-auto">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => router.push("/")}
-            className="p-1.5 sm:p-2 rounded-xl hover:bg-white/30 transition-all duration-200"
-          >
-            <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5 text-slate-600" />
-          </motion.button>
-          <h1 className="ml-4 text-lg sm:text-xl font-light text-slate-800 tracking-wide">
-            新政新知
-          </h1>
+      {/* 页面头部 */}
+      <header className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push("/")}
+              className="-ml-2"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl font-light text-slate-800 tracking-wide">
+                新政新知
+              </h1>
+            </div>
+          </div>
         </div>
-      </motion.header>
+      </header>
       <div className="min-h-screen bg-white">
-        <div className="max-w-6xl mx-auto px-6 pt-4 sm:pt-6">
+        <div className="max-w-7xl mx-auto px-2 sm:px-6 pt-4 sm:pt-6">
           {/* 筛选结果提示 */}
           {activeFilterCount > 0 && (
             <motion.div

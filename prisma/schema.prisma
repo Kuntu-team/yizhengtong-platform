@@ -117,7 +117,7 @@ model key_person_base_info {
   department_code            String?                      @db.VarChar(20)
   department                 String?                      @db.VarChar(100)
   position_code              String?                      @db.VarChar(20)
-  position                   String?                      @db.VarChar(100)
+  position                   String?
   leadership_division        String?
   person_desc                String?
   region_code                String?                      @db.VarChar(10)
@@ -129,7 +129,7 @@ model key_person_base_info {
   city_cn                    String?                      @db.VarChar(100)
   district_code              String?                      @db.VarChar(10)
   district_cn                String?                      @db.VarChar(100)
-  office_phone               String?                      @db.VarChar(20)
+  office_phone               String?                      @db.VarChar(255)
   office_address             String?
   public_email               String?                      @db.VarChar(100)
   work_experience            String?
@@ -206,6 +206,7 @@ model policies_info {
   policy_id           String   @id @db.VarChar(36)
   policy_title        String?
   policy_content      String?
+  body_content        String?
   policy_url          String?  @db.VarChar(500)
   policy_level        String?  @db.VarChar(10)
   policy_code         String?  @db.VarChar(100)

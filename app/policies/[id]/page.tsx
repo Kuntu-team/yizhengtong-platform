@@ -75,7 +75,11 @@ function renderScriptWithCustomHighlight(script: string) {
   if (!script) return null;
   return (
     <span
-      style={{ color: "#222" }} // 默认黑色
+      style={{ 
+        color: "#000000",
+        fontSize: '14px',
+        lineHeight: '1.6'
+      }}
       dangerouslySetInnerHTML={{
         __html: script.replace(
           /\*\*([^*]+)\*\*/g,
@@ -205,6 +209,55 @@ function useTypewriterEffect(fullText: string, speed = 20) {
   return displayed;
 }
 
+// 工具函数：提取 <body> 标签内容，并去除不需要的部分
+function extractBody(html: string) {
+  const match = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  let body = match ? match[1] : html;
+
+  // 0. 去除所有<link ...>标签（如iframe.css等外部样式表）
+  body = body.replace(/<link[^>]*>/gi, '');
+  // 1. 去除所有包含“扫一扫”或“分享”字样的段落或区块
+  body = body.replace(/<[^>]*>[^<]*(扫一扫|分享)[^<]*<\/[^>]*>/gi, '');
+  body = body.replace(/(扫一扫|分享)[^<\n\r]*/gi, '');
+  // 2. 去除头部“首页 > 信息公开...”等导航和发布时间等（图三部分）
+  body = body.replace(/<div[^>]*class=["']crumb-box["'][^>]*>[\s\S]*?<\/div>/gi, '');
+  body = body.replace(/<div[^>]*class=["']info["'][^>]*>[\s\S]*?<\/div>/gi, '');
+  body = body.replace(/<p[^>]*class=["']xxgk-infos["'][^>]*>[\s\S]*?<\/p>/gi, '');
+  body = body.replace(/发布时间：[^<]+<br\s*\/?>/gi, '');
+  body = body.replace(/<span[^>]*>\s*分享至：?[\s\S]*?<\/span>/gi, '');
+
+  // 3. 去除红框中的LOGO区块和大标题
+  body = body.replace(/<div[^>]*class=["']main-logo["'][^>]*>[\s\S]*?<\/div>/gi, '');
+  body = body.replace(/<div[^>]*class=["']xxgk-title["'][^>]*>[\s\S]*?<\/div>/gi, '');
+  body = body.replace(/<div[^>]*class=["']top-info["'][^>]*>[\s\S]*?<\/div>/gi, '');
+  // 通用匹配各地政府大标题
+  body = body.replace(/<h[1-3][^>]*>[\s\S]*?(?:[省市区县].*?人民政府)[\s\S]*?<\/h[1-3]>/gi, '');
+  // 通用匹配各地政府办公室印发说明
+  body = body.replace(/<p[^>]*>[\s\S]*?人民政府办公室关于印发[\s\S]*?<\/p>/gi, '');
+  body = body.replace(/<div[^>]*>\s*<\/div>/gi, '');
+  body = body.replace(/<p[^>]*>\s*<\/p>/gi, '');
+
+  // 4. 去除所有图片
+  body = body.replace(/<img[^>]*>/gi, '');
+
+  // 5. 去除多余空行和空白块
+  // 递归去除仅包含 &nbsp;、空格、<br>、换行的 <p>、<div>、<span>
+  let prevBody;
+  do {
+    prevBody = body;
+    body = body.replace(/<(p|div|span)[^>]*>(\s|&nbsp;|<br\s*\/?>|\r|\n)*<\/(p|div|span)>/gi, '');
+  } while (body !== prevBody);
+  // 合并多个 <br>、空白、换行为一个 <br>
+  body = body.replace(/((<br\s*\/?>|\s|&nbsp;|\r|\n){2,})/gi, '<br />');
+  // 去除所有孤立的 <br> 或空白块（行首行尾）
+  body = body.replace(/^(<br\s*\/?>|\s|&nbsp;)+/gi, '');
+  body = body.replace(/(<br\s*\/?>|\s|&nbsp;)+$/gi, '');
+  // 去除首尾空白
+  body = body.trim();
+
+  return body;
+}
+
 export default function PolicyDetailPage() {
   const params = useParams();
   const id = params.id as string;
@@ -214,6 +267,7 @@ export default function PolicyDetailPage() {
     projects: true,
     content: false, // 政策内容默认收起
   });
+  const [contentNeedsExpand, setContentNeedsExpand] = useState(false);
   const [copiedScript, setCopiedScript] = useState<string | null>(null);
 
   const [activeSection, setActiveSection] = useState("policy-content");
@@ -282,21 +336,31 @@ export default function PolicyDetailPage() {
             status: "completed",
             keyPoints: [],
             projects: [],
-            fullContent: item.policy_content || "-",
+            fullContent: item.body_content || "-",
           });
         }
       });
   }, [id]);
 
+  // 检测内容是否需要展开收起功能
+  useEffect(() => {
+    if (policy?.fullContent) {
+      const contentElement = document.querySelector('.policy-html-content');
+      if (contentElement) {
+        const scrollHeight = contentElement.scrollHeight;
+        const clientHeight = contentElement.clientHeight;
+        setContentNeedsExpand(scrollHeight > 300);
+      }
+    }
+  }, [policy?.fullContent, expanded.content]);
+
   // 推荐话术流式
   const { answer: script1, loading: script1Loading, error: script1Error } = useStreamingAnswer({ id: policy?.id || '', query: "生成推荐话术1", type: "2" });
-  const { answer: script2, loading: script2Loading, error: script2Error } = useStreamingAnswer({ id: policy?.id || '', query: "生成推荐话术2", type: "2" });
   // 政策解读流式
   const { answer: analysisAnswer, loading: analysisLoading, error: analysisError } = useStreamingAnswer({ id: policy?.id || '', query: "生成政策解读", type: "1" });
 
   // 推荐话术和政策解读 typewriter 动画变量
   const typewriterScript1 = useTypewriterEffect(script1, 20);
-  const typewriterScript2 = useTypewriterEffect(script2, 20);
   const typewriterAnalysis = useTypewriterEffect(analysisAnswer, 20);
 
   // 只在弹窗未打开时，policy变化才设置默认朋友圈文案，避免覆盖接口返回内容
@@ -679,66 +743,82 @@ export default function PolicyDetailPage() {
               <div className="flex items-center justify-between text-sm text-gray-500 mb-4 pb-3 border-b">
                 <span>
                   发布机构：
-                  {policy.sourceUrl ? (
-                    <a
-                      href={policy.sourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
-                    >
-                      {policy.source}
-                    </a>
-                  ) : (
-                    policy.source
-                  )}
+                  {(() => {
+                    const source = policy.source;
+                    const displaySource = !source || source === '-' || source === '未知' || source.trim() === '' ? '政策原文' : source;
+                    
+                    return policy.sourceUrl ? (
+                      <a
+                        href={policy.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                      >
+                        {displaySource}
+                      </a>
+                    ) : (
+                      displaySource
+                    );
+                  })()}
                 </span>
                 <span>发布时间：{formatDate(policy.publishDate)}</span>
               </div>
 
-              {/* 政策内容 */}
-              <div className="text-sm leading-relaxed text-gray-700">
-                {policy.fullContent.split("\n").slice(0, 5).join("\n")}
-                {!expanded.content && policy.fullContent.split("\n").length > 5 && "..."}
-              </div>
-
-              <AnimatePresence>
-                {expanded.content &&
-                  policy.fullContent.split("\n").length > 5 && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="mt-4 bg-white rounded-lg p-4 max-h-96 overflow-y-auto">
-                        <div className="prose prose-sm max-w-none">
-                          <div className="text-sm leading-relaxed text-gray-700 whitespace-pre-line">
-                            {policy.fullContent.split("\n").slice(5).join("\n")}
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-              </AnimatePresence>
-
-              <div className="flex justify-end mt-3">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() =>
-                    setExpanded({ ...expanded, content: !expanded.content })
-                  }
-                  className="text-blue-600 hover:text-blue-700"
-                >
-                  {expanded.content ? "收起" : "展开全文"}
-                  <ChevronDown
-                    className={`ml-1 h-3 w-3 transition-transform ${
-                      expanded.content ? "rotate-180" : ""
-                    }`}
+              {/* 政策内容 - 仅渲染 <body> 内内容，并加样式限制 */}
+              <div className="relative">
+                <div
+                  className="policy-html-content"
+                  style={{
+                    maxWidth: '100%',
+                    overflowX: 'auto',
+                    background: '#fff',
+                    padding: '12px 16px',
+                    borderRadius: 8,
+                    wordBreak: 'break-all',
+                    maxHeight: expanded.content ? 'none' : '300px',
+                    overflow: expanded.content ? 'visible' : 'hidden',
+                    transition: 'max-height 0.3s ease-in-out',
+                    fontSize: '14px',
+                    lineHeight: '1.6',
+                    color: '#000000',
+                  }}
+                  dangerouslySetInnerHTML={{
+                    __html: extractBody(policy.fullContent || ''),
+                  }}
+                />
+                {!expanded.content && contentNeedsExpand && (
+                  <div 
+                    className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-white to-transparent pointer-events-none"
+                    style={{ 
+                      bottom: '0px',
+                      left: '16px',
+                      right: '16px',
+                      borderRadius: '0 0 8px 8px'
+                    }}
                   />
-                </Button>
+                )}
               </div>
+
+              {contentNeedsExpand && (
+                <div className="flex justify-end mt-3">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      console.log('展开/收起按钮被点击，当前状态:', expanded.content);
+                      setExpanded({ ...expanded, content: !expanded.content });
+                    }}
+                    className="text-blue-600 hover:text-blue-700"
+                  >
+                    {expanded.content ? '收起' : '展开全文'}
+                    <ChevronDown
+                      className={`ml-1 h-3 w-3 transition-transform ${
+                        expanded.content ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </Button>
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="analysis" className="mt-4">
@@ -758,103 +838,68 @@ export default function PolicyDetailPage() {
           </Tabs>
         </section>
 
-        {/* 推荐项目及话术模块 */}
+        {/* 推荐话术模块 */}
         {policy?.id && (
           <section
             id="matching-projects"
-            className="bg-white rounded-lg p-4 mb-4"
+            className="bg-white rounded-lg p-4 mb-4 border border-gray-200"
           >
-            {(!typewriterScript1 && !typewriterScript2) ? (
+            {!typewriterScript1 ? (
               <div className="text-gray-400 text-center py-8 text-lg">
                 推荐话术生成中...
               </div>
             ) : (
-              <Tabs defaultValue="styleA" className="w-full">
-                <TabsList className="w-full flex flex-row gap-4 bg-transparent p-2 mb-6 mt-4">
-                  <TabsTrigger value="styleA" className="flex-1 text-2xl md:text-4xl font-bold py-4 rounded-xl bg-white shadow-sm transition min-w-0 data-[state=active]:bg-[#e8f0fe] data-[state=active]:text-[#2966d2] data-[state=active]:shadow-none">
-                    推荐话术1
-                  </TabsTrigger>
-                  <TabsTrigger value="styleB" className="flex-1 text-2xl md:text-4xl font-bold py-4 rounded-xl bg-white shadow-sm transition min-w-0 data-[state=active]:bg-[#e8f0fe] data-[state=active]:text-[#2966d2] data-[state=active]:shadow-none">
-                    推荐话术2
-                  </TabsTrigger>
-                </TabsList>
-                <TabsContent value="styleA" className="mt-0">
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-white rounded-xl p-6 min-h-[80px] flex flex-col items-center shadow">
-                    <div className="w-full">
-                      {renderScriptWithCustomHighlight(typewriterScript1)}
-                    </div>
-                    <div className="flex justify-end mt-3 w-full">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleCopyScript(typewriterScript1, 'script1')}
-                        className="rounded-lg border border-gray-200 bg-white text-gray-800 flex items-center gap-1 px-4 py-2 transition hover:bg-[#e8f0fe] hover:text-[#2966d2] focus:outline-none focus:ring-2 focus:ring-[#2966d2]"
-                        style={{ boxShadow: "none" }}
-                      >
-                        {copiedScript === 'script1' ? (
-                          <>
-                            <CheckCircle className="h-4 w-4 mr-1 text-green-600" />
-                            <span className="text-green-600">已复制</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="h-4 w-4 mr-1 transition-colors group-hover:text-[#2966d2]" />
-                            <span className="transition-colors group-hover:text-[#2966d2]">
-                              复制
-                            </span>
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                    {copiedScript === 'script1' && (
-                      <motion.p
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-xs text-green-600 mt-2"
-                      >
-                        已复制到剪贴板
-                      </motion.p>
-                    )}
-                  </motion.div>
-                </TabsContent>
-                <TabsContent value="styleB" className="mt-0">
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-white rounded-xl p-6 min-h-[80px] flex flex-col items-center shadow">
-                    <div className="w-full">
-                      {renderScriptWithCustomHighlight(typewriterScript2)}
-                    </div>
-                    <div className="flex justify-end mt-3 w-full">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleCopyScript(typewriterScript2, 'script2')}
-                        className="rounded-lg border border-gray-200 bg-white text-gray-800 flex items-center gap-1 px-4 py-2 transition hover:bg-[#e8f0fe] hover:text-[#2966d2] focus:outline-none focus:ring-2 focus:ring-[#2966d2]"
-                        style={{ boxShadow: 'none' }}
-                      >
-                        {copiedScript === 'script2' ? (
-                          <>
-                            <CheckCircle className="h-4 w-4 mr-1 text-green-600" />
-                            <span className="text-green-600">已复制</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="h-4 w-4 mr-1 transition-colors group-hover:text-[#2966d2]" />
-                            <span className="transition-colors group-hover:text-[#2966d2]">复制</span>
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                    {copiedScript === 'script2' && (
-                      <motion.p
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-xs text-green-600 mt-2"
-                      >
-                        已复制到剪贴板
-                      </motion.p>
-                    )}
-                  </motion.div>
-                </TabsContent>
-              </Tabs>
+              <div className="w-full">
+                {/* 标题栏样式调整，去除 max-w-md，左右撑满 */}
+                <div className="w-full bg-[#eaf2fb] rounded-lg p-3 border border-[#c2dbf7] mb-4">
+                  <h3 className="text-base font-semibold text-[#2966d2] text-center">推荐话术</h3>
+                </div>
+                {/* 内容区 */}
+                <div 
+                  className="bg-white rounded-lg p-3 border border-gray-200"
+                  style={{
+                    fontSize: '14px',
+                    lineHeight: '1.6',
+                    color: '#000000'
+                  }}
+                >
+                  <div className="w-full">
+                    {renderScriptWithCustomHighlight(typewriterScript1)}
+                  </div>
+                  <div className="flex justify-end mt-3 w-full">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleCopyScript(typewriterScript1, 'script1')}
+                      className="rounded-lg border border-gray-200 bg-white text-gray-800 flex items-center gap-1 px-4 py-2 transition hover:bg-[#e8f0fe] hover:text-[#2966d2] focus:outline-none focus:ring-2 focus:ring-[#2966d2]"
+                      style={{ boxShadow: "none" }}
+                    >
+                      {copiedScript === 'script1' ? (
+                        <>
+                          <CheckCircle className="h-4 w-4 mr-1 text-green-600" />
+                          <span className="text-green-600">已复制</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-4 w-4 mr-1 transition-colors group-hover:text-[#2966d2]" />
+                          <span className="transition-colors group-hover:text-[#2966d2]">
+                            复制
+                          </span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  {copiedScript === 'script1' && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-xs text-green-600 mt-2 text-center"
+                    >
+                      已复制到剪贴板
+                    </motion.p>
+                  )}
+                </div>
+              </div>
             )}
           </section>
         )}

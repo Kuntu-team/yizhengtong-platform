@@ -233,29 +233,23 @@ function CompactPersonCard({
           </div>
 
           {/* 第二行：部门、职位、地区、年龄 */}
-          <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2 flex-wrap">
+          <div
+            className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2"
+            style={{ minHeight: 24 }}
+          >
             <span
-              className="text-sm font-medium text-gray-800 truncate max-w-[60px]"
-              title={person.department}
+              className="truncate max-w-[95%] text-sm font-medium text-gray-800 inline-block align-bottom"
+              title={`${person.department}${person.department && person.position ? ' · ' : ''}${person.position}${person.position && person.hometown ? ' · ' : ''}${person.hometown}`}
+              style={{ verticalAlign: 'bottom' }}
             >
               {person.department}
-            </span>
-            <span className="text-xs text-slate-400">·</span>
-            <span
-              className="text-sm font-medium text-gray-800 truncate max-w-[60px]"
-              title={person.position}
-            >
+              {person.department && person.position ? ' · ' : ''}
               {person.position}
-            </span>
-            {/* <span className="text-xs text-slate-400">·</span> */}
-            <span
-              className="text-xs text-gray-700 truncate max-w-[60px]"
-              title={person.hometown}
-            >
+              {person.position && person.hometown ? ' · ' : ''}
               {person.hometown}
             </span>
-            <span className="text-xs text-slate-400">·</span>
-            <span className="text-xs text-gray-600">
+            <span className="text-xs text-slate-400 flex-shrink-0">·</span>
+            <span className="text-xs text-gray-600 flex-shrink-0" title={person.age !== null ? `${person.age}岁` : "未知"}>
               {person.age !== null ? `${person.age}岁` : "未知"}
             </span>
           </div>
@@ -265,13 +259,14 @@ function CompactPersonCard({
             <div className="flex items-center gap-1">
               <Phone className="h-3 w-3 text-slate-400 flex-shrink-0" />
               <span
-                className="text-xs text-gray-900 font-medium truncate max-w-[80px]"
+                className="text-xs text-gray-900 font-medium break-all"
                 title={person.office_phone}
               >
                 {person.office_phone || "暂无办公电话"}
               </span>
             </div>
-            <div className="flex items-center gap-1">
+            {/* 隐藏微信号显示 */}
+            {/* <div className="flex items-center gap-1">
               <svg
                 className="h-3 w-3 text-green-600 flex-shrink-0"
                 viewBox="0 0 24 24"
@@ -285,7 +280,7 @@ function CompactPersonCard({
               >
                 {person.contact?.wechat || "未提供"}
               </span>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
@@ -314,6 +309,9 @@ export default function DirectoryPage() {
   const [hoveredDepartment, setHoveredDepartment] = useState<string | null>(
     null
   );
+  const [regionOptions, setRegionOptions] = useState<{ code: string; name: string }[]>([]);
+  const [selectedRegion, setSelectedRegion] = useState<string>("全部地区");
+  const [regionDict, setRegionDict] = useState<any[]>([]);
   const businessPersonId = Cookies.get("business_person_id");
   console.log("business_person_id", businessPersonId);
 
@@ -340,21 +338,45 @@ export default function DirectoryPage() {
     fetchDepartmentPositions();
   }, [toast]);
 
+  // 获取地区字典表
+  useEffect(() => {
+    fetch('/api/region-info').then(res => res.json()).then(data => setRegionDict(data.data || []));
+  }, []);
+
   // 检查是否有筛选条件
   const hasFilter =
     selectedDepartment !== "全部部门" || selectedPosition !== "全部岗位";
 
-  // 当前筛选下所有人（不管是否关注）
+  function getAllRegionNames(selectedRegion: string) {
+    if (selectedRegion === '全部地区') return [];
+    // 找到所有属于该省/市/区的区县名
+    const lowerNames = regionDict
+      .filter(d =>
+        d.province_cn === selectedRegion ||
+        d.city_cn === selectedRegion ||
+        d.district_cn === selectedRegion
+      )
+      .map(d => d.district_cn || d.city_cn || d.province_cn);
+    // 还要加上本身
+    return [selectedRegion, ...lowerNames];
+  }
+
+  // 当前筛选下所有人（不管是否关注）——已做地区映射
   const filteredAllPeople = useMemo(() => {
-    return people.filter((person) => {
+    return people.filter(person => {
+      let matchesRegion = true;
+      if (selectedRegion !== '全部地区') {
+        const regionNames = getAllRegionNames(selectedRegion);
+        matchesRegion = regionNames.includes(person.region);
+      }
       const matchesDepartment =
         selectedDepartment === "全部部门" ||
         person.department === selectedDepartment;
       const matchesPosition =
         selectedPosition === "全部岗位" || person.position === selectedPosition;
-      return matchesDepartment && matchesPosition;
+      return matchesRegion && matchesDepartment && matchesPosition;
     });
-  }, [people, selectedDepartment, selectedPosition]);
+  }, [people, selectedRegion, selectedDepartment, selectedPosition, regionDict]);
 
   // 当前筛选下被关注的人
   const filteredFollowedPeople = useMemo(() => {
@@ -362,6 +384,18 @@ export default function DirectoryPage() {
       followedPeople.includes(person.id)
     );
   }, [filteredAllPeople, followedPeople]);
+
+  // 页面实际渲染用的列表
+  const filteredPeople = useMemo(() => {
+    if (activeTab === "followed") {
+      return filteredFollowedPeople;
+    }
+    // "all" 时已关注的优先
+    return [
+      ...filteredAllPeople.filter((p) => followedPeople.includes(p.id)),
+      ...filteredAllPeople.filter((p) => !followedPeople.includes(p.id)),
+    ];
+  }, [activeTab, filteredAllPeople, filteredFollowedPeople, followedPeople]);
 
   // 获取人物数据
   useEffect(() => {
@@ -439,6 +473,21 @@ export default function DirectoryPage() {
     };
   }, [toast]);
 
+  // 获取地区选项
+  useEffect(() => {
+    async function fetchRegions() {
+      // 只用 /api/sales-lead/region 返回的 region_cn 字段
+      const res = await fetch("/api/sales-lead/region");
+      const data = await res.json();
+      const options = (data.region_info || []).map((r: any) => ({
+        code: r.region_code,
+        name: r.region_cn
+      }));
+      setRegionOptions([{ code: "", name: "全部地区" }, ...options]);
+    }
+    fetchRegions();
+  }, []);
+
   // 点击外部关闭筛选
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -455,30 +504,6 @@ export default function DirectoryPage() {
   }, [filterOpen]);
 
   // 过滤人物列表
-  const filteredPeople = useMemo(() => {
-    let filtered = people.filter((person) => {
-      // 首先按tab筛选
-      if (activeTab === "followed" && !followedPeople.includes(person.id)) {
-        return false;
-      }
-      const matchesDepartment =
-        selectedDepartment === "全部部门" ||
-        person.department === selectedDepartment;
-      const matchesPosition =
-        selectedPosition === "全部岗位" || person.position === selectedPosition;
-      return matchesDepartment && matchesPosition;
-    });
-    // 全部人物时，已关注的优先展示
-    if (activeTab === "all") {
-      filtered = [
-        ...filtered.filter((p) => followedPeople.includes(p.id)),
-        ...filtered.filter((p) => !followedPeople.includes(p.id)),
-      ];
-    }
-    return filtered;
-  }, [people, selectedDepartment, selectedPosition, activeTab, followedPeople]);
-
-  // 切换关注状态
   const handleToggleFollow = useCallback(
     async (personId: string) => {
       try {
@@ -552,8 +577,18 @@ export default function DirectoryPage() {
     [toast, followedPeople, selectedDepartment]
   );
 
+  // 选中部门时，自动高亮“全部岗位”
   const handleDepartmentSelect = (department: string) => {
     setSelectedDepartment(department);
+    setSelectedPosition("全部岗位");
+    setHoveredDepartment(null);
+    setFilterOpen(false);
+  };
+
+  // 选中地区时，自动高亮“全部部门/全部岗位”
+  const handleRegionSelect = (regionName: string) => {
+    setSelectedRegion(regionName);
+    setSelectedDepartment("全部部门");
     setSelectedPosition("全部岗位");
     setHoveredDepartment(null);
     setFilterOpen(false);
@@ -567,6 +602,7 @@ export default function DirectoryPage() {
   const handleClearFilter = () => {
     setSelectedDepartment("全部部门");
     setSelectedPosition("全部岗位");
+    setSelectedRegion("全部地区");
     setFilterOpen(false);
     toast({
       title: "筛选已清除",
@@ -636,18 +672,13 @@ export default function DirectoryPage() {
                   value="followed"
                   className="text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=inactive]:text-gray-600 data-[state=inactive]:bg-transparent"
                 >
-                  我关注的 (
-                  {hasFilter
-                    ? filteredFollowedPeople.length
-                    : followedPeople.length}
-                  )
+                  我关注的 ({filteredFollowedPeople.length})
                 </TabsTrigger>
                 <TabsTrigger
                   value="all"
                   className="text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=inactive]:text-gray-600 data-[state=inactive]:bg-transparent"
                 >
-                  全部人物 (
-                  {hasFilter ? filteredAllPeople.length : people.length})
+                  全部人物 ({filteredAllPeople.length})
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -666,16 +697,46 @@ export default function DirectoryPage() {
                 </Button>
 
                 {filterOpen && (
-                  <div className="absolute top-full right-0 mt-1 w-80 bg-white border border-gray-200 shadow-lg rounded-lg z-50">
+                  <div className="absolute top-full right-0 mt-1 w-96 bg-white border border-gray-200 shadow-lg rounded-lg z-50">
                     <div className="flex">
-                      {/* 第一级菜单 - 部门 */}
+                      {/* 地区筛选 */}
                       <div className="w-40 border-r border-gray-200">
                         <div className="p-2 border-b border-gray-100 bg-gray-50">
-                          <span className="text-xs font-medium text-gray-600">
-                            部门
-                          </span>
+                          <span className="text-xs font-medium text-gray-600">地区</span>
                         </div>
                         <div className="max-h-60 overflow-y-auto">
+                          {regionOptions.map((region) => (
+                            <div
+                              key={region.code}
+                              className={`px-3 py-2 text-sm cursor-pointer transition-colors ${
+                                selectedRegion === region.name
+                                  ? "bg-blue-50 text-blue-700"
+                                  : "text-gray-700 hover:bg-gray-50"
+                              }`}
+                              onClick={() => handleRegionSelect(region.name)}
+                            >
+                              {region.name}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      {/* 部门筛选 */}
+                      <div className="w-40 border-r border-gray-200">
+                        <div className="p-2 border-b border-gray-100 bg-gray-50">
+                          <span className="text-xs font-medium text-gray-600">部门</span>
+                        </div>
+                        <div className="max-h-60 overflow-y-auto">
+                          {/* 全部部门选项 */}
+                          <div
+                            className={`px-3 py-2 text-sm cursor-pointer transition-colors ${
+                              selectedDepartment === "全部部门"
+                                ? "bg-blue-50 text-blue-700"
+                                : "text-gray-700 hover:bg-gray-50"
+                            }`}
+                            onClick={() => handleDepartmentSelect("全部部门")}
+                          >
+                            全部部门
+                          </div>
                           {Object.keys(departmentPositions)
                             .filter((dept) => dept !== "全部部门")
                             .map((department) => (
@@ -686,20 +747,15 @@ export default function DirectoryPage() {
                                     ? "bg-blue-50 text-blue-700"
                                     : "text-gray-700 hover:bg-gray-50"
                                 }`}
-                                onMouseEnter={() =>
-                                  setHoveredDepartment(department)
-                                }
-                                onClick={() =>
-                                  handleDepartmentSelect(department)
-                                }
+                                onMouseEnter={() => setHoveredDepartment(department)}
+                                onClick={() => handleDepartmentSelect(department)}
                               >
                                 {department}
                               </div>
                             ))}
                         </div>
                       </div>
-
-                      {/* 第二级菜单 - 职位 */}
+                      {/* 职位筛选 */}
                       <div className="w-40">
                         <div className="p-2 border-b border-gray-100 bg-gray-50">
                           <span className="text-xs font-medium text-gray-600">
@@ -707,6 +763,17 @@ export default function DirectoryPage() {
                           </span>
                         </div>
                         <div className="max-h-60 overflow-y-auto">
+                          {/* 全部岗位选项 */}
+                          <div
+                            className={`px-3 py-2 text-sm cursor-pointer transition-colors ${
+                              selectedPosition === "全部岗位"
+                                ? "bg-blue-50 text-blue-700"
+                                : "text-gray-700 hover:bg-gray-50"
+                            }`}
+                            onClick={() => handlePositionSelect("全部岗位")}
+                          >
+                            全部岗位
+                          </div>
                           {hoveredDepartment &&
                             departmentPositions[
                               hoveredDepartment as keyof typeof departmentPositions
@@ -715,7 +782,11 @@ export default function DirectoryPage() {
                               .map((position: any) => (
                                 <div
                                   key={position}
-                                  className="px-3 py-2 text-sm cursor-pointer text-gray-700 hover:bg-gray-50 transition-colors"
+                                  className={`px-3 py-2 text-sm cursor-pointer transition-colors ${
+                                    selectedPosition === position
+                                      ? "bg-blue-50 text-blue-700"
+                                      : "text-gray-700 hover:bg-gray-50"
+                                  }`}
                                   onClick={() => handlePositionSelect(position)}
                                 >
                                   {position}

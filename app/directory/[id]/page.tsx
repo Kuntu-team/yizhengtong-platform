@@ -657,7 +657,7 @@ export default function PersonDetailPage() {
           // 字段兜底，防止后端字段变动
           const safeData = Array.isArray(data)
             ? data.map((item) => ({
-                position_info: item.position_info || "",
+                position_info: item.position_info || item.description || "",
                 startdate: item.startdate || "",
                 enddate: item.enddate || "",
               }))
@@ -934,20 +934,15 @@ export default function PersonDetailPage() {
     console.log("workExperiences", workExperiences);
   }, [workExperiences]);
 
-  // 只展示enddate为'至今'的履历
-  const filteredWorkExperiences = workExperiences.filter(
-    (exp) => exp.enddate === "至今"
-  );
-
-  // 展示所有履历，按enddate和startdate倒序排列，enddate为'至今'的排最前
-  const sortedWorkExperiences = [...workExperiences].sort((a, b) => {
-    const endA = parseDate(a.enddate);
-    const endB = parseDate(b.enddate);
-    if (endA !== endB) return endB - endA;
-    const startA = parseDate(a.startdate);
-    const startB = parseDate(b.startdate);
-    return endB !== endA ? endB - endA : startB - startA;
-  });
+  // 只保留最近两条工作履历，按enddate倒序
+  const sortedWorkExperiences = [...workExperiences]
+    .sort((a, b) => {
+      // 处理enddate为空或'至今'的情况，认为是当前
+      const endA = (!a.enddate || a.enddate === '至今') ? 99999999 : parseInt(a.enddate.replace(/[^\d]/g, ''));
+      const endB = (!b.enddate || b.enddate === '至今') ? 99999999 : parseInt(b.enddate.replace(/[^\d]/g, ''));
+      return endB - endA;
+    })
+    .slice(0, 2);
 
   if (loading) {
     return (
@@ -1007,7 +1002,7 @@ export default function PersonDetailPage() {
       <main className="px-1 sm:px-3 py-2 sm:py-4 w-full">
         {/* 近期动态 */}
         <section className="bg-white border border-gray-200 shadow-sm rounded-lg p-2 sm:p-4 mb-2">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 sm:mb-4 gap-2 sm:gap-0">
+          <div className="flex items-center justify-between mb-2 sm:mb-4">
             <h2 className="flex items-center gap-2 text-base sm:text-lg font-semibold text-gray-900">
               <Calendar className="h-4 w-4" />
               近期动态
@@ -1015,7 +1010,7 @@ export default function PersonDetailPage() {
             <Button
               variant="link"
               size="sm"
-              className="text-blue-600 text-xs px-1 self-end"
+              className="text-blue-600 text-xs px-1"
               onClick={() => router.push(`/leads?person_id=${id}`)}
             >
               查看全部 <ChevronRight className="h-3 w-3 ml-1" />
@@ -1024,7 +1019,7 @@ export default function PersonDetailPage() {
           <div className="space-y-3">
             {newsList.length > 0 ? (
               newsList
-                .slice(0, expandedSections.activities ? undefined : 3)
+                .slice(0, 3)
                 .map((news, index) => (
                   <motion.div
                     key={news.id || index}
@@ -1066,26 +1061,7 @@ export default function PersonDetailPage() {
               </div>
             )}
           </div>
-          {newsList.length > 3 && (
-            <Button
-              variant="link"
-              size="sm"
-              className="mt-3 p-0 text-xs"
-              onClick={() =>
-                setExpandedSections({
-                  ...expandedSections,
-                  activities: !expandedSections.activities,
-                })
-              }
-            >
-              {expandedSections.activities ? "收起" : "展开更多"}
-              <ChevronDown
-                className={`h-3 w-3 ml-1 transition-transform ${
-                  expandedSections.activities ? "rotate-180" : ""
-                }`}
-              />
-            </Button>
-          )}
+          {/* 隐藏展开更多功能，默认只显示3条 */}
         </section>
 
         {/* 基本信息 */}
@@ -1163,12 +1139,13 @@ export default function PersonDetailPage() {
                           <span>电话: {person.contact.phone}</span>
                         </>
                       )}
-                      {person.contact?.wechat && (
+                      {/* 隐藏微信号显示 */}
+                      {/* {person.contact?.wechat && (
                         <>
                           <span>·</span>
                           <span>微信: {person.contact.wechat}</span>
                         </>
-                      )}
+                      )} */}
                     </>
                   )}
                 </div>
@@ -1211,18 +1188,18 @@ export default function PersonDetailPage() {
                               display: "inline-block",
                             }}
                           >
-                            {exp.startdate} - {exp.enddate}
+                            {exp.startdate} - {exp.enddate || '至今'}
                           </span>
-                          {exp.enddate === "至今" && (
+                          {(!exp.enddate || exp.enddate === '至今') && (
                             <span
-                              className="text-xs sm:text-sm font-semibold"
+                              className="text-xs sm:text-sm font-semibold ml-2"
                               style={{
-                                background: "#1677FF",
-                                color: "#fff",
+                                background: '#1677FF',
+                                color: '#fff',
                                 borderRadius: 4,
-                                padding: "2px 8px",
+                                padding: '2px 8px',
                                 fontWeight: 600,
-                                display: "inline-block",
+                                display: 'inline-block',
                               }}
                             >
                               当前
