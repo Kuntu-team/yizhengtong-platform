@@ -851,11 +851,11 @@ export default function PolicyDetailPage() {
               </div>
             ) : (
               <div className="w-full">
-                <div className="flex justify-center mb-4">
-                  <div className="bg-gray-50 rounded-lg px-4 py-2 w-full max-w-md border border-gray-200">
-                    <h3 className="text-base font-medium text-gray-800 text-center">推荐话术</h3>
-                  </div>
+                {/* 标题栏样式调整，去除 max-w-md，左右撑满 */}
+                <div className="w-full bg-[#eaf2fb] rounded-lg p-3 border border-[#c2dbf7] mb-4">
+                  <h3 className="text-base font-semibold text-[#2966d2] text-center">推荐话术</h3>
                 </div>
+                {/* 内容区 */}
                 <div 
                   className="bg-white rounded-lg p-3 border border-gray-200"
                   style={{
