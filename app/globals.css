@@ -262,3 +262,57 @@
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
   }
 }
+
+/* 政策内容区域统一样式 */
+.policy-html-content {
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  color: #000000 !important;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif !important;
+}
+
+.policy-html-content * {
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  color: #000000 !important;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif !important;
+}
+
+.policy-html-content p {
+  margin: 0 0 12px 0 !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  color: #000000 !important;
+}
+
+.policy-html-content div {
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  color: #000000 !important;
+}
+
+.policy-html-content span {
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  color: #000000 !important;
+}
+
+.policy-html-content strong {
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  color: #2966d2 !important;
+  font-weight: bold !important;
+}
+
+.policy-html-content h1,
+.policy-html-content h2,
+.policy-html-content h3,
+.policy-html-content h4,
+.policy-html-content h5,
+.policy-html-content h6 {
+  font-size: 16px !important;
+  line-height: 1.6 !important;
+  color: #000000 !important;
+  font-weight: bold !important;
+  margin: 16px 0 8px 0 !important;
+}

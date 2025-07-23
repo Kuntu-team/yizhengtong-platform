@@ -918,15 +918,6 @@ function MainContent() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={handleShare}
-                        className="rounded-md border-gray-300"
-                      >
-                        <Share2 className="h-4 w-4 mr-2" />
-                        分享
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
                         onClick={handleDownloadChart}
                         className="rounded-md border-gray-300"
                       >
