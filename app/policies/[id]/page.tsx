@@ -214,12 +214,11 @@ function extractBody(html: string) {
   const match = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
   let body = match ? match[1] : html;
 
-  // 1. 去除“扫一扫分享到手机端”及其下方内容（如二维码、footer、温馨提示等）
-  body = body.replace(/<p[^>]*>\s*扫一扫分享到手机端[\s\S\n\r]*$/i, '');
-  body = body.replace(/<div[^>]*id=["']ercode["'][^>]*>[\s\S]*?<\/div>/gi, '');
-  body = body.replace(/<div[^>]*class=["']footer["'][^>]*>[\s\S]*?<\/div>/gi, '');
-  body = body.replace(/<div[^>]*class=["']tic-box["'][^>]*>[\s\S]*?<\/div>/gi, '');
-
+  // 0. 去除所有<link ...>标签（如iframe.css等外部样式表）
+  body = body.replace(/<link[^>]*>/gi, '');
+  // 1. 去除所有包含“扫一扫”或“分享”字样的段落或区块
+  body = body.replace(/<[^>]*>[^<]*(扫一扫|分享)[^<]*<\/[^>]*>/gi, '');
+  body = body.replace(/(扫一扫|分享)[^<\n\r]*/gi, '');
   // 2. 去除头部“首页 > 信息公开...”等导航和发布时间等（图三部分）
   body = body.replace(/<div[^>]*class=["']crumb-box["'][^>]*>[\s\S]*?<\/div>/gi, '');
   body = body.replace(/<div[^>]*class=["']info["'][^>]*>[\s\S]*?<\/div>/gi, '');
@@ -337,7 +336,7 @@ export default function PolicyDetailPage() {
             status: "completed",
             keyPoints: [],
             projects: [],
-            fullContent: item.policy_content || "-",
+            fullContent: item.body_content || "-",
           });
         }
       });

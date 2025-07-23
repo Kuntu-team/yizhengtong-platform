@@ -684,8 +684,8 @@ export default function PoliciesPage() {
           matchedProjects: 0,
           unread: false,
           category: item.category_name || "other",
-          salesPitch: item.policy_content
-            ? extractTextSummary(item.policy_content, 60, item.policy_title)
+          salesPitch: item.body_content
+            ? extractTextSummary(item.body_content, 60, item.policy_title)
             : "-",
           rn: d.rn, // 保留 rn 字段
         };
