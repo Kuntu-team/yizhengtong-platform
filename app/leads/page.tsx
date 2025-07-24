@@ -169,9 +169,10 @@ function MainContent() {
     return data.filter((item) => {
       const matchesRegion =
         selectedRegions.length === 0 ||
-        (activeTab === "internal"
-          ? selectedRegions.includes(item.news_province_code)
-          : selectedRegions.includes(item.filter_code));
+        selectedRegions.includes(item.filter_code);
+      // (activeTab === "internal"
+      //   ? selectedRegions.includes(item.news_province_code)
+      //   : selectedRegions.includes(item.filter_code));
       const matchesPerson =
         selectedPeople.length === 0 || selectedPeople.includes(item.person_id);
       return matchesRegion && matchesPerson;

@@ -30,7 +30,11 @@ export async function GET(request: Request) {
         ...item,
         person_name: person?.person_name || null,
         tags_name: newTag?.tags || null,
-        person_private: person_private,
+        person_private: person_private || {
+          person_id: item.person_id,
+          phone_number: "未知",
+          wechat_number: "未知",
+        },
         position:
           (person?.region_cn ?? "") +
           (person?.department ?? "") +
