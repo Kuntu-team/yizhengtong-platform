@@ -94,7 +94,12 @@ export default function HomePage() {
 
   useEffect(() => {
     fetch(`/api/business-person-news?page=${page}&pageSize=${pageSize}`)
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+      })
       .then((res) => {
         setNewsData(res.data || []);
         setTotal(res.total || 0);
@@ -103,6 +108,12 @@ export default function HomePage() {
           "当前商务人员关注的followed_person_id:",
           res.followedPersonIds
         ); // 新增
+      })
+      .catch((error) => {
+        console.log("Error fetching business person news:", error);
+        setNewsData([]);
+        setTotal(0);
+        setFollowedPersonIds([]);
       });
   }, [page]);
   const fetchData = async () => {

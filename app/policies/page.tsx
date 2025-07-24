@@ -146,7 +146,7 @@ function formatDate(date: string | Date) {
 }
 
 // 工具函数：提取HTML中的正文纯文本摘要
-function extractTextSummary(html: string, length = 60, policyTitle = '') {
+function extractTextSummary(html: string, length = 120, policyTitle = '') {
   if (!html) return '-';
   // 提取<body>内内容
   const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
@@ -244,7 +244,7 @@ function PolicyCard({ policy }: { policy: Policy }) {
         </div>
 
         {/* 话术预览 */}
-        <p className="text-sm sm:text-base text-slate-700 leading-relaxed break-words">
+        <p className="text-sm sm:text-base text-slate-700 leading-relaxed truncate whitespace-nowrap">
           {policy.salesPitch}
         </p>
 
@@ -685,7 +685,7 @@ export default function PoliciesPage() {
           unread: false,
           category: item.category_name || "other",
           salesPitch: item.body_content
-            ? extractTextSummary(item.body_content, 60, item.policy_title)
+            ? extractTextSummary(item.body_content, 120, item.policy_title)
             : "-",
           rn: d.rn, // 保留 rn 字段
         };
