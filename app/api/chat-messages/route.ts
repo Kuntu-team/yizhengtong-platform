@@ -7,7 +7,7 @@ export async function POST(req: Request) {
 
   // 请求第三方流式接口
   //   const response = await fetch("https://dify.ktt.team/v1/chat-messages", {
-  const response = await fetch("http://47.94.55.173:8088/v1/chat-messages", {
+  const response = await fetch("https://dify.ktt.team/v1/chat-messages", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

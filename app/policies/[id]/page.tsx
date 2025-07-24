@@ -113,13 +113,21 @@ function useStreamingAnswer({ id, query, type }: { id: string, query: string, ty
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!id) return;
+    // 如果没有有效的ID，不发送请求
+    if (!id || id === 'undefined' || id === 'null') {
+      setAnswer("");
+      setError(null);
+      setLoading(false);
+      return;
+    }
+    
     setAnswer("");
     setError(null);
     setLoading(true);
     let cancelled = false;
     async function fetchStream() {
       try {
+        console.log('Making streaming request for:', { id, query, type });
         const res = await fetch(`/api/policies/${id}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -132,6 +140,12 @@ function useStreamingAnswer({ id, query, type }: { id: string, query: string, ty
             files: [],
           }),
         });
+        
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || `HTTP ${res.status}: ${res.statusText}`);
+        }
+        
         if (!res.body) throw new Error("No response body");
         const reader = res.body.getReader();
         const decoder = new TextDecoder("utf-8");
@@ -158,7 +172,13 @@ function useStreamingAnswer({ id, query, type }: { id: string, query: string, ty
           }
         }
       } catch (err: any) {
-        setError(err.message || "流式请求失败");
+        // console.log('Streaming request failed:', err);
+        const errorMessage = err.message || "流式请求失败";
+        setError(errorMessage);
+        // 如果是配置错误，给出更友好的提示
+        if (errorMessage.includes('DIFY token') || errorMessage.includes('403')) {
+          setError("AI服务暂时不可用，请稍后再试");
+        }
       } finally {
         setLoading(false);
       }
@@ -258,6 +278,14 @@ function extractBody(html: string) {
   return body;
 }
 
+// 处理表格样式，确保内容不溢出
+function processTableStyles(html: string) {
+  return html
+    .replace(/<table/g, '<table style="width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 11px; overflow-x: auto; line-height: 1.2;"')
+    .replace(/<td/g, '<td style="border: 1px solid #ddd; padding: 8px 4px; word-wrap: break-word; word-break: break-all; vertical-align: middle !important; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: normal; max-width: 0; display: table-cell; line-height: 1.2;"')
+    .replace(/<th/g, '<th style="border: 1px solid #ddd; padding: 8px 4px; word-wrap: break-word; word-break: break-all; vertical-align: middle !important; text-align: center; background-color: #f5f5f5; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: normal; max-width: 0; display: table-cell; line-height: 1.2;"');
+}
+
 export default function PolicyDetailPage() {
   const params = useParams();
   const id = params.id as string;
@@ -355,9 +383,17 @@ export default function PolicyDetailPage() {
   }, [policy?.fullContent, expanded.content]);
 
   // 推荐话术流式
-  const { answer: script1, loading: script1Loading, error: script1Error } = useStreamingAnswer({ id: policy?.id || '', query: "生成推荐话术1", type: "2" });
+  const { answer: script1, loading: script1Loading, error: script1Error } = useStreamingAnswer({ 
+    id: policy?.id || '', 
+    query: "生成推荐话术1", 
+    type: "2" 
+  });
   // 政策解读流式
-  const { answer: analysisAnswer, loading: analysisLoading, error: analysisError } = useStreamingAnswer({ id: policy?.id || '', query: "生成政策解读", type: "1" });
+  const { answer: analysisAnswer, loading: analysisLoading, error: analysisError } = useStreamingAnswer({ 
+    id: policy?.id || '', 
+    query: "生成政策解读", 
+    type: "1" 
+  });
 
   // 推荐话术和政策解读 typewriter 动画变量
   const typewriterScript1 = useTypewriterEffect(script1, 20);
@@ -774,16 +810,16 @@ export default function PolicyDetailPage() {
                     background: '#fff',
                     padding: '12px 16px',
                     borderRadius: 8,
-                    wordBreak: 'break-all',
+                    wordBreak: 'break-word',
                     maxHeight: expanded.content ? 'none' : '300px',
-                    overflow: expanded.content ? 'visible' : 'hidden',
+                    overflow: expanded.content ? 'auto' : 'hidden',
                     transition: 'max-height 0.3s ease-in-out',
                     fontSize: '14px',
                     lineHeight: '1.6',
                     color: '#000000',
                   }}
                   dangerouslySetInnerHTML={{
-                    __html: extractBody(policy.fullContent || ''),
+                    __html: processTableStyles(extractBody(policy.fullContent || '')),
                   }}
                 />
                 {!expanded.content && contentNeedsExpand && (
@@ -823,15 +859,17 @@ export default function PolicyDetailPage() {
 
             <TabsContent value="analysis" className="mt-4">
               <div className="space-y-3">
-                {!typewriterAnalysis ? (
+                {analysisError ? (
+                  <div className="text-center py-8">
+                    <div className="text-gray-500 text-sm mb-2">AI服务暂时不可用</div>
+                    <div className="text-gray-400 text-xs">政策解读功能需要AI服务支持，请稍后再试</div>
+                  </div>
+                ) : !typewriterAnalysis ? (
                   <div className="text-gray-500 text-sm">政策解读生成中...</div>
                 ) : (
                   <div className="prose prose-sm max-w-none" style={{ color: '#222' }}>
                     {renderAnalysisWithHighlight(typewriterAnalysis).map((el, idx) => <React.Fragment key={idx}>{el}<br/></React.Fragment>)}
                   </div>
-                )}
-                {analysisError && (
-                  <div className="text-red-500 text-sm">{analysisError}</div>
                 )}
               </div>
             </TabsContent>
@@ -844,7 +882,12 @@ export default function PolicyDetailPage() {
             id="matching-projects"
             className="bg-white rounded-lg p-4 mb-4 border border-gray-200"
           >
-            {!typewriterScript1 ? (
+            {script1Error ? (
+              <div className="text-center py-8">
+                <div className="text-gray-500 text-sm mb-2">AI服务暂时不可用</div>
+                <div className="text-gray-400 text-xs">推荐话术功能需要AI服务支持，请稍后再试</div>
+              </div>
+            ) : !typewriterScript1 ? (
               <div className="text-gray-400 text-center py-8 text-lg">
                 推荐话术生成中...
               </div>

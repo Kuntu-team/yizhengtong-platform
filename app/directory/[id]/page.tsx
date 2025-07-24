@@ -1039,7 +1039,10 @@ export default function PersonDetailPage() {
                       <h4 className="font-medium text-gray-900 mb-1 text-sm">
                         {news.title || news.news_title || "无标题"}
                       </h4>
-                      <p className="text-xs text-gray-600 mb-1 line-clamp-2 sm:line-clamp-none">
+                      <p
+                        className="text-xs text-gray-600 mb-1 line-clamp-3 cursor-pointer"
+                        title={news.content || news.news_content || ""}
+                      >
                         {news.content || news.news_content || ""}
                       </p>
                       <div className="flex items-center gap-3 text-xs text-gray-500">
@@ -1074,12 +1077,29 @@ export default function PersonDetailPage() {
           <div className="space-y-3">
             {/* 头像和基本信息 */}
             <div className="flex items-start gap-3 sm:flex-row sm:items-start sm:text-left flex-col items-center text-center">
-              <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
-                <img
-                  src={person.person_photo_url || "/placeholder-user.jpg"}
-                  alt={person.name || "用户头像"}
-                  className="w-full h-full object-cover"
-                />
+              <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 relative">
+                {person.person_photo_url ? (
+                  <img
+                    src={`/api/image-proxy?url=${encodeURIComponent(person.person_photo_url)}`}
+                    alt={person.name || "用户头像"}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // 隐藏失败的图片，显示默认蓝色头像
+                      (e.target as HTMLImageElement).style.display = 'none';
+                      const fallbackDiv = (e.target as HTMLImageElement).nextElementSibling as HTMLDivElement;
+                      if (fallbackDiv) {
+                        fallbackDiv.style.display = 'flex';
+                      }
+                    }}
+                  />
+                ) : null}
+                {/* 默认蓝色头像作为后备 */}
+                <div 
+                  className="absolute inset-0 w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center"
+                  style={{ display: person.person_photo_url ? 'none' : 'flex' }}
+                >
+                  <User className="h-6 w-6 text-white" />
+                </div>
               </div>
               <div className="flex-1 min-w-0">
                 {/* 姓名和职位信息 */}

@@ -189,14 +189,25 @@ function CompactPersonCard({
       <div className="flex items-center gap-2 sm:gap-3">
         {/* 头像 */}
         {person.avatar ? (
-          <img
-            src={person.avatar}
-            alt={person.name}
-            className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = "/placeholder-user.jpg";
-            }}
-          />
+          <div className="relative w-12 h-12 flex-shrink-0">
+            <img
+              src={`/api/image-proxy?url=${encodeURIComponent(person.avatar)}`}
+              alt={person.name}
+              className="w-12 h-12 rounded-lg object-cover"
+              onError={(e) => {
+                // 隐藏失败的图片，显示默认蓝色头像
+                (e.target as HTMLImageElement).style.display = 'none';
+                const fallbackDiv = (e.target as HTMLImageElement).nextElementSibling as HTMLDivElement;
+                if (fallbackDiv) {
+                  fallbackDiv.style.display = 'flex';
+                }
+              }}
+            />
+            {/* 默认蓝色头像作为后备 */}
+            <div className="absolute inset-0 w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center" style={{ display: 'none' }}>
+              <User className="h-6 w-6 text-white" />
+            </div>
+          </div>
         ) : (
           <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
             <User className="h-6 w-6 text-white" />
