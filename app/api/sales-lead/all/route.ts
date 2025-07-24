@@ -3,7 +3,39 @@ import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
   try {
-    const news = await prisma.key_person_news.findMany();
+    // 解析 URL 参数
+    const { searchParams } = new URL(request.url);
+    const personId = searchParams.get("person_id");
+    const personIds = searchParams.get("person_ids");
+    const timeLimit = searchParams.get("time_limit");
+
+    // 构建查询条件
+    let whereClause: any = {};
+
+    // 处理单个 person_id
+    if (personId) {
+      whereClause = { person_id: personId };
+    }
+    // 处理多个 person_ids（逗号分隔）
+    else if (personIds) {
+      const ids = personIds
+        .split(",")
+        .map((id) => id.trim())
+        .filter((id) => id);
+      if (ids.length > 0) {
+        whereClause = { person_id: { in: ids } };
+      }
+    } else if (timeLimit) {
+      const daysAgo = new Date();
+      daysAgo.setDate(daysAgo.getDate() - 15);
+      whereClause.news_time = {
+        gte: daysAgo, // gte 表示 greater than or equal (大于等于)
+      };
+    }
+
+    const news = await prisma.key_person_news.findMany({
+      where: whereClause,
+    });
 
     const [persons, private_info, tags] = await Promise.all([
       prisma.key_person_base_info.findMany(),

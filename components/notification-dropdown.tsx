@@ -71,15 +71,15 @@ export function NotificationDropdown() {
   const fetchData = async () => {
     try {
       const response = await axios.get("/api/sales-lead/all");
-      const oneMonthAgo = new Date();
-      oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+      const fifteenDaysAgo = new Date();
+      fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
 
       const filtered = response.data.filter((item: any) => {
         const newsTime = new Date(item.news_time);
-        return newsTime >= oneMonthAgo;
+        return newsTime >= fifteenDaysAgo;
       });
       // setNotifications(filtered);
-      console.log("最近一个月的数据：", filtered);
+      console.log("最近15天的数据：", filtered);
       // 获取关注表数据
       const followResponse = await fetch("/api/business-person/follow");
       if (!followResponse.ok) throw new Error("Failed to fetch follow data");

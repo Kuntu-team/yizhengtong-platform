@@ -102,9 +102,11 @@ function MainContent() {
   const [ready, setReady] = useState(false);
   const [duringTenureData, setDuringTenureData] = useState<any[]>([]);
   const [outsideTermData, setOutsideTermData] = useState<any[]>([]);
+  const [personFilteredData, setPersonFilteredData] = useState<any[]>([]);
 
   useEffect(() => {
     const followedPersonIdsParam = searchParams.get("followedPersonIds");
+
     setPersonIdParam(searchParams.get("person_id") || null);
     if (followedPersonIdsParam) {
       setFollowedPersonIds(JSON.parse(followedPersonIdsParam));
@@ -150,18 +152,55 @@ function MainContent() {
   //     setFilteredItems(duringTenureData);
   //   }
   // }, [activeTab]);
+  useEffect(() => {
+    if (personIdParam) {
+      const fetchPersonData = async () => {
+        try {
+          const res = await axios.get(
+            `/api/sales-lead/all?person_id=${personIdParam}`
+          );
+          setPersonFilteredData(res.data);
+        } catch (error) {
+          console.log("请求失败:", error);
+          setPersonFilteredData([]);
+        }
+      };
+      fetchPersonData();
+    } else if (followedPersonIds && followedPersonIds.length > 0) {
+      // 当有多个关注的人物时，使用 person_ids 参数
+      const fetchMultiplePersonData = async () => {
+        try {
+          const personIds = followedPersonIds.join(",");
+          const res = await axios.get(
+            `/api/sales-lead/all?person_ids=${personIds}`
+          );
+          setPersonFilteredData(res.data);
+        } catch (error) {
+          console.log("请求失败:", error);
+          setPersonFilteredData([]);
+        }
+      };
+      fetchMultiplePersonData();
+    } else {
+      setPersonFilteredData([]);
+    }
+  }, [personIdParam, followedPersonIds]);
 
   const filteredData = useMemo(() => {
     // 根据当前 tab 选择数据源
-    let data = activeTab === "internal" ? duringTenureData : outsideTermData;
-
-    // 关键人物筛选
-    if (followedPersonIds && followedPersonIds.length > 0) {
-      data = data.filter((item) => followedPersonIds.includes(item.person_id));
-    } else if (personIdParam) {
-      data = data.filter((item) => item.person_id === personIdParam);
+    let data = [];
+    if (activeTab === "internal") {
+      if (
+        personIdParam ||
+        (followedPersonIds && followedPersonIds.length > 0)
+      ) {
+        data = personFilteredData;
+      } else {
+        data = duringTenureData;
+      }
+    } else {
+      data = outsideTermData;
     }
-
     // 地区和人物筛选
     if (selectedRegions.length === 0 && selectedPeople.length === 0) {
       return data;
@@ -241,6 +280,15 @@ function MainContent() {
 
     const handleScroll = () => {
       if (activeTab === "internal" && internalHasMore && !internalLoading) {
+        // 当有 personIdParam 或 followedPersonIds 时，不应该触发滚动加载
+        // 因为这些情况下使用的是筛选后的数据，而不是分页数据
+        if (
+          personIdParam ||
+          (followedPersonIds && followedPersonIds.length > 0)
+        ) {
+          return;
+        }
+
         if (
           window.innerHeight + window.scrollY >=
           document.body.offsetHeight - 100
@@ -725,7 +773,7 @@ function MainContent() {
                             商务抓手：
                           </span>
                           <span className="text-base text-blue-600 font-medium">
-                            {item.tags_name ?? "暂无"}
+                            {item.tags_name}
                           </span>
                         </div>
                       )}

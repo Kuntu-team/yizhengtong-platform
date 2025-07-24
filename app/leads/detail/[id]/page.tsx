@@ -420,82 +420,91 @@ export default function DetailPage({
 
   // 根据领导岗位和新闻内容智能生成携带材料
   const generateMaterials = (newsData: any) => {
-    const { position, department, region, title } = newsData;
-    const materials = [];
+    // const { position, department, region, title } = newsData;
+    // const materials = [];
 
-    // 第一份材料：项目分析（必有）
-    let projectAnalysisTitle = "";
-    let estimatedSize = "10-15MB";
-    let estimatedTime = "2-3分钟";
+    // // 第一份材料：项目分析（必有）
+    // let projectAnalysisTitle = "";
+    // let estimatedSize = "10-15MB";
+    // let estimatedTime = "2-3分钟";
 
-    if (department?.includes("发改")) {
-      projectAnalysisTitle = `${region}数字经济市场分析报告`;
-      estimatedSize = "12-18MB";
-      estimatedTime = "3-4分钟";
-    } else if (position?.includes("市长") || position?.includes("副市长")) {
-      const projectType = title.includes("教育")
-        ? "教育城"
-        : title.includes("物流")
-        ? "物流园区"
-        : "产业园";
-      projectAnalysisTitle = `${region}${projectType}项目实施方案`;
-      estimatedSize = "15-20MB";
-      estimatedTime = "3-5分钟";
-    } else if (department?.includes("财政")) {
-      projectAnalysisTitle = `${region}财政投资项目分析报告`;
-      estimatedSize = "8-12MB";
-      estimatedTime = "2-3分钟";
-    } else {
-      projectAnalysisTitle = `${region}重点项目投资分析`;
-      estimatedSize = "10-15MB";
-      estimatedTime = "2-3分钟";
-    }
+    // if (department?.includes("发改")) {
+    //   projectAnalysisTitle = `${region}数字经济市场分析报告`;
+    //   estimatedSize = "12-18MB";
+    //   estimatedTime = "3-4分钟";
+    // } else if (position?.includes("市长") || position?.includes("副市长")) {
+    //   const projectType = title.includes("教育")
+    //     ? "教育城"
+    //     : title.includes("物流")
+    //     ? "物流园区"
+    //     : "产业园";
+    //   projectAnalysisTitle = `${region}${projectType}项目实施方案`;
+    //   estimatedSize = "15-20MB";
+    //   estimatedTime = "3-5分钟";
+    // } else if (department?.includes("财政")) {
+    //   projectAnalysisTitle = `${region}财政投资项目分析报告`;
+    //   estimatedSize = "8-12MB";
+    //   estimatedTime = "2-3分钟";
+    // } else {
+    //   projectAnalysisTitle = `${region}重点项目投资分析`;
+    //   estimatedSize = "10-15MB";
+    //   estimatedTime = "2-3分钟";
+    // }
 
-    materials.push({
-      id: "mat1",
-      title: projectAnalysisTitle,
-      type: "PDF",
-      estimatedSize,
-      estimatedTime,
-      category: "market_analysis",
-    });
+    // materials.push({
+    //   id: "mat1",
+    //   title: projectAnalysisTitle,
+    //   type: "PDF",
+    //   estimatedSize,
+    //   estimatedTime,
+    //   category: "market_analysis",
+    // });
 
-    // 第二份材料：根据具体情况生成
-    if (department?.includes("发改")) {
-      materials.push({
-        id: "mat2",
-        title: `${region}数字经济政策汇编`,
-        type: "PDF",
-        estimatedSize: "8-12MB",
-        estimatedTime: "1-2分钟",
-        category: "policy_collection",
-      });
-    } else if (position?.includes("市长") || position?.includes("副市长")) {
-      const materialType = title.includes("教育")
-        ? "教育产业"
-        : title.includes("物流")
-        ? "物流产业"
-        : "重点产业";
-      materials.push({
-        id: "mat2",
-        title: `${region}${materialType}发展规划`,
+    // // 第二份材料：根据具体情况生成
+    // if (department?.includes("发改")) {
+    //   materials.push({
+    //     id: "mat2",
+    //     title: `${region}数字经济政策汇编`,
+    //     type: "PDF",
+    //     estimatedSize: "8-12MB",
+    //     estimatedTime: "1-2分钟",
+    //     category: "policy_collection",
+    //   });
+    // } else if (position?.includes("市长") || position?.includes("副市长")) {
+    //   const materialType = title.includes("教育")
+    //     ? "教育产业"
+    //     : title.includes("物流")
+    //     ? "物流产业"
+    //     : "重点产业";
+    //   materials.push({
+    //     id: "mat2",
+    //     title: `${region}${materialType}发展规划`,
+    //     type: "PDF",
+    //     estimatedSize: "15-20MB",
+    //     estimatedTime: "3-4分钟",
+    //     category: "development_plan",
+    //   });
+    // } else if (department?.includes("财政")) {
+    //   materials.push({
+    //     id: "mat2",
+    //     title: `${region}PPP项目投资指南`,
+    //     type: "PDF",
+    //     estimatedSize: "9-15MB",
+    //     estimatedTime: "2-3分钟",
+    //     category: "investment_guide",
+    //   });
+    // }
+
+    return [
+      {
+        id: "mat1",
+        title: "",
         type: "PDF",
         estimatedSize: "15-20MB",
-        estimatedTime: "3-4分钟",
-        category: "development_plan",
-      });
-    } else if (department?.includes("财政")) {
-      materials.push({
-        id: "mat2",
-        title: `${region}PPP项目投资指南`,
-        type: "PDF",
-        estimatedSize: "9-15MB",
-        estimatedTime: "2-3分钟",
-        category: "investment_guide",
-      });
-    }
-
-    return materials;
+        estimatedTime: "3-5分钟",
+        category: "market_analysis",
+      },
+    ];
   };
 
   // 使用新的材料生成函数
