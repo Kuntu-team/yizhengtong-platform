@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ChevronLeft, Star, User, Phone, Filter, X } from "lucide-react";
 import { motion } from "framer-motion";
 import Cookies from "js-cookie";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Person {
   id: string;
@@ -324,7 +325,13 @@ export default function DirectoryPage() {
   const [selectedRegion, setSelectedRegion] = useState<string>("全部地区");
   const [regionDict, setRegionDict] = useState<any[]>([]);
   const businessPersonId = Cookies.get("business_person_id");
-  console.log("business_person_id", businessPersonId);
+  // 分页相关
+  const [page, setPage] = useState(1);
+  const pageSize = 30;
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [total, setTotal] = useState(0);
+  // console.log("business_person_id", businessPersonId);
 
   // 获取部门岗位数据
   useEffect(() => {
@@ -408,81 +415,71 @@ export default function DirectoryPage() {
     ];
   }, [activeTab, filteredAllPeople, filteredFollowedPeople, followedPeople]);
 
-  // 获取人物数据
-  useEffect(() => {
-    let isMounted = true; // 防止组件卸载后设置状态
-
-    async function fetchPeople() {
-      try {
-        // 从URL参数获取businessPersonId
-        // const searchParams = new URLSearchParams(window.location.search);
-        // const businessPersonId =
-        //   searchParams.get("businessPersonId") ||
-        //   "e7558fb6-234c-475d-82b9-79db46840389";
-        const response = await fetch(
-          `/api/key-persons?businessPersonId=${businessPersonId}`
-        );
-        if (!response.ok) throw new Error("Failed to fetch data");
-        const data = await response.json();
-        console.log(
-          businessPersonId,
-          "------",
-          "Fetched key persons data:",
-          data
-        );
-        // 获取关注表数据
-        const followResponse = await fetch("/api/business-person/follow");
-        if (!followResponse.ok) throw new Error("Failed to fetch follow data");
-        const followData = await followResponse.json();
-        console.log("查询wby_business_person_follow表全部的数据:", followData);
-        // 提取关注的人员ID列表
-        // 正确提取API响应中的关注人员ID数组
-        const followedPersonIds = Array.isArray(followData?.followedPersonIds)
-          ? followData.followedPersonIds
-          : [];
-        setFollowedPeople(followedPersonIds);
-
-        // 筛选出已关注的人员数据
-        const followedPersons = data.filter((item: any) =>
-          followedPersonIds.includes(item.id)
-        );
-        console.log("已关注的人员数据:", followedPersons);
-
-        if (isMounted) {
-          const transformed = data.map((p: any) => ({
-            ...p,
-            age: calculateAge(p.birth_date),
-            hometown: p.hometown || "",
-            tenure: p.tenure || "",
-            focusAreas: p.focusAreas || [],
-            latestActivity: p.latestActivity || "",
-            contact: {
-              phone: p.phone || "",
-              wechat: p.wechat || "",
-            },
-          }));
-          setPeople(transformed);
-        }
-      } catch (error) {
-        if (isMounted) {
-          toast({
-            title: "加载失败",
-            description: "无法获取人物数据",
-            variant: "destructive",
-          });
-          console.log(error);
-        }
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
+  // 获取人物数据（分页）
+  const fetchPeople = useCallback(async (pageToLoad = 1, replace = false) => {
+    try {
+      setLoadingMore(true);
+      const response = await fetch(`/api/key-persons?businessPersonId=${businessPersonId}&page=${pageToLoad}&pageSize=${pageSize}`);
+      if (!response.ok) throw new Error("Failed to fetch data");
+      const { data, total: totalCount } = await response.json();
+      setTotal(totalCount);
+      // 获取关注表数据
+      const followResponse = await fetch("/api/business-person/follow");
+      if (!followResponse.ok) throw new Error("Failed to fetch follow data");
+      const followData = await followResponse.json();
+      const followedPersonIds = Array.isArray(followData?.followedPersonIds) ? followData.followedPersonIds : [];
+      setFollowedPeople(followedPersonIds);
+      const transformed = data.map((p: any) => ({
+        ...p,
+        age: calculateAge(p.birth_date),
+        hometown: p.hometown || "",
+        tenure: p.tenure || "",
+        focusAreas: p.focusAreas || [],
+        latestActivity: p.latestActivity || "",
+        contact: {
+          phone: p.phone || "",
+          wechat: p.wechat || "",
+        },
+      }));
+      setPeople(prev => {
+        const merged = replace ? transformed : [...prev, ...transformed];
+        return Array.from(new Map(merged.map((item: Person) => [item.id, item])).values()) as Person[];
+      });
+      setHasMore((pageToLoad - 1) * pageSize + data.length < totalCount);
+      setPage(pageToLoad + 1);
+    } catch (error) {
+      toast({ title: "加载失败", description: "无法获取人物数据", variant: "destructive" });
+      console.log(error);
+    } finally {
+      setIsLoading(false);
+      setLoadingMore(false);
     }
+  }, [businessPersonId, toast]);
 
-    fetchPeople();
+  // 首次加载
+  useEffect(() => {
+    setPeople([]);
+    setPage(1);
+    setHasMore(true);
+    fetchPeople(1, true);
+  }, [businessPersonId]);
 
-    return () => {
-      isMounted = false;
+  // 无限滚动监听
+  useEffect(() => {
+    const handleScroll = () => {
+      if (
+        window.innerHeight + document.documentElement.scrollTop + 400 >=
+        document.documentElement.offsetHeight
+      ) {
+        if (hasMore && !isLoading && !loadingMore) {
+          setLoadingMore(true);
+          fetchPeople(page);
+        }
+      }
     };
-  }, [toast]);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [hasMore, isLoading, loadingMore, fetchPeople, page]);
 
   // 获取地区选项
   useEffect(() => {
@@ -689,7 +686,7 @@ export default function DirectoryPage() {
                   value="all"
                   className="text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=inactive]:text-gray-600 data-[state=inactive]:bg-transparent"
                 >
-                  全部人物 ({filteredAllPeople.length})
+                  全部人物 ({filteredAllPeople.length}/{total})
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -842,7 +839,7 @@ export default function DirectoryPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                   {filteredPeople.map((person, index) => (
                     <motion.div
-                      key={person.id}
+                      key={person.id + '-' + index}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.02 }}
@@ -923,6 +920,13 @@ export default function DirectoryPage() {
               )}
             </TabsContent>
           </Tabs>
+        )}
+        {loadingMore && (
+          <div className="py-4 grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} className="h-24" />
+            ))}
+          </div>
         )}
       </main>
     </div>
