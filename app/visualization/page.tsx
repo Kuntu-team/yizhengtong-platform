@@ -445,7 +445,7 @@ function MainContent() {
                       ? 12
                       : ctx.chart.options.scales?.x?.title?.font?.size || 20,
                   }),
-                  color: "#fff", // 数据标签白色
+                  color: "#222", // 数据标签深色，适合白底
                   formatter: (value: any, ctx: any) =>
                     ctx.dataset.label === "项目数量(个)"
                       ? `${value}个`
@@ -652,6 +652,9 @@ function MainContent() {
       tempCanvas.height = height * scale;
       const ctx = tempCanvas.getContext("2d");
       if (ctx) {
+        // 先填充白色背景，保证导出图片为白底
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
         ctx.scale(scale, scale);
         ctx.drawImage(canvas, 0, 0);
         const url = tempCanvas.toDataURL("image/png");

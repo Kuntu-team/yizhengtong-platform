@@ -5,8 +5,11 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     const businessPersonId = url.searchParams.get("businessPersonId");
+    const page = parseInt(url.searchParams.get("page") || "1", 10);
+    const pageSize = parseInt(url.searchParams.get("pageSize") || "30", 10);
+    const skip = (page - 1) * pageSize;
     if (!businessPersonId) {
-      return NextResponse.json([]);
+      return NextResponse.json({ data: [], total: 0 });
     }
 
     // 1. 查找该商务负责的所有区域
@@ -14,7 +17,7 @@ export async function GET(request: Request) {
       where: { business_person_id: businessPersonId },
     });
     if (!managerRegions || managerRegions.length === 0) {
-      return NextResponse.json([]);
+      return NextResponse.json({ data: [], total: 0 });
     }
 
     // 2. 按区域类型分组，构造查询条件
@@ -42,10 +45,14 @@ export async function GET(request: Request) {
     const uniqueKeyPersons = Array.from(
       new Map(allKeyPersons.map((item) => [item.person_id, item])).values()
     );
+    const total = uniqueKeyPersons.length;
 
-    // 5. 查 dim_dept_position_code 和 key_person_private_info 并组装结果
+    // 5. 分页
+    const pagedKeyPersons = uniqueKeyPersons.slice(skip, skip + pageSize);
+
+    // 6. 查 dim_dept_position_code 和 key_person_private_info 并组装结果
     const results = await Promise.all(
-      uniqueKeyPersons.map(async (k) => {
+      pagedKeyPersons.map(async (k) => {
         let deptPosition = null;
         if (k.department_code && k.position_code) {
           deptPosition = await prisma.dim_dept_position_code.findFirst({
@@ -74,7 +81,7 @@ export async function GET(request: Request) {
       })
     );
 
-    return NextResponse.json(results);
+    return NextResponse.json({ data: results, total });
   } catch (error) {
     console.log("Database query error:", error);
     return NextResponse.json(
