@@ -562,7 +562,10 @@ export default function PolicyDetailPage() {
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <div className="flex items-center gap-3">
-              <h1 className="text-xl font-light text-slate-800 tracking-wide">
+              <h1
+                className="font-light text-slate-800 tracking-wide break-words whitespace-normal flex-1 min-w-0 text-sm sm:text-base md:text-lg"
+                style={{ fontSize: "clamp(11px, 4vw, 16px)" }}
+              >
                 {policy.title}
               </h1>
             </div>
