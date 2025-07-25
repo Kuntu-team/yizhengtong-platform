@@ -66,11 +66,11 @@
   }
 
   body {
-    @apply bg-slate-50 text-foreground;
+    @apply bg-white text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", "Roboto", "Helvetica Neue", Arial,
       sans-serif;
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    background: #fff;
     min-height: 100vh;
   }
 }

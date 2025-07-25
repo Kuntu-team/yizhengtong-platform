@@ -548,29 +548,25 @@ export default function PolicyDetailPage() {
   }
 
   return (
-    <div>
+    <div className="bg-white">
       {/* 顶部导航 */}
-      <header className="bg-white border-b sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto px-4 h-14 flex items-center">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <h1
-            className="ml-4 text-base font-medium truncate flex-1"
-            style={{ color: "#222" }}
-          >
-            {policy.title}
-          </h1>
-          {/* <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              console.log("👆 Users按钮被点击");
-              setShareModalOpen(true);
-            }}
-          >
-            <Users className="h-4 w-4" />
-          </Button> */}
+      <header className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.back()}
+              className="-ml-2"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl font-light text-slate-800 tracking-wide">
+                {policy.title}
+              </h1>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -765,9 +761,9 @@ export default function PolicyDetailPage() {
       )}
 
       {/* 主体内容 */}
-      <main className="max-w-4xl mx-auto px-4 py-4 min-h-screen bg-gray-50">
+      <main className="max-w-7xl mx-auto px-2 sm:px-6 pt-4 sm:pt-6 min-h-screen bg-white">
         {/* 政策内容和解读模块 */}
-        <section id="policy-content" className="bg-white rounded-lg p-4 mb-4">
+        <section id="policy-content" className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
           <Tabs defaultValue="content" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="content">政策内容</TabsTrigger>
