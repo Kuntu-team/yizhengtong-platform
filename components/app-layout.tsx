@@ -106,7 +106,7 @@ export function AppLayout({
           transition={{ duration: 0.6 }}
           className="bg-white border-b border-business-gray-200 fixed top-0 w-full z-50 shadow-sm"
         >
-          <div className="h-20 px-4 sm:px-8 flex items-center justify-between max-w-7xl mx-auto">
+          <div className="h-20 flex items-center justify-between w-full px-8">
             <div className="flex items-center gap-4 sm:gap-12">
               {/* 移动端汉堡菜单按钮 */}
               <button
