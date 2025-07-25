@@ -553,7 +553,7 @@ export default function PolicyDetailPage() {
     <div className="bg-white">
       {/* 顶部导航 */}
       <header className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="w-full px-2 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4 w-full">
             <Button
               variant="ghost"
@@ -781,7 +781,7 @@ export default function PolicyDetailPage() {
       )}
 
       {/* 主体内容 */}
-      <main className="max-w-7xl mx-auto px-2 sm:px-6 pt-4 sm:pt-6 min-h-screen bg-white">
+      <main className="w-full px-2 pt-4 sm:pt-6 min-h-screen bg-white">
         {/* 政策内容和解读模块 */}
         <section id="policy-content" className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
           <Tabs defaultValue="content" className="w-full">
