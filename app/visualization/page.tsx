@@ -91,6 +91,8 @@ function MainContent() {
   const [qrUrl, setQrUrl] = useState<string | null>(null);
   // 页面渲染时 showDataLabels=false，下载时临时切换为true
   const [showDataLabels, setShowDataLabels] = useState(false);
+  // 新增：下载模式，导出图片时临时为true
+  const [downloadMode, setDownloadMode] = useState(false);
 
   // 只在客户端生成二维码图片
   useEffect(() => {
@@ -348,13 +350,18 @@ function MainContent() {
     data,
     isFullscreen = false,
     showDataLabels = false,
+    downloadMode = false, // 新增
   }: {
     data: ProjectData[];
     isFullscreen?: boolean;
     showDataLabels?: boolean;
+    downloadMode?: boolean;
   }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const chartRef = useRef<any>(null);
+
+    // 在CanvasBarChart组件内，判断是否为移动端
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 600;
 
     useEffect(() => {
       if (!canvasRef.current || !data || data.length === 0) return;
@@ -377,6 +384,16 @@ function MainContent() {
       ])
         .then(([Chart, ChartDataLabels]) => {
           if (destroyed) return;
+          // 优化：根据downloadMode动态调整参数
+          const fontSize = downloadMode ? 14 : isMobile ? 10 : isFullscreen ? 28 : 20;
+          const xLabelRotation = downloadMode ? 45 : isMobile ? 0 : 45;
+          const paddingBottom = downloadMode ? 100 : 48;
+          const dataLabelFontSize = downloadMode ? 13 : isMobile ? 12 : 20;
+          const dataLabelOffset = downloadMode ? 12 : 4;
+          const xLabelFontSize = downloadMode ? 14 : isMobile ? 10 : 24;
+          const yLabelFontSize = downloadMode ? 14 : isMobile ? 10 : 24;
+          const legendFontSize = downloadMode ? 16 : isMobile ? 10 : isFullscreen ? 28 : 20;
+
           const chartInstance = new Chart.default(ctx, {
             type: "bar",
             data: {
@@ -405,7 +422,7 @@ function MainContent() {
               maintainAspectRatio: false,
               layout: {
                 padding: {
-                  bottom: 48,
+                  bottom: paddingBottom,
                 },
               },
               interaction: {
@@ -418,7 +435,7 @@ function MainContent() {
                   position: "top",
                   labels: {
                     font: {
-                      size: isMobile ? 10 : isFullscreen ? 28 : 20,
+                      size: legendFontSize,
                       weight: "bold",
                     },
                     color: "#222",
@@ -438,18 +455,37 @@ function MainContent() {
                   display: showDataLabels,
                   clamp: true,
                   anchor: "end",
-                  align: "start",
-                  font: (ctx: any) => ({
+                  align: "end",
+                  offset: dataLabelOffset,
+                  font: {
                     weight: "bold",
-                    size: isMobile
-                      ? 12
-                      : ctx.chart.options.scales?.x?.title?.font?.size || 20,
-                  }),
-                  color: "#222", // 数据标签深色，适合白底
-                  formatter: (value: any, ctx: any) =>
-                    ctx.dataset.label === "项目数量(个)"
-                      ? `${value}个`
-                      : `${value}亿元`,
+                    size: dataLabelFontSize,
+                  },
+                  // 根据数据类型设置颜色，增强与柱子的关联性
+                  color: (ctx: any) => {
+                    if (downloadMode) {
+                      // 下载模式下用颜色区分
+                      return ctx.dataset.label === "项目数量(个)" ? "#4A90E2" : "#52C41A";
+                    }
+                    return "#222"; // 页面展示时统一深色
+                  },
+                  // 下载模式下分两行显示，平时单行显示
+                  formatter: (value: any, ctx: any) => {
+                    if (downloadMode) {
+                      // 下载模式下，每个数据集显示自己的数据
+                      if (ctx.dataset.label === "项目数量(个)") {
+                        return `${value}个`;
+                      } else if (ctx.dataset.label === "发行规模(亿元)") {
+                        return `${value}亿元`;
+                      }
+                      return "";
+                    } else {
+                      // 页面展示时单行
+                      return ctx.dataset.label === "项目数量(个)"
+                        ? `${value}个`
+                        : `${value}亿元`;
+                    }
+                  },
                 },
               },
               scales: {
@@ -459,7 +495,7 @@ function MainContent() {
                     display: true,
                     text: "区县",
                     font: {
-                      size: isMobile ? 10 : isFullscreen ? 28 : 20,
+                      size: fontSize,
                       weight: "bold",
                     },
                     color: "#222",
@@ -467,11 +503,11 @@ function MainContent() {
                   ticks: {
                     color: "#222",
                     font: {
-                      size: isMobile ? 10 : 24,
+                      size: xLabelFontSize,
                       weight: "bold",
                     },
-                    maxRotation: isMobile ? 0 : 45,
-                    minRotation: isMobile ? 0 : 45,
+                    maxRotation: xLabelRotation,
+                    minRotation: xLabelRotation,
                     autoSkip: isMobile ? true : false,
                   },
                 },
@@ -483,7 +519,7 @@ function MainContent() {
                     display: true,
                     text: "项目数量(个)",
                     font: {
-                      size: isMobile ? 10 : isFullscreen ? 28 : 20,
+                      size: fontSize,
                       weight: "bold",
                     },
                     color: "#222",
@@ -491,7 +527,7 @@ function MainContent() {
                   ticks: {
                     color: "#222",
                     font: {
-                      size: isMobile ? 10 : 24,
+                      size: yLabelFontSize,
                       weight: "bold",
                     },
                   },
@@ -504,7 +540,7 @@ function MainContent() {
                     display: true,
                     text: "发行规模(亿元)",
                     font: {
-                      size: isMobile ? 10 : isFullscreen ? 28 : 20,
+                      size: fontSize,
                       weight: "bold",
                     },
                     color: "#222",
@@ -512,7 +548,7 @@ function MainContent() {
                   ticks: {
                     color: "#222",
                     font: {
-                      size: isMobile ? 10 : 24,
+                      size: yLabelFontSize,
                       weight: "bold",
                     },
                   },
@@ -537,10 +573,7 @@ function MainContent() {
           chartRef.current = null;
         }
       };
-    }, [data, isFullscreen, showDataLabels]);
-
-    // 在CanvasBarChart组件内，判断是否为移动端
-    const isMobile = typeof window !== "undefined" && window.innerWidth < 600;
+    }, [data, isFullscreen, showDataLabels, downloadMode]);
 
     return (
       <div
@@ -640,31 +673,246 @@ function MainContent() {
   // VisualizationPage 组件内，添加下载函数：
   const handleDownloadChart = () => {
     setShowDataLabels(true);
+    setDownloadMode(true); // 开启下载模式
     setTimeout(() => {
       const canvas = document.querySelector("canvas");
-      if (!canvas) return;
-      // 提高分辨率：临时放大canvas再导出
-      const scale = 3;
-      const width = canvas.width;
-      const height = canvas.height;
-      const tempCanvas = document.createElement("canvas");
-      tempCanvas.width = width * scale;
-      tempCanvas.height = height * scale;
-      const ctx = tempCanvas.getContext("2d");
-      if (ctx) {
-        // 先填充白色背景，保证导出图片为白底
-        ctx.fillStyle = "#fff";
-        ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-        ctx.scale(scale, scale);
-        ctx.drawImage(canvas, 0, 0);
-        const url = tempCanvas.toDataURL("image/png");
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = "chart.png";
-        link.click();
+      if (!canvas) {
+        setShowDataLabels(false);
+        setDownloadMode(false);
+        return;
       }
-      setShowDataLabels(false);
-    }, 300); // 等待300ms确保图表刷新
+      // 判断是否为移动端
+      const isMobile = typeof window !== "undefined" && window.innerWidth < 600;
+      if (isMobile) {
+        // 创建隐藏的临时canvas用于导出
+        const exportWidth = 900;
+        const exportHeight = 600;
+        const tempCanvas = document.createElement("canvas");
+        tempCanvas.width = exportWidth;
+        tempCanvas.height = exportHeight;
+        tempCanvas.style.position = "absolute";
+        tempCanvas.style.left = "-9999px";
+        tempCanvas.style.top = "-9999px";
+        document.body.appendChild(tempCanvas);
+        
+        const tempCtx = tempCanvas.getContext("2d");
+        if (tempCtx) {
+          // 在临时canvas上重新渲染图表
+          Promise.all([
+            import("chart.js/auto"),
+            import("chartjs-plugin-datalabels") as any,
+          ]).then(([Chart, ChartDataLabels]) => {
+            // 移动端下载模式下的参数
+            const fontSize = 12;
+            const xLabelRotation = 45;
+            const paddingBottom = 120;
+            const dataLabelFontSize = 11;
+            const dataLabelOffset = 8;
+            const xLabelFontSize = 12;
+            const yLabelFontSize = 12;
+            const legendFontSize = 14;
+            const barPercentage = 0.45;
+            const categoryPercentage = 0.7;
+
+            const exportChart = new Chart.default(tempCtx, {
+              type: "bar",
+              data: {
+                labels: chartData.map((item) => item.region),
+                datasets: [
+                  {
+                    label: "项目数量(个)",
+                    data: chartData.map((item) => item.projectCount),
+                    backgroundColor: "#4A90E2",
+                    borderColor: "#4A90E2",
+                    borderWidth: 1,
+                    yAxisID: "y",
+                    barPercentage,
+                    categoryPercentage,
+                  },
+                  {
+                    label: "发行规模(亿元)",
+                    data: chartData.map((item) => item.fundingScale),
+                    backgroundColor: "#52C41A",
+                    borderColor: "#52C41A",
+                    borderWidth: 1,
+                    yAxisID: "y1",
+                    barPercentage,
+                    categoryPercentage,
+                  },
+                ],
+              },
+              options: {
+                responsive: false, // 重要：设置为false，使用固定尺寸
+                maintainAspectRatio: false,
+                layout: {
+                  padding: {
+                    bottom: paddingBottom,
+                  },
+                },
+                interaction: {
+                  mode: "index",
+                  intersect: false,
+                },
+                plugins: {
+                  legend: {
+                    display: true,
+                    position: "top",
+                    labels: {
+                      font: {
+                        size: legendFontSize,
+                        weight: "bold",
+                      },
+                      color: "#222",
+                    },
+                  },
+                  tooltip: {
+                    enabled: false, // 导出时不需要tooltip
+                  },
+                  datalabels: {
+                    display: true,
+                    clamp: true,
+                    anchor: "end",
+                    align: "end",
+                    offset: dataLabelOffset,
+                    font: {
+                      weight: "bold",
+                      size: dataLabelFontSize,
+                    },
+                    color: (ctx: any) => {
+                      return ctx.dataset.label === "项目数量(个)" ? "#4A90E2" : "#52C41A";
+                    },
+                    formatter: (value: any, ctx: any) => {
+                      if (ctx.dataset.label === "项目数量(个)") {
+                        return `${value}个`;
+                      } else if (ctx.dataset.label === "发行规模(亿元)") {
+                        return `${value}亿元`;
+                      }
+                      return "";
+                    },
+                  },
+                },
+                scales: {
+                  x: {
+                    display: true,
+                    title: {
+                      display: true,
+                      text: "区县",
+                      font: {
+                        size: fontSize,
+                        weight: "bold",
+                      },
+                      color: "#222",
+                    },
+                    ticks: {
+                      color: "#222",
+                      font: {
+                        size: xLabelFontSize,
+                        weight: "bold",
+                      },
+                      maxRotation: xLabelRotation,
+                      minRotation: xLabelRotation,
+                    },
+                  },
+                  y: {
+                    type: "linear",
+                    display: true,
+                    position: "left",
+                    title: {
+                      display: true,
+                      text: "项目数量(个)",
+                      font: {
+                        size: fontSize,
+                        weight: "bold",
+                      },
+                      color: "#222",
+                    },
+                    ticks: {
+                      color: "#222",
+                      font: {
+                        size: yLabelFontSize,
+                        weight: "bold",
+                      },
+                    },
+                  },
+                  y1: {
+                    type: "linear",
+                    display: true,
+                    position: "right",
+                    title: {
+                      display: true,
+                      text: "发行规模(亿元)",
+                      font: {
+                        size: fontSize,
+                        weight: "bold",
+                      },
+                      color: "#222",
+                    },
+                    ticks: {
+                      color: "#222",
+                      font: {
+                        size: yLabelFontSize,
+                        weight: "bold",
+                      },
+                    },
+                    grid: {
+                      drawOnChartArea: false,
+                    },
+                  },
+                },
+              },
+              plugins: [(ChartDataLabels as any).default],
+            });
+
+            // 等待图表渲染完成后导出
+            setTimeout(() => {
+              const scale = 2;
+              const finalCanvas = document.createElement("canvas");
+              finalCanvas.width = exportWidth * scale;
+              finalCanvas.height = exportHeight * scale;
+              const finalCtx = finalCanvas.getContext("2d");
+              if (finalCtx) {
+                finalCtx.fillStyle = "#fff";
+                finalCtx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+                finalCtx.scale(scale, scale);
+                finalCtx.drawImage(tempCanvas, 0, 0, exportWidth, exportHeight);
+                const url = finalCanvas.toDataURL("image/png");
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = "chart.png";
+                link.click();
+              }
+              // 清理临时canvas和图表
+              exportChart.destroy();
+              document.body.removeChild(tempCanvas);
+              setShowDataLabels(false);
+              setDownloadMode(false);
+            }, 300);
+          });
+        }
+      } else {
+        // PC端逻辑保持不变
+        const scale = 3;
+        const width = canvas.width;
+        const height = canvas.height;
+        const tempCanvas = document.createElement("canvas");
+        tempCanvas.width = width * scale;
+        tempCanvas.height = height * scale;
+        const ctx = tempCanvas.getContext("2d");
+        if (ctx) {
+          ctx.fillStyle = "#fff";
+          ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+          ctx.scale(scale, scale);
+          ctx.drawImage(canvas, 0, 0);
+          const url = tempCanvas.toDataURL("image/png");
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = "chart.png";
+          link.click();
+        }
+        setShowDataLabels(false);
+        setDownloadMode(false); // 恢复
+      }
+    }, 400); // 等待400ms确保图表刷新
   };
 
   // 分享按钮绑定事件
@@ -935,6 +1183,7 @@ function MainContent() {
                     <CanvasBarChart
                       data={chartData}
                       showDataLabels={showDataLabels}
+                      downloadMode={downloadMode}
                     />
                   </div>
 
@@ -994,6 +1243,7 @@ function MainContent() {
               data={chartData}
               isFullscreen={true}
               showDataLabels={showDataLabels}
+              downloadMode={downloadMode}
             />
           </div>
         </DialogContent>

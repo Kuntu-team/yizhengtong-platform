@@ -34,6 +34,30 @@ interface NewsItem {
   category: string;
 }
 
+// Spinner 组件：转圈圈 loading 动画
+function Spinner() {
+  return (
+    <span className="inline-block align-middle mx-1">
+      <svg className="animate-spin h-7 w-7 text-gray-400" viewBox="0 0 24 24">
+        <circle
+          className="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="4"
+          fill="none"
+        />
+        <path
+          className="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+        />
+      </svg>
+    </span>
+  );
+}
+
 export default function HomePage() {
   const [user, setUser] = useState<UserInfo | null>(null);
   const [userYk, setUserYk] = useState<any>(null);
@@ -44,6 +68,7 @@ export default function HomePage() {
   const pageSize = 10;
   const router = useRouter();
   const [itemsCount, setItemsCount] = useState(0);
+  const [itemsCountLoading, setItemsCountLoading] = useState(true); // 新增加载状态
   const [followedPersonIds, setFollowedPersonIds] = useState<string[]>([]); // 新增
   useEffect(() => {
     fetchData();
@@ -121,8 +146,10 @@ export default function HomePage() {
       const response = await axios.get("/api/sales-lead/all?time_limit=15");
       console.log(response.data);
       setItemsCount(response?.data.length);
+      setItemsCountLoading(false);
     } catch (error) {
       console.log("请求失败:", error);
+      setItemsCountLoading(false); // 加载失败也结束loading
     }
   };
 
@@ -154,7 +181,7 @@ export default function HomePage() {
   return (
     <AppLayout>
       <div className="min-h-screen bg-white">
-        <div className="max-w-4xl mx-auto px-2 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-8">
+        <div className="mx-auto sm:mx-20 px-2 sm:px-4 py-4 sm:py-8 space-y-4 sm:space-y-8">
           {/* 简化的问候语区域 */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -171,9 +198,13 @@ export default function HomePage() {
                   >
                     <h1 className="text-lg sm:text-2xl font-light text-gray-900 tracking-tight">
                       欢迎回来，{userYk?.business_person_name || "用户"}，你有
-                      <span className="text-2xl sm:text-5xl font-bold text-red-500 mx-1">
-                        {itemsCount}
-                      </span>
+                      {itemsCountLoading ? (
+                        <Spinner />
+                      ) : (
+                        <span className="text-2xl sm:text-5xl font-bold text-red-500 mx-1">
+                          {itemsCount}
+                        </span>
+                      )}
                       条新的任内动态
                     </h1>
                   </motion.div>
