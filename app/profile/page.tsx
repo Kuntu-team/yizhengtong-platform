@@ -173,7 +173,7 @@ export default function ProfilePage() {
 
   return (
     <AppLayout>
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="mx-auto px-6 py-8">
         {/* 页面标题 */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -198,7 +198,7 @@ export default function ProfilePage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="mb-6"
+          className="mb-6 sm:mx-8"
         >
           <Card className="bg-white border border-gray-200 shadow-sm rounded-lg">
             <CardContent className="p-6">

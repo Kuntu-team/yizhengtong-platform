@@ -119,7 +119,7 @@ export default function DetailPage({
       <div className="min-h-screen bg-white">
         {/* 固定顶部导航 */}
         <header className="fixed top-0 w-full bg-white border-b z-50">
-          <div className="max-w-7xl mx-auto px-4 h-14 flex items-center">
+          <div className="mx-auto px-4 h-14 flex items-center">
             <Button
               variant="ghost"
               size="sm"
@@ -135,7 +135,7 @@ export default function DetailPage({
         {/* 主体布局 */}
         <div className="pt-14">
           {/* 右侧主体内容区 */}
-          <main className="max-w-6xl mx-auto px-6 py-4 space-y-6">
+          <main className="sm:mx-7 px-6 py-4 space-y-6">
             {/* 新闻信息 */}
             <section
               id="news"

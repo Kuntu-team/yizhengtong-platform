@@ -697,7 +697,7 @@ export default function DetailPage({
         {/* 主体布局 */}
         <div className="pt-14">
           {/* 右侧主体内容区 */}
-          <main className="mx-auto px-6 py-4 space-y-6">
+          <main className="sm:mx-7 px-6 py-4 space-y-6">
             {/* 新闻信息 */}
             <section
               id="news"

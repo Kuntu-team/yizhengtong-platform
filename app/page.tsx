@@ -118,23 +118,9 @@ export default function HomePage() {
   }, [page]);
   const fetchData = async () => {
     try {
-      const response = await axios.get("/api/sales-lead/all");
+      const response = await axios.get("/api/sales-lead/all?time_limit=15");
       console.log(response.data);
-      const fifteenDaysAgo = new Date();
-      fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
-
-      const recentData = response.data.filter((item: any) => {
-        // 确保 news_time 存在并能正确转换为日期
-        if (!item.news_time) return false;
-
-        const newsTime = new Date(item.news_time);
-        // 检查日期是否有效
-        if (isNaN(newsTime.getTime())) return false;
-
-        return newsTime >= fifteenDaysAgo;
-      });
-
-      setItemsCount(recentData.length);
+      setItemsCount(response?.data.length);
     } catch (error) {
       console.log("请求失败:", error);
     }

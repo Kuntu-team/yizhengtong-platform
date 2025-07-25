@@ -496,7 +496,7 @@ function MainContent() {
               transition={{ duration: 0.3 }}
               className="bg-white border-b border-gray-200 overflow-hidden sticky top-16 z-50"
             >
-              <div className="px-6 py-6 space-y-6 max-w-6xl mx-auto">
+              <div className="px-6 py-6 space-y-6 max-w-6xl mx-auto sm:mx-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* 地区筛选 */}
                   <div>
@@ -768,7 +768,7 @@ function MainContent() {
                         <span>{getTimeAgo(item.news_time)}</span>
                       </div>
                       {item.tags_name && (
-                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <div className="flex items-center gap-2 w-full sm:w-1/2 sm:justify-end">
                           <span className="text-sm font-medium text-slate-700 whitespace-nowrap">
                             商务抓手：
                           </span>

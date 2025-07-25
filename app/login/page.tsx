@@ -3,20 +3,16 @@
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
-import { message } from "antd";
+import { message, Spin } from "antd";
 import Cookies from "js-cookie";
 
 export default function Login() {
   const [phone_number, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
   useEffect(() => {
-    // const fetchDetail = async () => {
-    //   const res = await axios.get("/api/users");
-    //   console.log(res.data);
-    // };
-    // fetchDetail();
     const allCookies = Cookies.get();
     Object.keys(allCookies).forEach((key) => {
       Cookies.remove(key, { path: "/" });
@@ -29,30 +25,31 @@ export default function Login() {
       setError("手机号和密码不能为空");
       return;
     }
-
+    setLoading(true);
     try {
-      const res = await axios.post("/api/login", { phone_number, password });
-
-      if (res.data.token) {
-        // 弹出登录成功提示
-        message.success("登录成功！");
-        router.push("/");
-        // 24小时过期
-        document.cookie = `token_yk=${res.data.token}; path=/; max-age=86400`;
-        document.cookie = `business_person_id=${res.data.user.business_person_id}; path=/; max-age=86400`;
-
-        localStorage.setItem("user_yk", JSON.stringify(res.data.user));
-        setError("");
-        setPhoneNumber("");
-        setPassword("");
-      } else {
-        // Handle errors
-        const errorData = res.data;
-        setError(errorData.message || "Invalid Credentials");
-      }
+        const res = await axios.post("/api/login", { phone_number, password });
+        if (res.data.token) {
+          // 弹出登录成功提示
+          message.success("登录成功！");
+          router.push("/");
+          // 24小时过期
+          document.cookie = `token_yk=${res.data.token}; path=/; max-age=86400`;
+          document.cookie = `business_person_id=${res.data.user.business_person_id}; path=/; max-age=86400`;
+          localStorage.setItem("user_yk", JSON.stringify(res.data.user));
+          setError("");
+          setPhoneNumber("");
+          setPassword("");
+        } else {
+          // Handle errors
+          const errorData = res.data;
+          setError(errorData.message || "Invalid Credentials");
+        }
     } catch (error: any) {
       // console.log("Login failed:", error)
       setError("用户名或密码错误，请重试。");
+    } finally {
+      // 无论成功或失败都关闭loading状态
+      setLoading(false);
     }
   };
 
@@ -99,12 +96,26 @@ export default function Login() {
               placeholder="请输入密码"
             />
           </div>
-          <div className="flex items-center justify-center">
+          {/* <div className="flex items-center justify-center">
             <button
               className="bg-blue-500 hover:bg-blue-700 w-full mt-4 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
               type="submit"
             >
               登录
+            </button>
+          </div> */}
+          <div className="flex items-center justify-center">
+            <button
+              className="bg-blue-500 hover:bg-blue-700 w-full mt-4 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline flex items-center justify-center"
+              type="submit"
+              disabled={loading}
+            >
+              <Spin
+                spinning={loading}
+                size="small"
+                style={{ color: "#bfdbfe", marginRight: "8px" }}
+              />
+              {loading ? "登录中..." : "登录"}
             </button>
           </div>
         </form>
