@@ -553,7 +553,7 @@ export default function PolicyDetailPage() {
     <div className="bg-white">
       {/* 顶部导航 */}
       <header className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="w-full px-2 h-16 flex items-center justify-between">
+        <div className="w-full px-2 pl-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4 w-full">
             <Button
               variant="ghost"

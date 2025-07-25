@@ -764,7 +764,7 @@ export default function PoliciesPage() {
     <AppLayout hideNavigation={true}>
       {/* 页面头部 */}
       <header className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="w-full px-2 h-16 flex items-center justify-between">
+        <div className="w-full px-2 pl-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"

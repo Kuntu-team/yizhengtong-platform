@@ -651,7 +651,7 @@ export default function DirectoryPage() {
         animate={{ opacity: 1, y: 0 }}
         className="bg-white border-b border-gray-200 sticky top-0 z-50"
       >
-        <div className="w-full px-2 h-16 flex items-center justify-between">
+        <div className="w-full px-2 pl-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <motion.button
               whileHover={{ scale: 1.05 }}
