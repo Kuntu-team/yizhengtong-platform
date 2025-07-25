@@ -168,7 +168,7 @@ export default function HomePage() {
   return (
     <AppLayout>
       <div className="min-h-screen bg-white">
-        <div className="max-w-4xl mx-auto px-2 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-8">
+        <div className="max-w-6xl mx-auto px-2 sm:px-4 py-4 sm:py-8 space-y-4 sm:space-y-8">
           {/* 简化的问候语区域 */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
