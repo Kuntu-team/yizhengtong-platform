@@ -447,7 +447,7 @@ function MainContent() {
         animate={{ opacity: 1, y: 0 }}
         className="bg-white border-b border-gray-200 fixed top-0 w-full z-50"
       >
-        <div className="h-16 px-6 flex items-center justify-between max-w-7xl mx-auto">
+        <div className="h-16 px-6 flex items-center justify-between mx-auto">
           <div className="flex items-center gap-4">
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -698,7 +698,7 @@ function MainContent() {
 
         {/* 标签切换 */}
         <div className="sticky top-16 bg-white border-b border-gray-200 z-40">
-          <div className="px-6 max-w-6xl mx-auto">
+          <div className="px-6 mx-auto">
             <Tabs
               value={activeTab}
               onValueChange={setActiveTab}
@@ -723,7 +723,7 @@ function MainContent() {
         </div>
 
         {/* 列表内容 */}
-        <div className="px-6 max-w-6xl mx-auto">
+        <div className="px-6 mx-auto">
           {filteredData.length > 0 ? (
             <motion.div
               className="divide-y divide-white/20 mb-10"
