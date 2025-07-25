@@ -312,6 +312,8 @@ export default function PolicyDetailPage() {
     message: string;
   } | null>(null);
 
+  const [showTitleModal, setShowTitleModal] = useState(false); // 新增标题弹窗状态
+
   // 滚动到指定模块
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
@@ -552,7 +554,7 @@ export default function PolicyDetailPage() {
       {/* 顶部导航 */}
       <header className="bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 w-full">
             <Button
               variant="ghost"
               size="sm"
@@ -561,17 +563,32 @@ export default function PolicyDetailPage() {
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <div className="flex items-center gap-3">
-              <h1
-                className="font-light text-slate-800 tracking-wide break-words whitespace-normal flex-1 min-w-0 text-sm sm:text-base md:text-lg"
-                style={{ fontSize: "clamp(11px, 4vw, 16px)" }}
-              >
-                {policy.title}
-              </h1>
-            </div>
+            <h1
+              className="flex-1 min-w-0 font-light text-slate-800 text-sm sm:text-base md:text-lg whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer"
+              style={{ fontSize: "clamp(11px, 4vw, 16px)" }}
+              onClick={() => setShowTitleModal(true)}
+              title={policy.title}
+            >
+              {policy.title}
+            </h1>
           </div>
         </div>
       </header>
+
+      {/* 标题完整内容弹窗 */}
+      {showTitleModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-sm w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <span className="text-base font-semibold">完整标题</span>
+              <button onClick={() => setShowTitleModal(false)} className="p-1 rounded hover:bg-gray-100">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="text-gray-900 text-sm break-words" style={{ wordBreak: 'break-all' }}>{policy.title}</div>
+          </div>
+        </div>
+      )}
 
       {/* 简单的模态框 */}
       {shareModalOpen && (
@@ -776,12 +793,11 @@ export default function PolicyDetailPage() {
             <TabsContent value="content" className="mt-4">
               {/* 发布机构和时间信息 */}
               <div className="flex items-center justify-between text-sm text-gray-500 mb-4 pb-3 border-b">
-                <span>
+                <span className="max-w-[55%] whitespace-nowrap overflow-hidden text-ellipsis block">
                   发布机构：
                   {(() => {
                     const source = policy.source;
                     const displaySource = !source || source === '-' || source === '未知' || source.trim() === '' ? '政策原文' : source;
-                    
                     return policy.sourceUrl ? (
                       <a
                         href={policy.sourceUrl}
@@ -796,7 +812,7 @@ export default function PolicyDetailPage() {
                     );
                   })()}
                 </span>
-                <span>发布时间：{formatDate(policy.publishDate)}</span>
+                <span className="max-w-[45%] whitespace-nowrap overflow-hidden text-ellipsis block text-right">发布时间：{formatDate(policy.publishDate)}</span>
               </div>
 
               {/* 政策内容 - 仅渲染 <body> 内内容，并加样式限制 */}
