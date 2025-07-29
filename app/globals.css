@@ -316,3 +316,91 @@
   font-weight: bold !important;
   margin: 16px 0 8px 0 !important;
 }
+
+/* Antd分页组件自定义样式 */
+.ant-pagination-custom {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+}
+
+.ant-pagination-custom .ant-pagination-item {
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  transition: all 0.2s ease-in-out;
+}
+
+.ant-pagination-custom .ant-pagination-item:hover {
+  border-color: #3b82f6;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.ant-pagination-custom .ant-pagination-item-active {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: white;
+}
+
+.ant-pagination-custom .ant-pagination-item-active:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.ant-pagination-custom .ant-pagination-prev,
+.ant-pagination-custom .ant-pagination-next {
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  transition: all 0.2s ease-in-out;
+}
+
+.ant-pagination-custom .ant-pagination-prev:hover,
+.ant-pagination-custom .ant-pagination-next:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.ant-pagination-custom .ant-pagination-jump-prev,
+.ant-pagination-custom .ant-pagination-jump-next {
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  transition: all 0.2s ease-in-out;
+}
+
+.ant-pagination-custom .ant-pagination-jump-prev:hover,
+.ant-pagination-custom .ant-pagination-jump-next:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.ant-pagination-custom .ant-pagination-total-text {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.ant-pagination-custom .ant-pagination-options {
+  margin-left: 16px;
+}
+
+.ant-pagination-custom .ant-pagination-options-quick-jumper {
+  color: #6b7280;
+}
+
+.ant-pagination-custom .ant-pagination-options-quick-jumper input {
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  padding: 4px 8px;
+  margin: 0 8px;
+  transition: all 0.2s ease-in-out;
+}
+
+.ant-pagination-custom .ant-pagination-options-quick-jumper input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  outline: none;
+}

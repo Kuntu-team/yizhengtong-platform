@@ -24,25 +24,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import axios from "axios";
 import { getTimeAgo } from "@/lib/utils";
 import { Suspense } from "react";
-import { Pagination } from "antd";
-
-// 检测设备类型的hook
-const useIsMobile = () => {
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkIsMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    checkIsMobile();
-    window.addEventListener("resize", checkIsMobile);
-
-    return () => window.removeEventListener("resize", checkIsMobile);
-  }, []);
-
-  return isMobile;
-};
 
 interface LeadItem {
   created_time: string; // 创建时间，ISO 格式字符串
@@ -78,6 +59,25 @@ interface Person {
   region_cn: string;
   department: string;
 }
+
+// const regions: Region[] = [
+//   { id: "jiujiang", name: "九江市" },
+//   { id: "nanchang", name: "南昌市" },
+//   { id: "yichun", name: "宜春市" },
+//   { id: "shangrao", name: "上饶市" },
+//   { id: "ganzhou", name: "赣州市" },
+// ];
+
+// const people: Person[] = [
+//   { id: 1, name: "张三", position: "发改委主任" },
+//   { id: 2, name: "李四", position: "财政局局长" },
+//   { id: 3, name: "王五", position: "市长" },
+//   { id: 4, name: "赵六", position: "副市长" },
+//   { id: 5, name: "陈七", position: "住建局局长" },
+//   { id: 6, name: "孙八", position: "交通局局长" },
+//   { id: 7, name: "周九", position: "教育局局长" },
+// ];
+
 export default function LeadsPage() {
   return (
     <Suspense fallback={<div>加载中...</div>}>
@@ -89,8 +89,6 @@ export default function LeadsPage() {
 function MainContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const isMobile = useIsMobile();
-
   // 所有Hook顶层声明
   const [followedPersonIds, setFollowedPersonIds] = useState<string[]>([]);
   const [personIdParam, setPersonIdParam] = useState<string | null>(null);
@@ -98,18 +96,13 @@ function MainContent() {
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
   const [selectedPeople, setSelectedPeople] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState("internal");
+  const [filteredItems, setFilteredItems] = useState<LeadItem[]>([]);
   const [regions, setRegions] = useState<Region[]>([]);
   const [people, setPeople] = useState<Person[]>([]);
   const [ready, setReady] = useState(false);
   const [duringTenureData, setDuringTenureData] = useState<any[]>([]);
   const [outsideTermData, setOutsideTermData] = useState<any[]>([]);
   const [personFilteredData, setPersonFilteredData] = useState<any[]>([]);
-
-  // PC端分页相关状态
-  const [pcInternalPage, setPcInternalPage] = useState(1);
-  const [pcExternalPage, setPcExternalPage] = useState(1);
-  const [pcInternalTotal, setPcInternalTotal] = useState(0);
-  const [pcExternalTotal, setPcExternalTotal] = useState(0);
 
   useEffect(() => {
     const followedPersonIdsParam = searchParams.get("followedPersonIds");
@@ -127,8 +120,6 @@ function MainContent() {
 
   useEffect(() => {
     const saved = localStorage.getItem("salesLeadFilters");
-    console.log(saved);
-
     if (saved) {
       try {
         const { regions, people } = JSON.parse(saved);
@@ -138,34 +129,116 @@ function MainContent() {
         // console.log("Failed to parse saved filters:", error)
       }
     }
-    // fetchData();
     getSelectData();
   }, []);
 
-  // 初始化完成后获取第一页数据
   useEffect(() => {
-    if (ready && !internalLoading && !externalLoading) {
-      console.log("Component ready, fetching initial data...");
+    localStorage.setItem(
+      "salesLeadFilters",
+      JSON.stringify({
+        regions: selectedRegions,
+        people: selectedPeople,
+      })
+    );
+    console.log(selectedRegions);
+  }, [selectedRegions, selectedPeople]);
+
+  // 使用ref来跟踪是否已经初始化过数据
+  const hasInitialized = useRef(false);
+
+  // 处理筛选条件恢复后的数据获取
+  useEffect(() => {
+    // 确保筛选条件已经加载完成，且只执行一次
+    if (
+      ready &&
+      !hasInitialized.current &&
+      (selectedRegions.length > 0 || selectedPeople.length > 0)
+    ) {
+      console.log(
+        "筛选条件恢复，重新获取数据",
+        {
+          selectedRegions,
+          selectedPeople,
+        },
+        activeTab
+      );
+      // 重置分页并获取数据
       if (activeTab === "internal") {
-        fetchPcInternalData(1);
+        setInternalPage(1);
+        console.log(33333);
+
+        setDuringTenureData([]);
+        // 直接调用数据获取函数
+        fetchInternalData(1);
       } else {
-        fetchPcExternalData(1);
+        setExternalPage(1);
+        setOutsideTermData([]);
+        // 直接调用数据获取函数
+        fetchExternalData(1);
       }
+      hasInitialized.current = true;
     }
-  }, [ready, activeTab]);
+  }, [ready, selectedRegions, selectedPeople, activeTab]);
+
+  // useEffect(() => {
+  //   console.log("Active Tab Changed:", activeTab);
+  //   if (activeTab != "internal") {
+  //     setFilteredItems(outsideTermData);
+  //   } else {
+  //     setFilteredItems(duringTenureData);
+  //   }
+  // }, [activeTab]);
+  // useEffect(() => {
+  //   if (personIdParam) {
+  //     const fetchPersonData = async () => {
+  //       try {
+  //         const res = await axios.get(
+  //           `/api/sales-lead/all?person_id=${personIdParam}`
+  //         );
+  //         setPersonFilteredData(res.data);
+  //       } catch (error) {
+  //         console.log("请求失败:", error);
+  //         setPersonFilteredData([]);
+  //       }
+  //     };
+  //     fetchPersonData();
+  //   } else if (followedPersonIds && followedPersonIds.length > 0) {
+  //     // 当有多个关注的人物时，使用 person_ids 参数
+  //     const fetchMultiplePersonData = async () => {
+  //       try {
+  //         const personIds = followedPersonIds.join(",");
+  //         const res = await axios.get(
+  //           `/api/sales-lead/all?person_ids=${personIds}`
+  //         );
+  //         setPersonFilteredData(res.data);
+  //       } catch (error) {
+  //         console.log("请求失败:", error);
+  //         setPersonFilteredData([]);
+  //       }
+  //     };
+  //     fetchMultiplePersonData();
+  //   } else {
+  //     setPersonFilteredData([]);
+  //   }
+  // }, [personIdParam, followedPersonIds]);
 
   const filteredData = useMemo(() => {
     // 根据当前 tab 选择数据源
     let data = [];
     if (activeTab === "internal") {
+      // if (
+      //   personIdParam ||
+      //   (followedPersonIds && followedPersonIds.length > 0)
+      // ) {
+      //   data = personFilteredData;
+      // } else {
       data = duringTenureData;
+      // }
     } else {
       data = outsideTermData;
     }
     return data;
   }, [
-    selectedRegions,
-    selectedPeople,
     duringTenureData,
     outsideTermData,
     personIdParam,
@@ -185,200 +258,95 @@ function MainContent() {
   //     console.log("请求失败:", error);
   //   }
   // };
-  // const [internalPage, setInternalPage] = useState(1);
-  // const [externalPage, setExternalPage] = useState(1);
+  const [internalPage, setInternalPage] = useState(1);
+  const [externalPage, setExternalPage] = useState(1);
   // const [internalData, setInternalData] = useState<LeadItem[]>([]);
   // const [externalData, setExternalData] = useState<LeadItem[]>([]);
   const [internalHasMore, setInternalHasMore] = useState(true);
   const [externalHasMore, setExternalHasMore] = useState(true);
   const [internalLoading, setInternalLoading] = useState(false);
   const [externalLoading, setExternalLoading] = useState(false);
-
-  // 防抖函数
-  const debounce = (func: Function, wait: number) => {
-    let timeout: NodeJS.Timeout;
-    return function executedFunction(...args: any[]) {
-      const later = () => {
-        clearTimeout(timeout);
-        func(...args);
-      };
-      clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
-    };
-  };
-
-  // PC端获取内部数据
-  const fetchPcInternalData = async (page = 1) => {
-    // 防止重复请求
-    if (internalLoading) {
-      console.log("Internal request already in progress, skipping...");
-      return;
-    }
-
-    if (isMobile) {
-      setInternalLoading(true);
-    }
-    console.log(11111);
-
+  const fetchInternalData = async (page = 1) => {
+    setInternalLoading(true);
     try {
       // 构建筛选参数
       const params = new URLSearchParams({
         page: page.toString(),
-        pageSize: "10",
+        pageSize: "20",
       });
-      const saved = localStorage.getItem("salesLeadFilters");
-      console.log(saved);
-      if (saved) {
-        const { regions, people } = JSON.parse(saved);
-        if (regions.length > 0) {
-          params.append("regions", regions.join(","));
-        }
-        if (people.length > 0) {
-          params.append("people", people.join(","));
-        }
+
+      if (selectedRegions.length > 0) {
+        params.append("regions", selectedRegions.join(","));
       }
-      // 添加personIdParam和followedPersonIds筛选参数
-      if (personIdParam) {
-        params.append("person_id", personIdParam);
-      } else if (followedPersonIds && followedPersonIds.length > 0) {
-        params.append("person_ids", followedPersonIds.join(","));
+      if (selectedPeople.length > 0) {
+        params.append("people", selectedPeople.join(","));
       }
+
       const res = await axios.get(`/api/sales-lead?${params.toString()}`);
       const data = res.data.data || [];
-      console.log(data);
-
-      // 根据设备类型和页码处理数据
-      if (isMobile) {
-        // 手机端：第一页替换，后续页面追加
-        if (page === 1) {
-          setDuringTenureData(data);
-        } else {
-          setDuringTenureData((prev) => [...prev, ...data]);
-        }
-        setInternalHasMore(data.length === 10);
-      } else {
-        // PC端：总是替换数据（分页模式）
-        setDuringTenureData(data);
-      }
-
-      setPcInternalTotal(res.data.total || 0);
-    } catch (error) {
-      console.error("Error fetching internal data:", error);
-      // 请求失败时，重置hasMore状态，防止无限重试
-      if (isMobile) {
-        setInternalHasMore(false);
-      }
+      setDuringTenureData((prev) => (page === 1 ? data : [...prev, ...data]));
+      setInternalHasMore(data.length === 20);
     } finally {
-      if (isMobile) {
-        setInternalLoading(false);
-      }
+      setInternalLoading(false);
     }
   };
 
-  // PC端获取外部数据
-  const fetchPcExternalData = async (page = 1) => {
-    // 防止重复请求
-    if (externalLoading) {
-      console.log("External request already in progress, skipping...");
-      return;
-    }
+  const fetchExternalData = async (page = 1) => {
+    console.log(page);
 
-    if (isMobile) {
-      setExternalLoading(true);
-    }
+    setExternalLoading(true);
     try {
-      // 构建筛选参数
+      // 构建筛选参数（任外数据只支持地区筛选）
       const params = new URLSearchParams({
         page: page.toString(),
-        pageSize: "10",
+        pageSize: "20",
       });
 
-      const saved = localStorage.getItem("salesLeadFilters");
-      console.log(saved);
-      if (saved) {
-        const { regions, people } = JSON.parse(saved);
-        if (regions.length > 0) {
-          params.append("regions", regions.join(","));
-        }
-        // if (people.length > 0) {
-        //   params.append("people", people.join(","));
-        // }
+      if (selectedRegions.length > 0) {
+        params.append("regions", selectedRegions.join(","));
       }
+      // 任外数据不支持按人物筛选，所以不传递people参数
 
       const res = await axios.get(`/api/term?${params.toString()}`);
-      // const res = await axios.get(`/api/term?page=${page}&pageSize=10`);
       const data = res.data.data || [];
-      console.log("External data received:", data.length, "items");
-
-      // 根据设备类型和页码处理数据
-      if (isMobile) {
-        // 手机端：第一页替换，后续页面追加
-        if (page === 1) {
-          setOutsideTermData(data);
-        } else {
-          setOutsideTermData((prev) => [...prev, ...data]);
-        }
-        setExternalHasMore(data.length === 10);
-      } else {
-        // PC端：总是替换数据（分页模式）
-        setOutsideTermData(data);
-      }
-
-      setPcExternalTotal(res.data.total || 0);
-    } catch (error) {
-      console.error("Error fetching external data:", error);
-      // 请求失败时，重置hasMore状态，防止无限重试
-      if (isMobile) {
-        setExternalHasMore(false);
-      }
+      setOutsideTermData((prev) => (page === 1 ? data : [...prev, ...data]));
+      setExternalHasMore(data.length === 20);
     } finally {
-      if (isMobile) {
-        setExternalLoading(false);
-      }
+      setExternalLoading(false);
     }
   };
-
-  // 检查是否到达底部
-  const isNearBottom = () => {
-    const scrollTop = window.scrollY || document.documentElement.scrollTop;
-    const windowHeight = window.innerHeight;
-    const documentHeight = document.documentElement.scrollHeight;
-    return scrollTop + windowHeight >= documentHeight - 200; // 提前200px触发
-  };
-
   useEffect(() => {
     console.log("Active Tab Changed:", activeTab);
 
-    const handleScroll = debounce(() => {
-      // 只在手机端启用滚动加载
-      if (!isMobile) return;
-
-      // 检查是否到达底部
-      if (!isNearBottom()) return;
-
+    const handleScroll = () => {
       if (activeTab === "internal" && internalHasMore && !internalLoading) {
-        // 防止重复请求
-        setPcInternalPage((prevPage) => {
-          if (prevPage === pcInternalPage) {
-            return prevPage + 1;
-          }
-          return prevPage;
-        });
-      }
+        // 当有 personIdParam 或 followedPersonIds 时，不应该触发滚动加载
+        // 因为这些情况下使用的是筛选后的数据，而不是分页数据
+        if (
+          personIdParam ||
+          (followedPersonIds && followedPersonIds.length > 0)
+        ) {
+          return;
+        }
 
+        if (
+          window.innerHeight + window.scrollY >=
+          document.body.offsetHeight - 100
+        ) {
+          setInternalPage((p) => p + 1);
+        }
+      }
       if (activeTab === "external" && externalHasMore && !externalLoading) {
-        console.log("External Scroll Triggered", pcExternalPage);
+        console.log("External Scroll Triggered", externalPage);
 
-        // 防止重复请求
-        setPcExternalPage((prevPage) => {
-          if (prevPage === pcExternalPage) {
-            return prevPage + 1;
-          }
-          return prevPage;
-        });
+        if (
+          window.innerHeight + window.scrollY >=
+          document.body.offsetHeight - 100
+        ) {
+          setExternalPage((p) => p + 1);
+        }
       }
-    }, 200); // 200ms防抖
-
+    };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, [
@@ -387,52 +355,37 @@ function MainContent() {
     externalHasMore,
     internalLoading,
     externalLoading,
-    isMobile,
-    pcInternalPage,
-    pcExternalPage,
   ]);
+  useEffect(() => {
+    if (activeTab === "internal") {
+      // 避免在筛选条件恢复时重复请求
+      if (!hasInitialized.current || internalPage > 1) {
+        fetchInternalData(internalPage);
+      }
+    }
+  }, [internalPage, selectedRegions, selectedPeople, activeTab]);
 
   useEffect(() => {
-    // 防止在组件初始化时重复请求
-    if (!ready) return;
-    // 当页码变化时获取数据
-    if (activeTab === "internal") {
-      fetchPcInternalData(pcInternalPage);
-    }
     if (activeTab === "external") {
-      fetchPcExternalData(pcExternalPage);
+      // 避免在筛选条件恢复时重复请求
+      if (!hasInitialized.current || externalPage > 1) {
+        fetchExternalData(externalPage);
+      }
     }
-  }, [pcInternalPage, pcExternalPage, activeTab, ready]);
-
-  // 筛选条件变化时重置分页并重新获取数据
-  useEffect(() => {
-    if (!ready) return;
-
-    console.log("Filter conditions changed, resetting pagination...");
-
-    if (activeTab === "internal") {
-      setPcInternalPage(1);
-      setDuringTenureData([]);
-      setInternalHasMore(true);
-      // 立即获取新数据
-      setTimeout(() => fetchPcInternalData(1), 0);
-    } else {
-      setPcExternalPage(1);
-      setOutsideTermData([]);
-      setExternalHasMore(true);
-      // 立即获取新数据
-      setTimeout(() => fetchPcExternalData(1), 0);
-    }
-  }, [
-    selectedRegions,
-    selectedPeople,
-    personIdParam,
-    followedPersonIds,
-    activeTab,
-    ready,
-  ]);
+  }, [externalPage, selectedRegions, activeTab]);
+  // const listData = activeTab === "internal" ? internalData : externalData;
   const loading = activeTab === "internal" ? internalLoading : externalLoading;
   const hasMore = activeTab === "internal" ? internalHasMore : externalHasMore;
+  useEffect(() => {
+    if (activeTab === "internal" && duringTenureData.length === 0) {
+      setInternalPage(1);
+      fetchInternalData(1);
+    }
+    if (activeTab === "external" && outsideTermData.length === 0) {
+      setExternalPage(1);
+      fetchExternalData(1);
+    }
+  }, [activeTab]);
   const getSelectData = async () => {
     try {
       const response = await axios.get("api/sales-lead/region");
@@ -459,6 +412,19 @@ function MainContent() {
       console.log("请求失败:", error);
     }
   };
+  // const filteredItems = useMemo(() => {
+  //   let items = mockLeadsData.filter((item) => item.type === activeTab);
+
+  //   if (selectedRegions.length > 0) {
+  //     items = items.filter((item) => selectedRegions.includes(item.regionId));
+  //   }
+
+  //   if (selectedPeople.length > 0) {
+  //     items = items.filter((item) => selectedPeople.includes(item.personId));
+  //   }
+
+  //   return items;
+  // }, [activeTab, selectedRegions, selectedPeople]);
 
   const handleItemClick = (item: LeadItem) => {
     if (item.person_name) {
@@ -467,6 +433,15 @@ function MainContent() {
       router.push(`/leads/detail-external/${item.news_id}`);
     }
   };
+
+  // const loadMore = () => {
+  //   setLoading(true);
+  //   setTimeout(() => {
+  //     setLoading(false);
+  //     setHasMore(false);
+  //   }, 1000);
+  // };
+
   const clearFilters = () => {
     setSelectedRegions([]);
     setSelectedPeople([]);
@@ -474,97 +449,83 @@ function MainContent() {
     // 清除localStorage中的筛选条件
     localStorage.removeItem("salesLeadFilters");
 
+    // 重置初始化标志
+    hasInitialized.current = false;
+
     // 重置分页状态
     if (activeTab === "internal") {
-      setPcInternalPage(1);
+      setInternalPage(1);
       setDuringTenureData([]);
-      setInternalHasMore(true);
     } else {
-      setPcExternalPage(1);
+      setExternalPage(1);
       setOutsideTermData([]);
-      setExternalHasMore(true);
     }
   };
+
   const handleRegionChange = (regionId: string, checked: boolean) => {
     console.log("Region Change:", regionId, checked);
-    console.log(selectedRegions);
-    const saved = localStorage.getItem("salesLeadFilters");
-    console.log(saved);
 
-    if (saved) {
-      const { regions, people } = JSON.parse(saved);
-      let newRegions = [];
-      if (checked) {
-        newRegions = [...regions, regionId];
-      } else {
-        newRegions = regions.filter((r: string) => r !== regionId);
-      }
-      setSelectedRegions(newRegions);
-      localStorage.setItem(
-        "salesLeadFilters",
-        JSON.stringify({
-          regions: newRegions,
-          people: people,
-        })
-      );
+    if (checked) {
+      setSelectedRegions([...selectedRegions, regionId]);
     } else {
-      setSelectedRegions([regionId]);
-      localStorage.setItem(
-        "salesLeadFilters",
-        JSON.stringify({
-          regions: [regionId],
-          people: [],
-        })
-      );
+      setSelectedRegions(selectedRegions.filter((r) => r !== regionId));
     }
+
+    // 重置初始化标志
+    hasInitialized.current = false;
 
     // 重置分页状态
     if (activeTab === "internal") {
-      setPcInternalPage(1);
+      setInternalPage(1);
       setDuringTenureData([]);
     } else {
-      setPcExternalPage(1);
+      setExternalPage(1);
       setOutsideTermData([]);
     }
   };
 
   const handlePersonChange = (personId: string) => {
-    const newPeople = selectedPeople.includes(personId)
-      ? selectedPeople.filter((p) => p !== personId)
-      : [...selectedPeople, personId];
-
-    setSelectedPeople(newPeople);
-
-    // 保存到localStorage
-    localStorage.setItem(
-      "salesLeadFilters",
-      JSON.stringify({
-        regions: selectedRegions,
-        people: newPeople,
-      })
+    setSelectedPeople(
+      selectedPeople.includes(personId)
+        ? selectedPeople.filter((p) => p !== personId)
+        : [...selectedPeople, personId]
     );
+
+    // 重置初始化标志
+    hasInitialized.current = false;
 
     // 重置分页状态（只有任内数据支持按人物筛选）
     if (activeTab === "internal") {
-      setPcInternalPage(1);
+      setInternalPage(1);
       setDuringTenureData([]);
     }
     // 任外数据不支持按人物筛选，所以不需要重置
-  };
-
-  // PC端分页处理函数
-  const handlePcInternalPageChange = (page: number) => {
-    setPcInternalPage(page);
-  };
-
-  const handlePcExternalPageChange = (page: number) => {
-    setPcExternalPage(page);
   };
 
   if (!ready) {
     // SSR和客户端初次渲染时都渲染空内容，避免hydration mismatch
     return <div />;
   }
+  // 监听滚动到底部
+  // useEffect(() => {
+  //   const handleScroll = () => {
+  //     if (!listRef.current || loading || !hasMore) return;
+  //     const { scrollTop, scrollHeight, clientHeight } =
+  //       document.documentElement;
+  //     if (scrollTop + clientHeight >= scrollHeight - 100) {
+  //       setPage((prev) => prev + 1);
+  //     }
+  //   };
+  //   window.addEventListener("scroll", handleScroll);
+  //   return () => window.removeEventListener("scroll", handleScroll);
+  // }, [loading, hasMore]);
+
+  // 加载下一页
+  // useEffect(() => {
+  //   if (page === 1) return;
+  //   fetchData(page);
+  // }, [page]);
+
   return (
     <div className="min-h-screen bg-white">
       {/* Apple风格顶部导航 */}
@@ -580,7 +541,8 @@ function MainContent() {
               whileTap={{ scale: 0.95 }}
               onClick={() => {
                 router.back();
-                localStorage.removeItem("salesLeadFilters");
+                // 不再自动清除筛选条件，让用户手动清除
+                // localStorage.removeItem("salesLeadFilters");
               }}
               className="p-2 rounded-xl hover:bg-white/30 transition-all duration-200"
             >
@@ -931,37 +893,31 @@ function MainContent() {
             </motion.div>
           )}
 
-          {/* PC端分页组件 */}
-          {!isMobile && (
-            <div className="flex justify-center my-8">
-              <Pagination
-                current={
-                  activeTab === "internal" ? pcInternalPage : pcExternalPage
-                }
-                total={
-                  activeTab === "internal" ? pcInternalTotal : pcExternalTotal
-                }
-                pageSize={10}
-                onChange={
-                  activeTab === "internal"
-                    ? handlePcInternalPageChange
-                    : handlePcExternalPageChange
-                }
-                showSizeChanger={false}
-                showQuickJumper
-                showTotal={(total, range) =>
-                  `第 ${range[0]}-${range[1]} 条，共 ${total} 条`
-                }
-                className="ant-pagination-custom"
-              />
-            </div>
-          )}
-
-          {/* 手机端滚动加载提示 */}
-          {isMobile && loading && (
-            <div className="text-center pb-6">加载中...</div>
-          )}
-          {isMobile && !hasMore && filteredData.length > 0 && (
+          {/* {hasMore && filteredData.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center my-8"
+            >
+              <Button
+                variant="ghost"
+                className="bg-white border border-gray-200 shadow-sm rounded-lg font-light"
+                onClick={loadMore}
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    加载中...
+                  </>
+                ) : (
+                  "加载更多"
+                )}
+              </Button>
+            </motion.div>
+          )} */}
+          {loading && <div className="text-center pb-6">加载中...</div>}
+          {!hasMore && (
             <div className="text-center pb-6 text-gray-400">没有更多了</div>
           )}
         </div>

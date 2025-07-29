@@ -8,11 +8,45 @@ export async function GET(request: Request) {
     const skip = (page - 1) * pageSize;
     const take = pageSize;
 
-    // 查询总数
-    const total = await prisma.key_person_news.count();
+    // 获取筛选参数
+    const regionsParam = searchParams.get("regions");
+    const peopleParam = searchParams.get("people");
+    const personIdParam = searchParams.get("person_id");
+    const personIdsParam = searchParams.get("person_ids");
 
-    // 分页查询
+    const regions = regionsParam ? regionsParam.split(",") : [];
+    const people = peopleParam ? peopleParam.split(",") : [];
+    const personIds = personIdsParam ? personIdsParam.split(",") : [];
+
+    // 构建筛选条件
+    const whereConditions: any = {};
+
+    // 如果有地区筛选条件
+    if (regions.length > 0) {
+      whereConditions.OR = [
+        { news_province_code: { in: regions } },
+        { news_city_code: { in: regions } },
+        { news_district_code: { in: regions } },
+      ];
+    }
+
+    // 如果有人物筛选条件（优先级：person_id > person_ids > people）
+    if (personIdParam) {
+      whereConditions.person_id = personIdParam;
+    } else if (personIds.length > 0) {
+      whereConditions.person_id = { in: personIds };
+    } else if (people.length > 0) {
+      whereConditions.person_id = { in: people };
+    }
+
+    // 查询总数（应用筛选条件）
+    const total = await prisma.key_person_news.count({
+      where: whereConditions,
+    });
+
+    // 分页查询（应用筛选条件）
     const news = await prisma.key_person_news.findMany({
+      where: whereConditions,
       skip,
       take,
       orderBy: {
