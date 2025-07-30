@@ -6,7 +6,16 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "next lint",
-    "start": "next start"
+    "start": "next start",
+    "start:prod": "NODE_ENV=production next start -p 3002",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:stop": "pm2 stop all",
+    "pm2:restart": "pm2 restart all",
+    "pm2:delete": "pm2 delete all",
+    "pm2:logs": "pm2 logs",
+    "pm2:monit": "pm2 monit",
+    "test:load": "npm run build && npm run pm2:start",
+    "clean": "rm -rf .next && rm -rf logs"
   },
   "dependencies": {
     "@ant-design/nextjs-registry": "^1.0.2",

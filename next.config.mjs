@@ -11,12 +11,40 @@ const nextConfig = {
   },
   devIndicators: false,
   output: "standalone", // 添加 standalone 输出模式配置
-  // distDir: 'next', 
-  // allowedDevOrigins: [ //本地测试使用允许跨域使用
-  //   '192.168.30.117',
-  //   'localhost',
-  //   '127.0.0.1'
-  // ],
+  
+  // 优化服务器配置
+  experimental: {
+    // 优化内存使用
+  },
+  
+  // 优化API路由
+  async headers() {
+    return [
+      {
+        source: '/api/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=300, s-maxage=300', // 5分钟缓存
+          },
+          {
+            key: 'X-Response-Time',
+            value: 'true',
+          },
+        ],
+      },
+    ];
+  },
+  
+  // 允许跨域（本地测试用）
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: '/api/:path*',
+      },
+    ];
+  },
 }
 
-export default nextConfig
+export default nextConfig;
