@@ -923,7 +923,7 @@ function MainContent() {
     <div className="min-h-screen bg-gray-50">
       {/* 顶部导航 */}
       <header className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="w-full px-2 pl-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
             {!isFromWxShare && (
               <Button
@@ -946,7 +946,7 @@ function MainContent() {
       </header>
 
       {/* 主体内容 */}
-      <main className="w-full px-2 sm:max-w-7xl sm:mx-auto sm:px-6 py-4 sm:py-8">
+      <main className="w-full px-2 py-4 sm:py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* 左侧筛选面板 */}
           <div className="w-full sm:lg:col-span-1 mb-4 sm:mb-0">

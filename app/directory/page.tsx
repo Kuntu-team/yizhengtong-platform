@@ -651,7 +651,7 @@ export default function DirectoryPage() {
         animate={{ opacity: 1, y: 0 }}
         className="bg-white border-b border-gray-200 sticky top-0 z-50"
       >
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="w-full px-2 pl-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -668,7 +668,7 @@ export default function DirectoryPage() {
 
       {/* Tab切换 */}
       <div className="bg-white border-b border-gray-200 sticky top-16 z-40">
-        <div className="max-w-7xl mx-auto px-6 py-3">
+        <div className="w-full px-2 py-3">
           <div className="flex items-center justify-between">
             <Tabs
               value={activeTab}
@@ -829,7 +829,7 @@ export default function DirectoryPage() {
       </div>
 
       {/* 主体内容 */}
-      <main className="max-w-7xl mx-auto px-2 sm:px-6 py-2 sm:py-4">
+      <main className="w-full px-2 py-2 sm:py-4">
         {isLoading ? (
           <div className="text-center py-12">加载中...</div>
         ) : (

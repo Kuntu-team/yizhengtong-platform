@@ -28,3 +28,15 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 /lib/generated/prisma
+
+# serena
+.serena/
+
+# logs
+/logs/
+*.log
+
+# test files (optional - uncomment if you don't want to commit test files)
+# *.jmx
+# test-users.csv
+# jmeter-*-compatible.jmx
