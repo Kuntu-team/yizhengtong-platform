@@ -218,8 +218,6 @@ function MainContent() {
     if (isMobile) {
       setInternalLoading(true);
     }
-    console.log(11111);
-
     try {
       // 构建筛选参数
       const params = new URLSearchParams({

@@ -744,7 +744,9 @@ export default function DetailPage({
                     <div className="flex items-center gap-1">
                       <span>发布时间：</span>
                       <span className="font-medium">
-                        {getTimeAgo(newsData.news_time)}
+                        {newsData.news_time
+                          ? getTimeAgo(newsData.news_time)
+                          : "未知时间"}
                       </span>
                     </div>
                   </div>
