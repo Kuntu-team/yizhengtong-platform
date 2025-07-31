@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,38 @@ import { AppLayout } from "@/components/app-layout";
 import { FileText, Settings, ChevronLeft } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Pagination } from "antd";
+
+// 检测设备类型的hook
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkIsMobile();
+    window.addEventListener("resize", checkIsMobile);
+
+    return () => window.removeEventListener("resize", checkIsMobile);
+  }, []);
+
+  return isMobile;
+};
+
+// 防抖函数
+const debounce = (func: Function, wait: number) => {
+  let timeout: NodeJS.Timeout;
+  return function executedFunction(...args: any[]) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+};
 
 interface Policy {
   id: string;
@@ -582,15 +614,25 @@ function InterestsManagementSheet({
 
 export default function PoliciesPage() {
   const router = useRouter();
+  const isMobile = useIsMobile();
+  
   const [allPolicyIds, setAllPolicyIds] = useState<any[]>([]);
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [page, setPage] = useState(1);
-  const pageSize = 30;
+  const pageSize = 10; // 改为10，与leads页面保持一致
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
   const [showInterestsManagement, setShowInterestsManagement] = useState(false);
+
+  // PC端分页相关状态
+  const [pcPage, setPcPage] = useState(1);
+  const [pcTotal, setPcTotal] = useState(0);
+  const [pcLoading, setPcLoading] = useState(false);
+  
+  // 缓存已加载的政策数据，避免重复请求
+  const [policyCache, setPolicyCache] = useState<Map<string, PolicyWithRn>>(new Map());
 
   const [filters, setFilters] = useState({
     timeRange: "all",
@@ -633,8 +675,15 @@ export default function PoliciesPage() {
       .then(async (data) => {
         if (data.success && Array.isArray(data.data)) {
           setAllPolicyIds(data.data);
-          // 只加载第一页
-          await loadPolicies(data.data, 1, true);
+          setPcTotal(data.data.length);
+          // 根据设备类型加载数据，避免重复请求
+          if (isMobile) {
+            // 手机端：只加载第一页
+            await loadPolicies(data.data, 1, true);
+          } else {
+            // PC端：加载第一页
+            await loadPcPolicies(data.data, 1);
+          }
         } else {
           setPolicies([]);
           setAllPolicyIds([]);
@@ -642,10 +691,87 @@ export default function PoliciesPage() {
         }
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [isMobile]);
 
-  // 加载 policies 分页
-  const loadPolicies = async (
+  // PC端加载 policies 分页
+  const loadPcPolicies = useCallback(async (ids: any[], pageToLoad: number) => {
+    if (!ids || ids.length === 0) return;
+    setPcLoading(true);
+    const start = (pageToLoad - 1) * pageSize;
+    const end = start + pageSize;
+    const currentIds = ids.slice(start, end);
+    
+    try {
+      // 检查缓存，只请求未缓存的数据
+      const uncachedIds = currentIds.filter(policy => !policyCache.has(policy.policy_id));
+      const cachedPolicies: PolicyWithRn[] = [];
+      
+      // 从缓存中获取已存在的数据
+      currentIds.forEach(policy => {
+        const cached = policyCache.get(policy.policy_id);
+        if (cached) {
+          cachedPolicies.push({ ...cached, rn: policy.rn });
+        }
+      });
+      
+      // 只请求未缓存的数据
+      let detailResults: any[] = [];
+      if (uncachedIds.length > 0) {
+        detailResults = await Promise.all(
+          uncachedIds.map((policy: any) =>
+            fetch(`/api/policies/${policy.policy_id}`)
+              .then((res) => res.json())
+              .then((d) => ({ ...d, rn: policy.rn }))
+          )
+        );
+      }
+      
+      // 处理新获取的数据
+      const newPolicies: PolicyWithRn[] = detailResults
+        .filter((d) => d.success && d.data)
+        .map((d) => {
+          const item = d.data;
+          let status: "pending" | "completed" = "completed";
+          if (item.status === "pending" || item.status === "completed") {
+            status = item.status;
+          }
+          const policy: PolicyWithRn = {
+            id: item.policy_id,
+            title: item.policy_title || "-",
+            source: item.issued_authority || "-",
+            publishDate: item.released_date
+              ? new Date(item.released_date)
+              : new Date(),
+            timeAgo: "",
+            status,
+            matchedProjects: 0,
+            unread: false,
+            category: item.category_name || "other",
+            salesPitch: item.body_content
+              ? extractTextSummary(item.body_content, 120, item.policy_title)
+              : "-",
+            rn: d.rn, // 保留 rn 字段
+          };
+          
+          // 更新缓存
+          setPolicyCache(prev => new Map(prev).set(item.policy_id, policy));
+          return policy;
+        });
+      
+      // 合并缓存和新数据
+      const allPolicies = [...cachedPolicies, ...newPolicies];
+      
+      // PC端总是替换数据（分页模式）
+      setPolicies(allPolicies);
+    } catch (error) {
+      console.error('加载政策数据失败:', error);
+    } finally {
+      setPcLoading(false);
+    }
+  }, [policyCache, pageSize, setPolicyCache, setPolicies, setPcLoading]);
+
+  // 移动端加载 policies 分页（无限滚动）
+  const loadPolicies = useCallback(async (
     ids: any[],
     pageToLoad: number,
     replace = false
@@ -655,75 +781,110 @@ export default function PoliciesPage() {
     const start = (pageToLoad - 1) * pageSize;
     const end = start + pageSize;
     const currentIds = ids.slice(start, end);
-    // 传递 rn 字段到详情
-    const detailResults: any[] = await Promise.all(
-      currentIds.map((policy: any) =>
-        fetch(`/api/policies/${policy.policy_id}`)
-          .then((res) => res.json())
-          .then((d) => ({ ...d, rn: policy.rn }))
-      )
-    );
-    // 合并 rn 字段
-    const mapped: PolicyWithRn[] = detailResults
-      .filter((d) => d.success && d.data)
-      .map((d) => {
-        const item = d.data;
-        let status: "pending" | "completed" = "completed";
-        if (item.status === "pending" || item.status === "completed") {
-          status = item.status;
-        }
-        return {
-          id: item.policy_id,
-          title: item.policy_title || "-",
-          source: item.issued_authority || "-",
-          publishDate: item.released_date
-            ? new Date(item.released_date)
-            : new Date(),
-          timeAgo: "",
-          status,
-          matchedProjects: 0,
-          unread: false,
-          category: item.category_name || "other",
-          salesPitch: item.body_content
-            ? extractTextSummary(item.body_content, 120, item.policy_title)
-            : "-",
-          rn: d.rn, // 保留 rn 字段
-        };
-      });
-    // 按 rn 升序排序并去重
-    setPolicies((prev) => {
-      const all = replace ? mapped : [...prev, ...mapped];
-      const uniqueMap = new Map<string, PolicyWithRn>();
-      all.forEach((item) => {
-        if (!uniqueMap.has(item.id)) {
-          uniqueMap.set(item.id, item);
+    
+    try {
+      // 检查缓存，只请求未缓存的数据
+      const uncachedIds = currentIds.filter(policy => !policyCache.has(policy.policy_id));
+      const cachedPolicies: PolicyWithRn[] = [];
+      
+      // 从缓存中获取已存在的数据
+      currentIds.forEach(policy => {
+        const cached = policyCache.get(policy.policy_id);
+        if (cached) {
+          cachedPolicies.push({ ...cached, rn: policy.rn });
         }
       });
-      return Array.from(uniqueMap.values()).sort(
-        (a, b) => (a.rn ?? 0) - (b.rn ?? 0)
-      );
-    });
-    setHasMore(end < ids.length);
-    setPage(pageToLoad + 1);
-    setLoadingMore(false);
-  };
-
-  // 无限滚动监听
-  useEffect(() => {
-    const handleScroll = () => {
-      if (
-        window.innerHeight + document.documentElement.scrollTop + 400 >=
-        document.documentElement.offsetHeight
-      ) {
-        if (hasMore && !loading && !loadingMore) {
-          setLoadingMore(true); // 立即设置，提升loading提示响应
-          loadPolicies(allPolicyIds, page);
-        }
+      
+      // 只请求未缓存的数据
+      let detailResults: any[] = [];
+      if (uncachedIds.length > 0) {
+        detailResults = await Promise.all(
+          uncachedIds.map((policy: any) =>
+            fetch(`/api/policies/${policy.policy_id}`)
+              .then((res) => res.json())
+              .then((d) => ({ ...d, rn: policy.rn }))
+          )
+        );
       }
-    };
+      
+      // 处理新获取的数据
+      const newPolicies: PolicyWithRn[] = detailResults
+        .filter((d) => d.success && d.data)
+        .map((d) => {
+          const item = d.data;
+          let status: "pending" | "completed" = "completed";
+          if (item.status === "pending" || item.status === "completed") {
+            status = item.status;
+          }
+          const policy: PolicyWithRn = {
+            id: item.policy_id,
+            title: item.policy_title || "-",
+            source: item.issued_authority || "-",
+            publishDate: item.released_date
+              ? new Date(item.released_date)
+              : new Date(),
+            timeAgo: "",
+            status,
+            matchedProjects: 0,
+            unread: false,
+            category: item.category_name || "other",
+            salesPitch: item.body_content
+              ? extractTextSummary(item.body_content, 120, item.policy_title)
+              : "-",
+            rn: d.rn, // 保留 rn 字段
+          };
+          
+          // 更新缓存
+          setPolicyCache(prev => new Map(prev).set(item.policy_id, policy));
+          return policy;
+        });
+      
+      // 合并缓存和新数据
+      const allPolicies = [...cachedPolicies, ...newPolicies];
+      
+      // 手机端：第一页替换，后续页面追加
+      setPolicies((prev) => {
+        const all = replace ? allPolicies : [...prev, ...allPolicies];
+        const uniqueMap = new Map<string, PolicyWithRn>();
+        all.forEach((item) => {
+          if (!uniqueMap.has(item.id)) {
+            uniqueMap.set(item.id, item);
+          }
+        });
+        return Array.from(uniqueMap.values()).sort(
+          (a, b) => (a.rn ?? 0) - (b.rn ?? 0)
+        );
+      });
+      setHasMore(end < ids.length);
+      setPage(pageToLoad + 1);
+    } catch (error) {
+      console.error('加载政策数据失败:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [policyCache, pageSize, setPolicyCache, setPolicies, setHasMore, setPage, setLoadingMore]);
+
+  // 无限滚动监听（只在移动端启用）
+  useEffect(() => {
+    const handleScroll = debounce(() => {
+      // 只在手机端启用滚动加载
+      if (!isMobile) return;
+
+      // 检查是否到达底部
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      const isNearBottom = scrollTop + windowHeight >= documentHeight - 200; // 提前200px触发
+
+      if (isNearBottom && hasMore && !loading && !loadingMore) {
+        setLoadingMore(true); // 立即设置，提升loading提示响应
+        loadPolicies(allPolicyIds, page);
+      }
+    }, 200); // 200ms防抖
+
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [hasMore, loading, loadingMore, allPolicyIds, page]);
+  }, [hasMore, loading, loadingMore, allPolicyIds, page, isMobile, loadPolicies]);
 
   const filteredPolicies = useMemo(() => {
     let filtered = [...policies];
@@ -752,6 +913,32 @@ export default function PoliciesPage() {
     }
     return filtered;
   }, [policies, filters]);
+
+  // 筛选条件变化时重置分页状态和清理缓存
+  useEffect(() => {
+    // 清理缓存，避免筛选后显示旧数据
+    setPolicyCache(new Map());
+    
+    if (isMobile) {
+      setPage(1);
+      setHasMore(true);
+    } else {
+      setPcPage(1);
+    }
+  }, [filters, isMobile]);
+
+  // PC端分页处理函数
+  const handlePcPageChange = (page: number) => {
+    setPcPage(page);
+  };
+
+  // PC端页码变化时获取数据
+  useEffect(() => {
+    if (!isMobile && allPolicyIds.length > 0 && pcPage > 1) {
+      // 避免初始加载时的重复请求，只有页码变化时才重新加载
+      loadPcPolicies(allPolicyIds, pcPage);
+    }
+  }, [pcPage, allPolicyIds, isMobile, loadPcPolicies]);
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
@@ -793,7 +980,7 @@ export default function PoliciesPage() {
             >
               <div className="space-y-2 sm:space-y-3">
                 <AnimatePresence>
-                  {loading
+                  {(loading || pcLoading)
                     ? Array.from({ length: 5 }, (_, idx) => idx).map((idx) => (
                         <div
                           key={idx}
@@ -827,30 +1014,30 @@ export default function PoliciesPage() {
             transition={{ delay: 0.2 }}
           >
             <div className="space-y-2 sm:space-y-3">
-              <AnimatePresence>
-                {loading && policies.length === 0
-                  ? Array.from({ length: 5 }, (_, idx) => idx).map((idx) => (
-                      <div
-                        key={idx}
-                        className="bg-white border border-gray-200 shadow-sm rounded-lg p-3 sm:p-4"
-                      >
-                        <Skeleton className="h-5 sm:h-6 w-2/3 mb-3 sm:mb-4" />
-                        <Skeleton className="h-3 sm:h-4 w-1/3 mb-2" />
-                        <Skeleton className="h-3 sm:h-4 w-1/4 mb-2" />
-                        <Skeleton className="h-3 sm:h-4 w-full mb-2" />
-                        <Skeleton className="h-3 sm:h-4 w-5/6" />
-                      </div>
-                    ))
-                  : filteredPolicies.map((policy, index) => (
-                      <motion.div
-                        key={policy.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                      >
-                        <PolicyCard policy={policy} />
-                      </motion.div>
-                    ))}
+                              <AnimatePresence>
+                  {(loading || pcLoading) && policies.length === 0
+                    ? Array.from({ length: 5 }, (_, idx) => idx).map((idx) => (
+                        <div
+                          key={idx}
+                          className="bg-white border border-gray-200 shadow-sm rounded-lg p-3 sm:p-4"
+                        >
+                          <Skeleton className="h-5 sm:h-6 w-2/3 mb-3 sm:mb-4" />
+                          <Skeleton className="h-3 sm:h-4 w-1/3 mb-2" />
+                          <Skeleton className="h-3 sm:h-4 w-1/4 mb-2" />
+                          <Skeleton className="h-3 sm:h-4 w-full mb-2" />
+                          <Skeleton className="h-3 sm:h-4 w-5/6" />
+                        </div>
+                      ))
+                    : filteredPolicies.map((policy, index) => (
+                        <motion.div
+                          key={policy.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                        >
+                          <PolicyCard policy={policy} />
+                        </motion.div>
+                      ))}
                 {/* 加载更多loading指示器/底部提示区 */}
                 <div style={{ minHeight: 48 }}>
                   {loadingMore && hasMore ? (
@@ -889,8 +1076,34 @@ export default function PoliciesPage() {
               </AnimatePresence>
             </div>
           </motion.div>
+          {/* PC端分页组件 */}
+          {!isMobile && !loading && !pcLoading && filteredPolicies.length > 0 && (
+            <div className="flex justify-center my-8">
+              <Pagination
+                current={pcPage}
+                total={pcTotal}
+                pageSize={pageSize}
+                onChange={handlePcPageChange}
+                showSizeChanger={false}
+                showQuickJumper
+                showTotal={(total, range) =>
+                  `第 ${range[0]}-${range[1]} 条，共 ${total} 条`
+                }
+                className="ant-pagination-custom"
+              />
+            </div>
+          )}
+
+          {/* 手机端滚动加载提示 */}
+          {isMobile && loadingMore && hasMore && (
+            <div className="text-center pb-6">加载中...</div>
+          )}
+          {isMobile && !hasMore && filteredPolicies.length > 0 && (
+            <div className="text-center pb-6 text-gray-400">没有更多了</div>
+          )}
+
           {/* 空状态 */}
-          {!loading && filteredPolicies.length === 0 && (
+          {!loading && !pcLoading && filteredPolicies.length === 0 && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
