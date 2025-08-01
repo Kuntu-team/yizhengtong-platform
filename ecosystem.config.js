@@ -18,13 +18,14 @@ module.exports = {
   apps: [
     {
       name: 'yizhengtong-platform',
-      script: 'node_modules/next/dist/bin/next',
-      args: 'start',
+      script: 'server.js',
+      args: '',
+      cwd: './',
       instances: 'max',
       exec_mode: 'cluster',
       env: {
         NODE_ENV: 'production',
-        PORT: 3002,
+        PORT: 3000,
         NODE_OPTIONS: '--max-old-space-size=4096 --max-semi-space-size=512',
         CACHE_ENABLED: 'true',
       },
