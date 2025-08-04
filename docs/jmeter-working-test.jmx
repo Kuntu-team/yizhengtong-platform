@@ -12,7 +12,32 @@
       <stringProp name="TestPlan.user_define_classpath"></stringProp>
     </TestPlan>
     <hashTree>
-      <ConfigTestElement guiclass="HttpDefaultsGui" testclass="ConfigTestElement" testname="HTTP请求默认值">
+      <Arguments guiclass="ArgumentsPanel" testclass="Arguments" testname="JMeter属性配置">
+        <collectionProp name="Arguments.arguments">
+          <elementProp name="jmeter.save.saveservice.response_data" elementType="Argument">
+            <stringProp name="Argument.name">jmeter.save.saveservice.response_data</stringProp>
+            <stringProp name="Argument.value">true</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+          <elementProp name="jmeter.save.saveservice.samplerData" elementType="Argument">
+            <stringProp name="Argument.name">jmeter.save.saveservice.samplerData</stringProp>
+            <stringProp name="Argument.value">true</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+          <elementProp name="jmeter.save.saveservice.requestHeaders" elementType="Argument">
+            <stringProp name="Argument.name">jmeter.save.saveservice.requestHeaders</stringProp>
+            <stringProp name="Argument.value">true</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+          <elementProp name="jmeter.save.saveservice.responseHeaders" elementType="Argument">
+            <stringProp name="Argument.name">jmeter.save.saveservice.responseHeaders</stringProp>
+            <stringProp name="Argument.value">true</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+        </collectionProp>
+      </Arguments>
+      <hashTree/>
+      <ConfigTestElement guiclass="HttpDefaultsGui" testclass="ConfigTestElement" testname="HTTP请求默认值" enabled="true">
         <stringProp name="HTTPSampler.domain">yzt.ktt.team</stringProp>
         <stringProp name="HTTPSampler.protocol">https</stringProp>
         <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="用户定义的变量">
@@ -21,7 +46,7 @@
         <stringProp name="HTTPSampler.implementation"></stringProp>
       </ConfigTestElement>
       <hashTree/>
-      <CSVDataSet guiclass="TestBeanGUI" testclass="CSVDataSet" testname="用户数据文件">
+      <CSVDataSet guiclass="TestBeanGUI" testclass="CSVDataSet" testname="用户数据文件" enabled="true">
         <stringProp name="delimiter">,</stringProp>
         <stringProp name="fileEncoding">UTF-8</stringProp>
         <stringProp name="filename">C:/Users/15031/Desktop/yizhengtong-platform/docs/test-users.csv</stringProp>
@@ -34,9 +59,9 @@
       </CSVDataSet>
       <hashTree/>
       <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="测试线程组">
-        <intProp name="ThreadGroup.num_threads">5000</intProp>
-        <intProp name="ThreadGroup.ramp_time">120</intProp>
-        <longProp name="ThreadGroup.duration">300</longProp>
+        <intProp name="ThreadGroup.num_threads">10</intProp>
+        <intProp name="ThreadGroup.ramp_time">1</intProp>
+        <longProp name="ThreadGroup.duration">3</longProp>
         <longProp name="ThreadGroup.delay">0</longProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
         <boolProp name="ThreadGroup.scheduler">true</boolProp>
@@ -47,7 +72,7 @@
         </elementProp>
       </ThreadGroup>
       <hashTree>
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="登录请求">
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="登录请求" enabled="false">
           <stringProp name="HTTPSampler.path">/api/login</stringProp>
           <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
           <stringProp name="HTTPSampler.method">POST</stringProp>
@@ -67,7 +92,7 @@
           </elementProp>
         </HTTPSamplerProxy>
         <hashTree>
-          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP信息头管理器">
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP信息头管理器" enabled="true">
             <collectionProp name="HeaderManager.headers">
               <elementProp name="" elementType="Header">
                 <stringProp name="Header.name">Content-Type</stringProp>
@@ -77,13 +102,13 @@
           </HeaderManager>
           <hashTree/>
         </hashTree>
-        <CookieManager guiclass="CookiePanel" testclass="CookieManager" testname="HTTP Cookie管理器">
+        <CookieManager guiclass="CookiePanel" testclass="CookieManager" testname="HTTP Cookie管理器" enabled="true">
           <collectionProp name="CookieManager.cookies"/>
           <boolProp name="CookieManager.clearEachIteration">false</boolProp>
           <boolProp name="CookieManager.controlledByThreadGroup">false</boolProp>
         </CookieManager>
         <hashTree/>
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="主页面请求">
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="主页面请求" enabled="false">
           <stringProp name="HTTPSampler.path">/</stringProp>
           <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
           <stringProp name="HTTPSampler.method">GET</stringProp>
@@ -94,7 +119,7 @@
           </elementProp>
         </HTTPSamplerProxy>
         <hashTree>
-          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="响应断言">
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="响应断言" enabled="true">
             <collectionProp name="Asserion.test_strings">
               <stringProp name="20213178">亿政通</stringProp>
             </collectionProp>
@@ -105,6 +130,17 @@
           </ResponseAssertion>
           <hashTree/>
         </hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="关键人物获取">
+          <stringProp name="HTTPSampler.path">/api/key-persons?businessPersonId=e7558fb6-234c-475d-82b9-79db46840389&amp;page=1&amp;pageSize=30</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="用户定义的变量">
+            <collectionProp name="Arguments.arguments"/>
+          </elementProp>
+        </HTTPSamplerProxy>
+        <hashTree/>
         <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="查看结果树">
           <boolProp name="ResultCollector.error_logging">false</boolProp>
           <objProp>
@@ -122,13 +158,13 @@
               <encoding>false</encoding>
               <assertions>true</assertions>
               <subresults>true</subresults>
-              <responseData>false</responseData>
-              <samplerData>false</samplerData>
+              <responseData>true</responseData>
+              <samplerData>true</samplerData>
               <xml>false</xml>
               <fieldNames>true</fieldNames>
-              <responseHeaders>false</responseHeaders>
-              <requestHeaders>false</requestHeaders>
-              <responseDataOnError>false</responseDataOnError>
+              <responseHeaders>true</responseHeaders>
+              <requestHeaders>true</requestHeaders>
+              <responseDataOnError>true</responseDataOnError>
               <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
               <assertionsResultsToSave>0</assertionsResultsToSave>
               <bytes>true</bytes>
@@ -142,7 +178,7 @@
           <stringProp name="filename"></stringProp>
         </ResultCollector>
         <hashTree/>
-        <ResultCollector guiclass="SummaryReport" testclass="ResultCollector" testname="汇总报告">
+        <ResultCollector guiclass="SummaryReport" testclass="ResultCollector" testname="汇总报告" enabled="false">
           <boolProp name="ResultCollector.error_logging">false</boolProp>
           <objProp>
             <name>saveConfig</name>
@@ -159,13 +195,13 @@
               <encoding>false</encoding>
               <assertions>true</assertions>
               <subresults>true</subresults>
-              <responseData>false</responseData>
-              <samplerData>false</samplerData>
+              <responseData>true</responseData>
+              <samplerData>true</samplerData>
               <xml>false</xml>
               <fieldNames>true</fieldNames>
-              <responseHeaders>false</responseHeaders>
-              <requestHeaders>false</requestHeaders>
-              <responseDataOnError>false</responseDataOnError>
+              <responseHeaders>true</responseHeaders>
+              <requestHeaders>true</requestHeaders>
+              <responseDataOnError>true</responseDataOnError>
               <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
               <assertionsResultsToSave>0</assertionsResultsToSave>
               <bytes>true</bytes>
@@ -176,10 +212,10 @@
               <connectTime>true</connectTime>
             </value>
           </objProp>
-          <stringProp name="filename"></stringProp>
+          <stringProp name="filename">C:/Users/15031/Desktop/yizhengtong-platform/docs/${__time(yyyy-MM-dd_HH-mm-ss)}_summary.jtl</stringProp>
         </ResultCollector>
         <hashTree/>
-        <ResultCollector guiclass="StatVisualizer" testclass="ResultCollector" testname="聚合报告">
+        <ResultCollector guiclass="StatVisualizer" testclass="ResultCollector" testname="聚合报告" enabled="false">
           <boolProp name="ResultCollector.error_logging">false</boolProp>
           <objProp>
             <name>saveConfig</name>
@@ -196,13 +232,13 @@
               <encoding>false</encoding>
               <assertions>true</assertions>
               <subresults>true</subresults>
-              <responseData>false</responseData>
-              <samplerData>false</samplerData>
+              <responseData>true</responseData>
+              <samplerData>true</samplerData>
               <xml>false</xml>
               <fieldNames>true</fieldNames>
-              <responseHeaders>false</responseHeaders>
-              <requestHeaders>false</requestHeaders>
-              <responseDataOnError>false</responseDataOnError>
+              <responseHeaders>true</responseHeaders>
+              <requestHeaders>true</requestHeaders>
+              <responseDataOnError>true</responseDataOnError>
               <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
               <assertionsResultsToSave>0</assertionsResultsToSave>
               <bytes>true</bytes>
@@ -213,8 +249,269 @@
               <connectTime>true</connectTime>
             </value>
           </objProp>
-          <stringProp name="filename"></stringProp>
+          <stringProp name="filename">C:/Users/15031/Desktop/yizhengtong-platform/docs/${__time(yyyy-MM-dd_HH-mm-ss)}_aggregate.jtl</stringProp>
         </ResultCollector>
+        <hashTree/>
+        <ResultCollector guiclass="SimpleDataWriter" testclass="ResultCollector" testname="响应数据保存器" enabled="false">
+          <boolProp name="ResultCollector.error_logging">false</boolProp>
+          <objProp>
+            <name>saveConfig</name>
+            <value class="SampleSaveConfiguration">
+              <time>true</time>
+              <latency>true</latency>
+              <timestamp>true</timestamp>
+              <success>true</success>
+              <label>true</label>
+              <code>true</code>
+              <message>true</message>
+              <threadName>true</threadName>
+              <dataType>true</dataType>
+              <encoding>false</encoding>
+              <assertions>true</assertions>
+              <subresults>true</subresults>
+              <responseData>true</responseData>
+              <samplerData>true</samplerData>
+              <xml>false</xml>
+              <fieldNames>true</fieldNames>
+              <responseHeaders>true</responseHeaders>
+              <requestHeaders>true</requestHeaders>
+              <responseDataOnError>true</responseDataOnError>
+              <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+              <assertionsResultsToSave>0</assertionsResultsToSave>
+              <bytes>true</bytes>
+              <sentBytes>true</sentBytes>
+              <url>true</url>
+              <threadCounts>true</threadCounts>
+              <idleTime>true</idleTime>
+              <connectTime>true</connectTime>
+            </value>
+          </objProp>
+          <stringProp name="filename">C:/Users/15031/Desktop/yizhengtong-platform/docs/${__time(yyyy-MM-dd_HH-mm-ss)}_response_data.jtl</stringProp>
+        </ResultCollector>
+        <hashTree/>
+        <JSR223Listener guiclass="TestBeanGUI" testclass="JSR223Listener" testname="响应数据记录器" enabled="false">
+          <stringProp name="cacheKey">true</stringProp>
+          <stringProp name="filename"></stringProp>
+          <stringProp name="parameters"></stringProp>
+          <stringProp name="script">import java.io.FileWriter;
+import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+try {
+    def timestamp = new SimpleDateFormat(&quot;yyyy-MM-dd_HH-mm-ss&quot;).format(new Date());
+    def filename = &quot;C:/Users/15031/Desktop/yizhengtong-platform/docs/&quot; + timestamp + &quot;_detailed_response.txt&quot;;
+    
+    def responseData = prev.getResponseDataAsString();
+    def requestData = prev.getSamplerData();
+    def responseCode = prev.getResponseCode();
+    def responseMessage = prev.getResponseMessage();
+    def label = prev.getSampleLabel();
+    
+    def writer = new PrintWriter(new FileWriter(filename, true));
+    writer.println(&quot;=== &quot; + label + &quot; ===&quot;);
+    writer.println(&quot;时间: &quot; + new Date());
+    writer.println(&quot;响应码: &quot; + responseCode);
+    writer.println(&quot;响应消息: &quot; + responseMessage);
+    writer.println(&quot;请求数据:&quot;);
+    writer.println(requestData);
+    writer.println(&quot;响应数据:&quot;);
+    writer.println(responseData);
+    writer.println(&quot;==========================================&quot;);
+    writer.println();
+    writer.close();
+    
+    log.info(&quot;响应数据已保存到: &quot; + filename);
+} catch (Exception e) {
+    log.error(&quot;保存响应数据时出错: &quot; + e.getMessage());
+}</stringProp>
+          <stringProp name="scriptLanguage">groovy</stringProp>
+        </JSR223Listener>
+        <hashTree/>
+        <BeanShellListener guiclass="TestBeanGUI" testclass="BeanShellListener" testname="关键人物数据保存器">
+          <stringProp name="filename"></stringProp>
+          <stringProp name="parameters"></stringProp>
+          <boolProp name="resetInterpreter">false</boolProp>
+          <stringProp name="script">import java.io.FileWriter;
+import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+try {
+    String label = prev.getSampleLabel();
+    log.info(&quot;当前请求标签: &quot; + label);
+    
+    // 只处理&quot;关键人物获取&quot;请求
+    if (label.equals(&quot;关键人物获取&quot;)) {
+        log.info(&quot;找到关键人物获取请求，开始处理...&quot;);
+        String responseData = prev.getResponseDataAsString();
+        String responseCode = prev.getResponseCode();
+        
+        log.info(&quot;响应码: &quot; + responseCode);
+        log.info(&quot;响应数据长度: &quot; + (responseData != null ? responseData.length() : &quot;null&quot;));
+        
+        // 检查响应是否成功
+        if (responseCode.equals(&quot;200&quot;) &amp;&amp; responseData != null &amp;&amp; !responseData.isEmpty()) {
+            // 保存JSON数据
+            String jsonFilename = &quot;C:/Users/15031/Desktop/yizhengtong-platform/docs/key_persons_data.json&quot;;
+            PrintWriter jsonWriter = new PrintWriter(new FileWriter(jsonFilename, false));
+            jsonWriter.println(responseData);
+            jsonWriter.close();
+            log.info(&quot;JSON数据已保存到: &quot; + jsonFilename);
+            
+            // 保存CSV格式（可以用Excel打开）
+            String csvFilename = &quot;C:/Users/15031/Desktop/yizhengtong-platform/docs/key_persons_data.csv&quot;;
+            java.io.FileOutputStream fos = new java.io.FileOutputStream(csvFilename);
+            java.io.OutputStreamWriter osw = new java.io.OutputStreamWriter(fos, &quot;UTF-8&quot;);
+            java.io.BufferedWriter csvWriter = new java.io.BufferedWriter(osw);
+            
+            // 写入BOM（字节顺序标记）确保Excel正确识别UTF-8
+            csvWriter.write(&apos;\ufeff&apos;);
+            
+            // 写入CSV头部
+            csvWriter.write(&quot;请求参数,姓名,部门,职位,地区,出生日期,办公电话,微信,领导分工,个人描述&quot;);
+            csvWriter.newLine();
+            
+            // 使用简单的字符串处理来解析JSON
+            if (responseData.contains(&quot;\&quot;data\&quot;:&quot;) &amp;&amp; responseData.contains(&quot;[&quot;) &amp;&amp; responseData.contains(&quot;]&quot;)) {
+                // 找到data数组的开始和结束位置
+                int dataStart = responseData.indexOf(&quot;\&quot;data\&quot;:&quot;) + 7;
+                int arrayStart = responseData.indexOf(&quot;[&quot;, dataStart);
+                int arrayEnd = responseData.lastIndexOf(&quot;]&quot;);
+                
+                if (arrayStart != -1 &amp;&amp; arrayEnd != -1 &amp;&amp; arrayEnd &gt; arrayStart) {
+                    String dataArray = responseData.substring(arrayStart + 1, arrayEnd);
+                    
+                    // 分割每个对象
+                    String[] objects = dataArray.split(&quot;\\},\\s*\\{&quot;);
+                    
+                    for (int i = 0; i &lt; objects.length; i++) {
+                        String obj = objects[i];
+                        if (i &gt; 0) obj = &quot;{&quot; + obj;
+                        if (i &lt; objects.length - 1) obj = obj + &quot;}&quot;;
+                        
+                        // 获取请求参数
+                        String requestParams = &quot;&quot;;
+                        try {
+                            String url = prev.getUrlAsString();
+                            if (url != null &amp;&amp; url.contains(&quot;?&quot;)) {
+                                requestParams = url.substring(url.indexOf(&quot;?&quot;) + 1);
+                            }
+                        } catch (Exception e) {}
+                        
+                        // 内联提取各个字段
+                        String name = &quot;&quot;;
+                        String department = &quot;&quot;;
+                        String position = &quot;&quot;;
+                        String region = &quot;&quot;;
+                        String birthDate = &quot;&quot;;
+                        String officePhone = &quot;&quot;;
+                        String wechat = &quot;&quot;;
+                        String leadershipDivision = &quot;&quot;;
+                        String personDesc = &quot;&quot;;
+                        
+                        // 提取name字段
+                        try {
+                            String namePattern = &quot;\&quot;name\&quot;:\\s*\&quot;([^\&quot;]*)\&quot;&quot;;
+                            java.util.regex.Pattern p = java.util.regex.Pattern.compile(namePattern);
+                            java.util.regex.Matcher m = p.matcher(obj);
+                            if (m.find()) name = m.group(1);
+                        } catch (Exception e) {}
+                        
+                        // 提取department字段
+                        try {
+                            String deptPattern = &quot;\&quot;department\&quot;:\\s*\&quot;([^\&quot;]*)\&quot;&quot;;
+                            java.util.regex.Pattern p = java.util.regex.Pattern.compile(deptPattern);
+                            java.util.regex.Matcher m = p.matcher(obj);
+                            if (m.find()) department = m.group(1);
+                        } catch (Exception e) {}
+                        
+                        // 提取position字段
+                        try {
+                            String posPattern = &quot;\&quot;position\&quot;:\\s*\&quot;([^\&quot;]*)\&quot;&quot;;
+                            java.util.regex.Pattern p = java.util.regex.Pattern.compile(posPattern);
+                            java.util.regex.Matcher m = p.matcher(obj);
+                            if (m.find()) position = m.group(1);
+                        } catch (Exception e) {}
+                        
+                        // 提取region字段
+                        try {
+                            String regPattern = &quot;\&quot;region\&quot;:\\s*\&quot;([^\&quot;]*)\&quot;&quot;;
+                            java.util.regex.Pattern p = java.util.regex.Pattern.compile(regPattern);
+                            java.util.regex.Matcher m = p.matcher(obj);
+                            if (m.find()) region = m.group(1);
+                        } catch (Exception e) {}
+                        
+                        // 提取birth_date字段
+                        try {
+                            String birthPattern = &quot;\&quot;birth_date\&quot;:\\s*\&quot;([^\&quot;]*)\&quot;&quot;;
+                            java.util.regex.Pattern p = java.util.regex.Pattern.compile(birthPattern);
+                            java.util.regex.Matcher m = p.matcher(obj);
+                            if (m.find()) birthDate = m.group(1);
+                        } catch (Exception e) {}
+                        
+                        // 提取office_phone字段
+                        try {
+                            String phonePattern = &quot;\&quot;office_phone\&quot;:\\s*\&quot;([^\&quot;]*)\&quot;&quot;;
+                            java.util.regex.Pattern p = java.util.regex.Pattern.compile(phonePattern);
+                            java.util.regex.Matcher m = p.matcher(obj);
+                            if (m.find()) officePhone = m.group(1);
+                        } catch (Exception e) {}
+                        
+                        // 提取wechat字段
+                        try {
+                            String wechatPattern = &quot;\&quot;wechat\&quot;:\\s*\&quot;([^\&quot;]*)\&quot;&quot;;
+                            java.util.regex.Pattern p = java.util.regex.Pattern.compile(wechatPattern);
+                            java.util.regex.Matcher m = p.matcher(obj);
+                            if (m.find()) wechat = m.group(1);
+                        } catch (Exception e) {}
+                        
+                        // 提取leadership_division字段
+                        try {
+                            String leadPattern = &quot;\&quot;leadership_division\&quot;:\\s*\&quot;([^\&quot;]*)\&quot;&quot;;
+                            java.util.regex.Pattern p = java.util.regex.Pattern.compile(leadPattern);
+                            java.util.regex.Matcher m = p.matcher(obj);
+                            if (m.find()) leadershipDivision = m.group(1);
+                        } catch (Exception e) {}
+                        
+                        // 提取person_desc字段
+                        try {
+                            String descPattern = &quot;\&quot;person_desc\&quot;:\\s*\&quot;([^\&quot;]*)\&quot;&quot;;
+                            java.util.regex.Pattern p = java.util.regex.Pattern.compile(descPattern);
+                            java.util.regex.Matcher m = p.matcher(obj);
+                            if (m.find()) personDesc = m.group(1);
+                        } catch (Exception e) {}
+                        
+                        // 处理CSV中的特殊字符
+                        name = name.replace(&quot;,&quot;, &quot;，&quot;);
+                        department = department.replace(&quot;,&quot;, &quot;，&quot;);
+                        position = position.replace(&quot;,&quot;, &quot;，&quot;);
+                        region = region.replace(&quot;,&quot;, &quot;，&quot;);
+                        leadershipDivision = leadershipDivision.replace(&quot;,&quot;, &quot;，&quot;);
+                        personDesc = personDesc.replace(&quot;,&quot;, &quot;，&quot;);
+                        
+                        csvWriter.write(requestParams + &quot;,&quot; + name + &quot;,&quot; + department + &quot;,&quot; + position + &quot;,&quot; + region + &quot;,&quot; + birthDate + &quot;,&quot; + officePhone + &quot;,&quot; + wechat + &quot;,&quot; + leadershipDivision + &quot;,&quot; + personDesc);
+                        csvWriter.newLine();
+                    }
+                }
+            }
+            csvWriter.flush();
+            csvWriter.close();
+            osw.close();
+            fos.close();
+            log.info(&quot;CSV数据已保存到: &quot; + csvFilename);
+            
+        } else {
+            log.warn(&quot;关键人物获取请求失败或响应为空，响应码: &quot; + responseCode);
+        }
+    } else {
+        log.info(&quot;跳过非关键人物获取请求: &quot; + label);
+    }
+} catch (Exception e) {
+    log.error(&quot;保存关键人物数据时出错: &quot; + e.getMessage());
+    e.printStackTrace();
+}</stringProp>
+        </BeanShellListener>
         <hashTree/>
       </hashTree>
     </hashTree>
