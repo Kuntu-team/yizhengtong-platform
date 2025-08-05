@@ -934,8 +934,8 @@ export default function PoliciesPage() {
 
   // PC端页码变化时获取数据
   useEffect(() => {
-    if (!isMobile && allPolicyIds.length > 0 && pcPage > 1) {
-      // 避免初始加载时的重复请求，只有页码变化时才重新加载
+    if (!isMobile && allPolicyIds.length > 0) {
+      // 页码变化时重新加载数据
       loadPcPolicies(allPolicyIds, pcPage);
     }
   }, [pcPage, allPolicyIds, isMobile, loadPcPolicies]);
