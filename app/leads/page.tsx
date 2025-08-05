@@ -261,7 +261,7 @@ function MainContent() {
 
       setPcInternalTotal(res.data.total || 0);
     } catch (error) {
-      console.error("Error fetching internal data:", error);
+      console.log("Error fetching internal data:", error);
       // 请求失败时，重置hasMore状态，防止无限重试
       if (isMobile) {
         setInternalHasMore(false);
@@ -324,7 +324,7 @@ function MainContent() {
 
       setPcExternalTotal(res.data.total || 0);
     } catch (error) {
-      console.error("Error fetching external data:", error);
+      console.log("Error fetching external data:", error);
       // 请求失败时，重置hasMore状态，防止无限重试
       if (isMobile) {
         setExternalHasMore(false);

@@ -764,7 +764,7 @@ export default function PoliciesPage() {
       // PC端总是替换数据（分页模式）
       setPolicies(allPolicies);
     } catch (error) {
-      console.error('加载政策数据失败:', error);
+      console.log('加载政策数据失败:', error);
     } finally {
       setPcLoading(false);
     }
@@ -858,7 +858,7 @@ export default function PoliciesPage() {
       setHasMore(end < ids.length);
       setPage(pageToLoad + 1);
     } catch (error) {
-      console.error('加载政策数据失败:', error);
+      console.log('加载政策数据失败:', error);
     } finally {
       setLoadingMore(false);
     }

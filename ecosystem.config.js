@@ -18,7 +18,7 @@ module.exports = {
   apps: [
     {
       name: 'yizhengtong-platform',
-      script: '.next/standalone/server.js',
+      script: 'server.js',
       args: '',
       cwd: './',
       instances: 'max',
