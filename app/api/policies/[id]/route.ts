@@ -47,7 +47,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const isStreaming = response_mode === 'streaming';
 
     console.log('Making request to Dify API...');
-    const difyRes = await fetch('http://192.168.100.100:8080/v1/chat-messages', {
+    const difyRes = await fetch('https://dify.ktt.team/v1/chat-messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
