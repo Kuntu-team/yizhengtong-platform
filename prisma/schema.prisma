@@ -36,6 +36,43 @@ model user_notification_read {
   @@schema("front_dev")
 }
 
+model Result_1 {
+  person_id           String    @id @db.VarChar(255)
+  person_name         String?   @db.VarChar(255)
+  department_code     String?   @db.VarChar(255)
+  department          String?   @db.VarChar(255)
+  position_code       String?   @db.VarChar(255)
+  position            String?   @db.VarChar(255)
+  leadership_division String?   @db.VarChar(255)
+  person_desc         String?   @db.VarChar(255)
+  region_code         Int?
+  region_cn           String?   @db.VarChar(255)
+  region_level        Int?
+  province_code       Int?
+  province_cn         String?   @db.VarChar(255)
+  city_code           Int?
+  city_cn             String?   @db.VarChar(255)
+  district_code       Int?
+  district_cn         String?   @db.VarChar(255)
+  office_phone        String?   @db.VarChar(255)
+  office_address      String?   @db.VarChar(255)
+  public_email        String?   @db.VarChar(255)
+  work_experience     String?   @db.VarChar(255)
+  person_photo_url    String?   @db.VarChar(255)
+  ancestral_home      String?   @db.VarChar(255)
+  ethnic_group        String?   @db.VarChar(255)
+  gender              String?   @db.VarChar(255)
+  birth_date          String?   @db.VarChar(255)
+  graduate_school     String?   @db.VarChar(255)
+  baike_url           String?   @db.VarChar(255)
+  data_status         Int?
+  created_time        DateTime? @db.Timestamp(6)
+  updated_time        DateTime? @db.Timestamp(6)
+
+  @@map("Result 1")
+  @@schema("public")
+}
+
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model business_manager_region_info {
   id                   Int       @id @default(autoincrement())
@@ -106,6 +143,54 @@ model dim_region_code_dh {
   district_code String? @db.VarChar(20)
   district_cn   String? @db.VarChar(500)
   id            Int     @id @default(autoincrement())
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model gov_project_indicator_often_used {
+  id                                      String    @id @db.VarChar(255)
+  region_cn                               String?
+  region_code                             String?
+  province_cn                             String?
+  city_cn                                 String?
+  district_cn                             String?
+  year                                    String
+  gdp                                     String?
+  gdp_growth                              String?
+  gdp_per_capita                          String?
+  primary_industry_added_value            String?
+  secondary_industry_added_value          String?
+  tertiary_industry_added_value           String?
+  population                              String?
+  industrial_added_value                  String?
+  industrial_output_above_designated_size String?
+  fixed_asset_investment                  String?
+  total_imports_and_exports               String?
+  total_retail_sales_consumer_goods       String?
+  disposable_income_per_capita            String?
+  total_saving_financial_institutions     String?
+  total_loan_financial_institutions       String?
+  general_public_budget_revenue           String?
+  general_public_budget_revenue_growth    String?
+  gpbr_tax_revenue                        String?
+  general_public_budget_expenditure       String?
+  government_revenue                      String?
+  gr_land_sale_revenue                    String?
+  government_expenditure                  String?
+  state_owned_enterprises_revenue         String?
+  state_owned_enterprises_expenditure     String?
+  fiscal_self_financing_ratio             String?
+  local_gov_debt_balance                  String?
+  general_bond_balance                    String?
+  special_bond_balance                    String?
+  local_gov_debt_limit                    String?
+  smi_interest_bearing_balance            String?
+  debt_ratio                              String?
+  foreign_debt_ratio                      String?
+  data_status                             String?   @default("1") @db.Char(1)
+  created_time                            DateTime? @default(now()) @db.Timestamp(6)
+  updated_time                            DateTime? @default(now()) @db.Timestamp(6)
 
   @@schema("public")
 }
@@ -299,7 +384,55 @@ model region_special_bond_stats_copy1 {
   @@schema("public")
 }
 
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model special_bond_base_info {
+  project_id             String    @id @db.VarChar(255)
+  project_name           String?
+  total_investment       String?
+  issued_date            String?
+  issued_amount_acc      String?
+  issued_period          String?
+  issued_rate            String?
+  project_url            String?
+  project_fullname       String?
+  province               String?   @db.VarChar(255)
+  city                   String?   @db.VarChar(255)
+  district               String?   @db.VarChar(255)
+  region_cn              String?   @db.VarChar(255)
+  region_code            String?   @db.VarChar(20)
+  region_level           String?   @db.Char(1)
+  province_cn            String?   @db.VarChar(255)
+  province_code          String?   @db.VarChar(20)
+  city_cn                String?   @db.VarChar(255)
+  city_code              String?   @db.VarChar(20)
+  district_cn            String?   @db.VarChar(255)
+  district_code          String?   @db.VarChar(20)
+  capital_exclspb        String?
+  project_field_name     String?
+  applied_spb_amount     String?   @db.VarChar(255)
+  project_owner          String?   @db.VarChar(255)
+  other_debt_finance     String?   @db.VarChar(255)
+  capital_from_spb       String?   @db.VarChar(255)
+  expected_revenue       String?   @db.VarChar(255)
+  special_bond_cost      String?   @db.VarChar(255)
+  construction_period    String?   @db.VarChar(255)
+  operation_period       String?   @db.VarChar(255)
+  income_source          String?   @db.VarChar(255)
+  construction_content   String?
+  special_note           String?
+  other_debt_finance_src String?   @db.VarChar(255)
+  admin_department       String?   @db.VarChar(255)
+  cost_income_ratio      String?   @db.VarChar(255)
+  accounting_firm        String?   @db.VarChar(255)
+  coverage_multiple      String?   @db.VarChar(255)
+  law_firm               String?   @db.VarChar(255)
+  data_status            String?   @default("1") @db.Char(1)
+  created_time           DateTime? @default(now()) @db.Timestamp(6)
+  updated_time           DateTime? @default(now()) @db.Timestamp(6)
+
+  @@schema("public")
+}
+
 model wby_business_person_follow {
   follow_id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   followed_person_id String?   @db.VarChar(50)
@@ -342,140 +475,6 @@ model yk_internal_projects {
   data_status              String?  @default("1") @db.Char(1)
   created_time             DateTime @default(now()) @db.Timestamp(6)
   updated_time             DateTime @default(now()) @db.Timestamp(6)
-
-  @@schema("public")
-}
-
-model Result_1 {
-  person_id           String    @id @db.VarChar(255)
-  person_name         String?   @db.VarChar(255)
-  department_code     String?   @db.VarChar(255)
-  department          String?   @db.VarChar(255)
-  position_code       String?   @db.VarChar(255)
-  position            String?   @db.VarChar(255)
-  leadership_division String?   @db.VarChar(255)
-  person_desc         String?   @db.VarChar(255)
-  region_code         Int?
-  region_cn           String?   @db.VarChar(255)
-  region_level        Int?
-  province_code       Int?
-  province_cn         String?   @db.VarChar(255)
-  city_code           Int?
-  city_cn             String?   @db.VarChar(255)
-  district_code       Int?
-  district_cn         String?   @db.VarChar(255)
-  office_phone        String?   @db.VarChar(255)
-  office_address      String?   @db.VarChar(255)
-  public_email        String?   @db.VarChar(255)
-  work_experience     String?   @db.VarChar(255)
-  person_photo_url    String?   @db.VarChar(255)
-  ancestral_home      String?   @db.VarChar(255)
-  ethnic_group        String?   @db.VarChar(255)
-  gender              String?   @db.VarChar(255)
-  birth_date          String?   @db.VarChar(255)
-  graduate_school     String?   @db.VarChar(255)
-  baike_url           String?   @db.VarChar(255)
-  data_status         Int?
-  created_time        DateTime? @db.Timestamp(6)
-  updated_time        DateTime? @db.Timestamp(6)
-
-  @@map("Result 1")
-  @@schema("public")
-}
-
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-model gov_project_indicator_often_used {
-  id                                      String    @id @db.VarChar(255)
-  region_cn                               String?
-  region_code                             String?
-  province_cn                             String?
-  city_cn                                 String?
-  district_cn                             String?
-  year                                    String
-  gdp                                     String?
-  gdp_growth                              String?
-  gdp_per_capita                          String?
-  primary_industry_added_value            String?
-  secondary_industry_added_value          String?
-  tertiary_industry_added_value           String?
-  population                              String?
-  industrial_added_value                  String?
-  industrial_output_above_designated_size String?
-  fixed_asset_investment                  String?
-  total_imports_and_exports               String?
-  total_retail_sales_consumer_goods       String?
-  disposable_income_per_capita            String?
-  total_saving_financial_institutions     String?
-  total_loan_financial_institutions       String?
-  general_public_budget_revenue           String?
-  general_public_budget_revenue_growth    String?
-  gpbr_tax_revenue                        String?
-  general_public_budget_expenditure       String?
-  government_revenue                      String?
-  gr_land_sale_revenue                    String?
-  government_expenditure                  String?
-  state_owned_enterprises_revenue         String?
-  state_owned_enterprises_expenditure     String?
-  fiscal_self_financing_ratio             String?
-  local_gov_debt_balance                  String?
-  general_bond_balance                    String?
-  special_bond_balance                    String?
-  local_gov_debt_limit                    String?
-  smi_interest_bearing_balance            String?
-  debt_ratio                              String?
-  foreign_debt_ratio                      String?
-  data_status                             String?   @default("1") @db.Char(1)
-  created_time                            DateTime? @default(now()) @db.Timestamp(6)
-  updated_time                            DateTime? @default(now()) @db.Timestamp(6)
-
-  @@schema("public")
-}
-
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-model special_bond_base_info {
-  project_id             String    @id @db.VarChar(255)
-  project_name           String?   @db.VarChar(255)
-  total_investment       String?   @db.VarChar(255)
-  issued_date            String?   @db.VarChar(1000)
-  issued_amount_acc      String?   @db.VarChar(255)
-  issued_period          String?   @db.VarChar(255)
-  issued_rate            String?   @db.VarChar(255)
-  project_url            String?   @db.VarChar(255)
-  project_fullname       String?   @db.VarChar(255)
-  province               String?   @db.VarChar(255)
-  city                   String?   @db.VarChar(255)
-  district               String?   @db.VarChar(255)
-  region_cn              String?   @db.VarChar(255)
-  region_code            String?   @db.VarChar(20)
-  region_level           String?   @db.Char(1)
-  province_cn            String?   @db.VarChar(255)
-  province_code          String?   @db.VarChar(20)
-  city_cn                String?   @db.VarChar(255)
-  city_code              String?   @db.VarChar(20)
-  district_cn            String?   @db.VarChar(255)
-  district_code          String?   @db.VarChar(20)
-  capital_exclspb        String?   @db.VarChar(255)
-  project_field_name     String?   @db.VarChar(255)
-  applied_spb_amount     String?   @db.VarChar(255)
-  project_owner          String?   @db.VarChar(255)
-  other_debt_finance     String?   @db.VarChar(255)
-  capital_from_spb       String?   @db.VarChar(255)
-  expected_revenue       String?   @db.VarChar(255)
-  special_bond_cost      String?   @db.VarChar(255)
-  construction_period    String?   @db.VarChar(255)
-  operation_period       String?   @db.VarChar(255)
-  income_source          String?   @db.VarChar(255)
-  construction_content   String?
-  special_note           String?
-  other_debt_finance_src String?   @db.VarChar(255)
-  admin_department       String?   @db.VarChar(255)
-  cost_income_ratio      String?   @db.VarChar(255)
-  accounting_firm        String?   @db.VarChar(255)
-  coverage_multiple      String?   @db.VarChar(255)
-  law_firm               String?   @db.VarChar(255)
-  data_status            String?   @default("1") @db.Char(1)
-  created_time           DateTime? @default(now()) @db.Timestamp(6)
-  updated_time           DateTime? @default(now()) @db.Timestamp(6)
 
   @@schema("public")
 }

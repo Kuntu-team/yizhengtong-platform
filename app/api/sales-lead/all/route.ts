@@ -43,12 +43,12 @@ export async function GET(request: Request) {
       prisma.key_person_news_tags.findMany(),
     ]);
 
-    const result = news.map((item) => {
-      const person = persons.find((p) => p.person_id === item.person_id);
+    const result = news.map((item: any) => {
+      const person = persons.find((p: any) => p.person_id === item.person_id);
       const person_private = private_info.find(
-        (p) => p.person_id === item.person_id
+        (p: any) => p.person_id === item.person_id
       );
-      const newTag = tags.find((t) => t.news_id === item.news_id);
+      const newTag = tags.find((t: any) => t.news_id === item.news_id);
       let filter_code = null;
       if (item.news_region_level === "1") {
         filter_code = item.news_province_code;
